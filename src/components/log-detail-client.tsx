@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { format } from 'date-fns';
 import { AiAnalysis } from '@/components/ai-analysis';
 import type { Audit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +29,7 @@ import {
 import { deleteAuditAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
+import { format } from 'date-fns';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -51,20 +51,6 @@ function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
     default:
       return 'outline';
   }
-}
-
-async function fetchImageAsDataUrl(url: string): Promise<string> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.statusText}`);
-  }
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: Audit, formattedCreatedAt: string }) {
@@ -99,9 +85,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
     if (audit) {
       setIsDownloading(true);
       try {
-        const bgImageUrl = '/IMAGENEN_UNIFICADA.jpg';
-        const bgImageDataUrl = await fetchImageAsDataUrl(bgImageUrl);
-        await generateAuditPdf(audit, bgImageDataUrl);
+        await generateAuditPdf(audit);
         toast({
           title: 'PDF Generado',
           description: 'El informe de auditoría se ha descargado.',

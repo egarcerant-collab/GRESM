@@ -5,7 +5,7 @@ import type { Audit } from "./types";
 
 const FONT = "helvetica"; // Using a standard font
 
-function buildPdf(data: Audit, bgImage: string | null): jsPDF {
+function buildPdf(data: Audit): jsPDF {
   const doc = new jsPDF("p", "pt", "letter");
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -16,18 +16,9 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
 
-  const addBackground = () => {
-    if (bgImage) {
-        doc.addImage(bgImage, 'JPEG', 0, pageH - 200, pageW, 200, undefined, 'FAST');
-    }
-  }
-
   const addPageWithBg = () => {
       doc.addPage();
-      addBackground();
   }
-  
-  addBackground();
 
   let finalY = topMargin;
 
@@ -185,9 +176,8 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
 
 export async function generateAuditPdf(
   audit: Audit,
-  bgImage: string | null = null,
 ): Promise<void> {
-  const doc = buildPdf(audit, bgImage);
+  const doc = buildPdf(audit);
   const fileName = `Informe_Auditoria_${audit.id}_${audit.patientName.replace(/ /g, '_')}.pdf`;
   doc.save(fileName);
 }
