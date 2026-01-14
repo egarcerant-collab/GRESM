@@ -30,7 +30,7 @@ import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { createAuditAction } from '@/app/actions';
-import { useTransition, useEffect } from 'react';
+import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const documentTypes = [
@@ -49,11 +49,13 @@ const eventTypes = [
   "Otro"
 ];
 
-const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA", "Otro"];
+const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
 
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [departmentSelection, setDepartmentSelection] = useState<string | undefined>('');
+  const isOtherDepartment = departmentSelection === 'Otro';
 
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
@@ -74,19 +76,13 @@ export function AuditForm() {
     },
   });
 
-  const departmentValue = form.watch('department');
-  const isOtherDepartment = departmentValue === 'Otro';
-
   useEffect(() => {
-    if (departmentValue !== 'Otro') {
-       const selectedDepartment = departmentOptions.find(d => d === departmentValue);
-       if(selectedDepartment && form.getValues('department') !== selectedDepartment) {
-          // No es necesario un setValue si el valor ya está en el select
-       }
+    if (departmentSelection !== 'Otro') {
+      form.setValue('department', departmentSelection || '');
     } else {
-        form.setValue('department', '');
+      form.setValue('department', '');
     }
-  }, [departmentValue, form]);
+  }, [departmentSelection, form]);
 
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
@@ -105,6 +101,7 @@ export function AuditForm() {
           description: 'La auditoría ha sido registrada exitosamente.',
         });
         form.reset();
+        setDepartmentSelection('');
       }
     });
   }
@@ -282,26 +279,21 @@ export function AuditForm() {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="department"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Departamento</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un departamento" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormItem>
+            <FormLabel>Departamento</FormLabel>
+            <Select onValueChange={setDepartmentSelection} value={departmentSelection}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione un departamento" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                <SelectItem value="Otro">Otro</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
            {isOtherDepartment && (
             <FormField
               control={form.control}
