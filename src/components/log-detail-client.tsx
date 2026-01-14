@@ -89,10 +89,9 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
       setIsDownloading(true);
       try {
         // Use the Server Action to get the image with the correct path
-        const headerImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
+        const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
         
-        // Pass the image data to the PDF generator
-        await generateAuditPdf(audit, headerImage);
+        await generateAuditPdf(audit, backgroundImage);
         
         toast({
           title: 'PDF Generado',

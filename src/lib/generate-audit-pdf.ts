@@ -5,48 +5,38 @@ import type { Audit } from "./types";
 
 const FONT = "helvetica";
 
-async function buildPdf(data: Audit, headerImage: string | null): Promise<jsPDF> {
-  const doc = new jsPDF("p", "pt", "letter");
+async function buildPdf(data: Audit, backgroundImage: string | null): Promise<jsPDF> {
+  const doc = new jsPDF("p", "pt", "a4"); // Set page size to A4
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 40;
-  const rightMargin = 40;
-  const contentWidth = pageW - leftMargin - rightMargin;
   
-  const headerImgHeight = 60;
-
-  const addHeader = () => {
-    if (headerImage) {
+  const addBackground = () => {
+    if (backgroundImage) {
       try {
-        const extension = headerImage.split(';')[0].split('/')[1].toUpperCase();
-        doc.addImage(headerImage, extension, 0, 0, pageW, headerImgHeight);
+        doc.addImage(backgroundImage, 'JPEG', 0, 0, pageW, pageH);
       } catch (e) {
-        console.error("Error adding header image to PDF:", e);
+        console.error("Error adding background image to PDF:", e);
       }
     }
   };
 
   const addFooter = (pageNumber: number, pageCount: number) => {
     doc.setFontSize(8);
-    doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 30, { align: 'center' });
+    doc.setTextColor(100);
+    doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, pageH - 30, { align: 'center' });
   };
-
-  let finalY = headerImage ? headerImgHeight + 20 : leftMargin;
   
-  addHeader();
+  // Add background to the first page
+  addBackground();
+
+  let finalY = leftMargin;
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(16);
+  doc.setTextColor(0);
   doc.text("Informe de Auditoría", pageW / 2, finalY, { align: "center" });
   finalY += 30;
-
-  const checkPageBreak = (yPosition: number) => {
-    if (yPosition > doc.internal.pageSize.getHeight() - 60) {
-      doc.addPage();
-      addHeader();
-      return headerImage ? headerImgHeight + 20 : leftMargin;
-    }
-    return yPosition;
-  };
 
   autoTable(doc, {
     startY: finalY,
@@ -57,12 +47,21 @@ async function buildPdf(data: Audit, headerImage: string | null): Promise<jsPDF>
     ],
     theme: "plain",
     styles: { font: FONT, fontSize: 10 },
-    didDrawPage: (hookData) => { if (hookData.pageNumber > 1) addHeader(); },
+    didDrawPage: (hookData) => { 
+      if (hookData.pageNumber > 1) {
+        addBackground(); 
+      }
+    },
   });
   finalY = (doc as any).lastAutoTable.finalY + 10;
   
   const addSectionTitle = (title: string) => {
-      finalY = checkPageBreak(finalY);
+      finalY = (doc as any).lastAutoTable.finalY + 20; // Use last finalY to position correctly after tables
+      if (finalY > pageH - 60) {
+        doc.addPage();
+        addBackground();
+        finalY = leftMargin;
+      }
       doc.setFont(FONT, "bold");
       doc.setFontSize(12);
       doc.text(title, leftMargin, finalY);
@@ -84,13 +83,12 @@ async function buildPdf(data: Audit, headerImage: string | null): Promise<jsPDF>
     ],
     theme: "striped",
     styles: { font: FONT, fontSize: 10, cellPadding: 5 },
-    didDrawPage: (hookData) => addHeader(),
+    didDrawPage: (hookData) => { addBackground(); },
   });
-  finalY = (doc as any).lastAutoTable.finalY + 10;
 
   addSectionTitle("Información del Evento");
   autoTable(doc, {
-    startY: finalY,
+    startY: (doc as any).lastAutoTable.finalY + 15,
     body: [
         [{ content: 'Tipo de Visita:', styles: { fontStyle: "bold" } }, data.visitType || 'N/A'],
         [{ content: 'Fecha de Seguimiento:', styles: { fontStyle: "bold" } }, data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : 'N/A'],
@@ -107,23 +105,35 @@ async function buildPdf(data: Audit, headerImage: string | null): Promise<jsPDF>
     ],
     theme: "striped",
     styles: { font: FONT, fontSize: 10, cellPadding: 5 },
-    didDrawPage: (hookData) => addHeader(),
+    didDrawPage: (hookData) => { addBackground(); },
   });
   finalY = (doc as any).lastAutoTable.finalY;
 
   const addTextSection = (title: string, text: string | null | undefined) => {
-    finalY = checkPageBreak(finalY + 20);
-    addSectionTitle(title);
+    finalY = finalY + 20; // Spacing
+    if (finalY > pageH - 80) {
+      doc.addPage();
+      addBackground();
+      finalY = leftMargin;
+    }
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(12);
+    doc.text(title, leftMargin, finalY);
+    finalY += 15;
     
     doc.setFont(FONT, "normal");
     doc.setFontSize(10);
     const safeText = text || 'N/A';
-    const splitText = doc.splitTextToSize(safeText, contentWidth);
+    const splitText = doc.splitTextToSize(safeText, pageW - leftMargin * 2);
 
     splitText.forEach((line: string) => {
-        finalY = checkPageBreak(finalY);
-        doc.text(line, leftMargin, finalY, { align: 'justify' });
-        finalY += 12;
+      if (finalY > pageH - 40) {
+        doc.addPage();
+        addBackground();
+        finalY = leftMargin;
+      }
+      doc.text(line, leftMargin, finalY, { align: 'justify' });
+      finalY += 12;
     });
   }
 
@@ -139,9 +149,9 @@ async function buildPdf(data: Audit, headerImage: string | null): Promise<jsPDF>
   return doc;
 }
 
-export async function generateAuditPdf(audit: Audit, headerImage: string | null): Promise<void> {
+export async function generateAuditPdf(audit: Audit, backgroundImage: string | null): Promise<void> {
   try {
-    const doc = await buildPdf(audit, headerImage);
+    const doc = await buildPdf(audit, backgroundImage);
     const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
     doc.save(fileName);
   } catch (error) {
