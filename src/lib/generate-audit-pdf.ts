@@ -1,15 +1,15 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from 'date-fns';
-import type { Audit } from "./types";
+import type { Audit, User } from "./types";
 
 const FONT = "helvetica";
 
-async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF): Promise<jsPDF> {
+async function buildPdf(data: Audit, backgroundImage: string | null, auditor: User | null, doc: jsPDF): Promise<jsPDF> {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 70;
-  const topMargin = 115; // Aproximadamente 4 cm, bajando el texto 1cm más
+  const topMargin = 115;
 
   const addBackground = () => {
     if (backgroundImage) {
@@ -24,17 +24,15 @@ async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF)
   const addFooter = (pageNumber: number, pageCount: number) => {
     doc.setFontSize(8);
     doc.setTextColor(100);
-    // Positioned ~1.4cm (40pts) from the bottom edge.
     doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, pageH - 40, { align: 'center' });
   };
   
-  // Add background to the first page
   addBackground();
 
   let finalY = topMargin;
 
   doc.setFont(FONT, "bold");
-  doc.setFontSize(14); // Slightly smaller font for the longer title
+  doc.setFontSize(14);
   doc.setTextColor(0);
   doc.text("ESTRATEGIA GRESM-Gestión Del Riesgo En Salud Mental", pageW / 2, finalY, { align: "center" });
   finalY += 30;
@@ -56,8 +54,8 @@ async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF)
   });
   
   const addSectionTitle = (title: string) => {
-      finalY = (doc as any).lastAutoTable.finalY + 30; // Increased spacing
-      if (finalY > pageH - 100) { // Keep a bottom margin
+      finalY = (doc as any).lastAutoTable.finalY + 30;
+      if (finalY > pageH - 100) {
         doc.addPage();
         addBackground();
         finalY = topMargin;
@@ -125,8 +123,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF)
   }
 
   const addTextSection = (title: string, text: string | null | undefined) => {
-    finalY = finalY + 30; // Increased spacing before the title
-    // Increased bottom margin from 80 to 100 to leave more space
+    finalY = finalY + 30;
     if (finalY > pageH - 100) {
       doc.addPage();
       addBackground();
@@ -143,7 +140,6 @@ async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF)
     const splitText = doc.splitTextToSize(safeText, pageW - leftMargin * 2);
 
     splitText.forEach((line: string) => {
-      // Increased bottom margin from 40 to 100
       if (finalY > pageH - 100) {
         doc.addPage();
         addBackground();
@@ -157,6 +153,30 @@ async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF)
   addTextSection("Notas de Seguimiento", data.followUpNotes);
   addTextSection("Conducta a Seguir", data.nextSteps);
 
+  if (auditor?.signature) {
+    finalY += 40; // Space before signature
+    if (finalY > pageH - 150) { // Check if there is enough space for the signature block
+        doc.addPage();
+        addBackground();
+        finalY = topMargin;
+    }
+    try {
+      doc.addImage(auditor.signature, 'PNG', leftMargin, finalY, 120, 60, undefined, 'FAST');
+    } catch (e) {
+      console.error("Error adding signature image:", e);
+      doc.text('[Error al cargar la firma]', leftMargin, finalY + 30);
+    }
+
+    finalY += 70; // Position below signature image
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(10);
+    doc.text(auditor.fullName || '', leftMargin, finalY);
+    finalY += 12;
+    doc.setFont(FONT, "normal");
+    doc.text(auditor.cargo || '', leftMargin, finalY);
+  }
+
+
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -166,7 +186,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF)
   return doc;
 }
 
-export async function generateAuditPdf(audit: Audit, backgroundImage: string | null, docInstance?: jsPDF): Promise<jsPDF> {
+export async function generateAuditPdf(audit: Audit, backgroundImage: string | null, auditor: User | null, docInstance?: jsPDF): Promise<jsPDF> {
   const doc = docInstance || new jsPDF({
     orientation: "p",
     unit: "pt",
@@ -174,9 +194,8 @@ export async function generateAuditPdf(audit: Audit, backgroundImage: string | n
   });
 
   try {
-    const finalDoc = await buildPdf(audit, backgroundImage, doc);
+    const finalDoc = await buildPdf(audit, backgroundImage, auditor, doc);
     
-    // If it's a single download, save it. If it's a mass download, the calling function will handle it.
     if (!docInstance) {
         const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
         finalDoc.save(fileName);
@@ -185,10 +204,9 @@ export async function generateAuditPdf(audit: Audit, backgroundImage: string | n
     return finalDoc;
   } catch (error) {
     console.error("Failed to generate PDF:", error);
-    // Avoid showing an alert if it's a mass download, the caller will handle toast notifications.
     if (!docInstance) {
         alert("No se pudo generar el PDF. Revise la consola para más detalles.");
     }
-    throw error; // Re-throw the error for the caller to handle
+    throw error;
   }
 }

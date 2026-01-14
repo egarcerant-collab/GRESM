@@ -36,6 +36,12 @@ export async function findUser(username: string): Promise<User | undefined> {
     return users.find((u) => u.username === username);
 }
 
+export async function findUserByFullName(fullName: string): Promise<User | undefined> {
+    const users = await readUsers();
+    return users.find((u) => u.fullName === fullName || u.username === fullName);
+}
+
+
 export async function addUser(user: User): Promise<void> {
     const users = await readUsers();
     if (users.some((u) => u.username === user.username)) {

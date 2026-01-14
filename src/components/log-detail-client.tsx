@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { Audit } from '@/lib/types';
+import type { Audit, User } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trash2, FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteAuditAction, getImageAsBase64Action } from '@/app/actions';
+import { deleteAuditAction, getImageAsBase64Action, findUserByFullNameAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
@@ -92,8 +92,9 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
       setIsDownloading(true);
       try {
         const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
+        const auditor = await findUserByFullNameAction(audit.auditorName);
         
-        await generateAuditPdf(audit, backgroundImage);
+        await generateAuditPdf(audit, backgroundImage, auditor);
         
         toast({
           title: 'PDF Generado',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getAuditsAction } from '@/app/actions';
+import { getAuditsAction, findUserByFullNameAction } from '@/app/actions';
 import { AuditLogTable } from '@/components/audit-log-table';
 import { DownloadAuditsButton } from '@/components/download-audits-button';
 import {
@@ -100,9 +100,9 @@ export default function LogsPage() {
       const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
   
       for (const audit of filteredAudits) {
-        // We create a new instance of jsPDF for each audit
+        const auditor = await findUserByFullNameAction(audit.auditorName);
         const { jsPDF } = await import('jspdf');
-        const doc = await generateAuditPdf(audit, backgroundImage, new jsPDF({
+        const doc = await generateAuditPdf(audit, backgroundImage, auditor, new jsPDF({
           orientation: "p",
           unit: "pt",
           format: "a4"

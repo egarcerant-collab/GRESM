@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/data/audits';
+import { findUserByFullName as dbFindUserByFullName } from '@/lib/data/users';
 import { auditSchema } from '@/lib/schema';
-import type { Audit } from '@/lib/types';
+import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
@@ -128,5 +129,20 @@ export async function getImageAsBase64Action(imagePath: string): Promise<string 
     // This will catch errors from fs.access (file not found) or fs.readFile
     console.error(`Error reading image from ${fullPath}:`, error);
     return null; // Return null on any error (e.g., file not found)
+  }
+}
+
+export async function findUserByFullNameAction(fullName: string): Promise<User | null> {
+  try {
+    const user = await dbFindUserByFullName(fullName);
+    if (!user) {
+      return null;
+    }
+    // Return user without password
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  } catch (error) {
+    console.error('Error finding user by full name:', error);
+    return null;
   }
 }
