@@ -80,14 +80,16 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    getAuditByIdAction(id).then(({ audit: data }) => {
-      if (data) {
-        setAudit(data);
-      } else {
-        notFound();
-      }
-      setIsLoading(false);
-    });
+    if (id) {
+        getAuditByIdAction(id).then(({ audit: data }) => {
+          if (data) {
+            setAudit(data);
+          } else {
+            notFound();
+          }
+          setIsLoading(false);
+        });
+    }
   }, [id]);
 
 
