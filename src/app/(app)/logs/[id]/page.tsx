@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
@@ -36,6 +34,7 @@ import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+  if (!value) return null;
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 py-3">
       <dt className="font-medium text-muted-foreground">{label}</dt>
@@ -148,6 +147,9 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
   // Dates are strings after serialization, convert them back
   const followUpDate = new Date(audit.followUpDate);
   const createdAt = new Date(audit.createdAt);
+  const birthDate = audit.birthDate ? new Date(audit.birthDate) : null;
+  
+  const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
 
 
   return (
@@ -229,6 +231,32 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
                 <DetailItem label="Número de Teléfono" value={audit.phoneNumber} />
               </div>
             </div>
+
+            {showSpecialEventFields && (
+                <>
+                    <div className="pt-4">
+                        <h3 className="text-md font-semibold mt-4 mb-2 text-foreground">Información Adicional de Evento</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                            <div className="divide-y divide-border">
+                                <DetailItem label="Fecha de Nacimiento" value={birthDate ? format(birthDate, 'PPP') : null} />
+                                <DetailItem label="Edad" value={audit.age} />
+                                <DetailItem label="Sexo" value={audit.sex} />
+                                <DetailItem label="Estado de Afiliación" value={audit.affiliationStatus} />
+                                <DetailItem label="Área" value={audit.area} />
+                                <DetailItem label="Asentamiento" value={audit.settlement} />
+                            </div>
+                            <div className="divide-y divide-border">
+                                <DetailItem label="Nacionalidad" value={audit.nationality} />
+                                <DetailItem label="IPS Primaria" value={audit.primaryHealthProvider} />
+                                <DetailItem label="Régimen" value={audit.regime} />
+                                <DetailItem label="UPGD o Prestador" value={audit.upgdProvider} />
+                                <DetailItem label="Tipo de Intervención" value={audit.followUpInterventionType} />
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
             <div className="pt-4">
               <DetailItem label="Notas de Seguimiento" value={<p className="whitespace-pre-wrap">{audit.followUpNotes}</p>} />
             </div>

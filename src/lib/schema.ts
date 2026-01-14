@@ -16,6 +16,20 @@ export const auditSchema = z.object({
   phoneNumber: z.string().min(7, { message: 'El número de teléfono es requerido.' }).regex(/^[0-9]+$/, "Solo se permiten números."),
   followUpNotes: z.string().min(10, { message: 'Las notas de seguimiento son requeridas.' }),
   nextSteps: z.string().min(10, { message: 'La conducta a seguir es requerida.' }),
+
+  // Campos condicionales
+  birthDate: z.date().optional(),
+  age: z.coerce.number().optional(),
+  sex: z.enum(['Masculino', 'Femenino']).optional(),
+  affiliationStatus: z.string().optional(),
+  area: z.enum(['Rural', 'Urbano']).optional(),
+  settlement: z.string().optional(),
+  nationality: z.string().optional(),
+  primaryHealthProvider: z.string().optional(),
+  regime: z.string().optional(),
+  upgdProvider: z.string().optional(),
+  followUpInterventionType: z.string().optional(),
+
 }).refine(data => {
     if (data.event === 'Otro') {
         return !!data.eventDetails && data.eventDetails.length >= 2;
@@ -24,4 +38,27 @@ export const auditSchema = z.object({
 }, {
     message: 'Especifique el evento.',
     path: ['eventDetails'],
+}).refine(data => {
+    const specialEvent = data.event === 'Intento de Suicidio' || data.event === 'Consumo de Sustancia Psicoactivas';
+    if (specialEvent) {
+        return (
+            data.birthDate &&
+            data.age !== undefined &&
+            data.sex &&
+            data.affiliationStatus &&
+            data.area &&
+            data.settlement &&
+            data.nationality &&
+            data.primaryHealthProvider &&
+            data.regime &&
+            data.upgdProvider &&
+            data.followUpInterventionType
+        );
+    }
+    return true;
+}, {
+    message: 'Este campo es requerido para el evento seleccionado.',
+    // This is a generic message, we'll handle specific messages in the form.
+    // We set a path, but it won't be used directly. The check is what matters.
+    path: ['birthDate'], 
 });

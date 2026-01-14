@@ -64,16 +64,28 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
   doc.text("Información del Paciente", leftMargin, finalY);
   finalY += 15;
 
-  autoTable(doc, {
-    startY: finalY,
-    head: [],
-    body: [
+  const patientBody = [
       [{ content: "Nombre:", styles: { fontStyle: "bold" } }, data.patientName],
       [{ content: "Documento:", styles: { fontStyle: "bold" } }, `${data.documentType} - ${data.documentNumber}`],
       [{ content: "Etnia:", styles: { fontStyle: "bold" } }, data.ethnicity],
       [{ content: "Teléfono:", styles: { fontStyle: "bold" } }, data.phoneNumber],
       [{ content: "Dirección:", styles: { fontStyle: "bold" } }, `${data.address}, ${data.municipality}, ${data.department}`],
-    ],
+  ];
+
+  if (data.sex) {
+      patientBody.push([{ content: "Sexo:", styles: { fontStyle: "bold" } }, data.sex]);
+  }
+  if (data.birthDate) {
+    patientBody.push([{ content: "Fecha de Nacimiento:", styles: { fontStyle: "bold" } }, format(new Date(data.birthDate), 'yyyy-MM-dd')]);
+  }
+  if (data.age) {
+    patientBody.push([{ content: "Edad:", styles: { fontStyle: "bold" } }, String(data.age)]);
+  }
+
+  autoTable(doc, {
+    startY: finalY,
+    head: [],
+    body: patientBody,
     theme: "striped",
     styles: { font: FONT, fontSize: 10 },
   });
@@ -86,15 +98,44 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
   doc.text("Información del Evento", leftMargin, finalY);
   finalY += 15;
 
-  autoTable(doc, {
-    startY: finalY,
-    head: [],
-    body: [
+  const eventBody = [
         [{ content: "Tipo de Visita:", styles: { fontStyle: "bold" } }, data.visitType],
         [{ content: "Fecha de Seguimiento:", styles: { fontStyle: "bold" } }, format(new Date(data.followUpDate), 'yyyy-MM-dd')],
         [{ content: "Evento:", styles: { fontStyle: "bold" } }, data.event],
-        ...(data.eventDetails ? [[{ content: "Detalles del Evento:", styles: { fontStyle: "bold" } }, data.eventDetails]] : []),
-    ],
+  ];
+
+  if (data.eventDetails) {
+    eventBody.push([{ content: "Detalles del Evento:", styles: { fontStyle: "bold" } }, data.eventDetails]);
+  }
+  if (data.affiliationStatus) {
+    eventBody.push([{ content: "Estado Afiliación:", styles: { fontStyle: "bold" } }, data.affiliationStatus]);
+  }
+  if (data.area) {
+    eventBody.push([{ content: "Área:", styles: { fontStyle: "bold" } }, data.area]);
+  }
+  if (data.settlement) {
+    eventBody.push([{ content: "Asentamiento:", styles: { fontStyle: "bold" } }, data.settlement]);
+  }
+  if (data.nationality) {
+    eventBody.push([{ content: "Nacionalidad:", styles: { fontStyle: "bold" } }, data.nationality]);
+  }
+  if (data.primaryHealthProvider) {
+    eventBody.push([{ content: "IPS Primaria:", styles: { fontStyle: "bold" } }, data.primaryHealthProvider]);
+  }
+  if (data.regime) {
+    eventBody.push([{ content: "Régimen:", styles: { fontStyle: "bold" } }, data.regime]);
+  }
+  if (data.upgdProvider) {
+    eventBody.push([{ content: "UPGD/Prestador:", styles: { fontStyle: "bold" } }, data.upgdProvider]);
+  }
+  if (data.followUpInterventionType) {
+    eventBody.push([{ content: "Tipo Intervención:", styles: { fontStyle: "bold" } }, data.followUpInterventionType]);
+  }
+
+  autoTable(doc, {
+    startY: finalY,
+    head: [],
+    body: eventBody,
     theme: "striped",
     styles: { font: FONT, fontSize: 10 },
   });

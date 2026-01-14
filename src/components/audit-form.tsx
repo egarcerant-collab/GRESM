@@ -32,6 +32,7 @@ import { Textarea } from './ui/textarea';
 import { createAuditAction, checkExistingPatientAction } from '@/app/actions';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from './ui/separator';
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -128,6 +129,7 @@ export function AuditForm() {
 
   const eventSelection = form.watch('event');
   const isOtherEvent = eventSelection === 'Otro';
+  const showSpecialEventFields = eventSelection === 'Intento de Suicidio' || eventSelection === 'Consumo de Sustancia Psicoactivas';
   const documentNumberValue = form.watch('documentNumber');
   const visitTypeValue = form.watch('visitType');
 
@@ -529,6 +531,141 @@ export function AuditForm() {
             )}
           />
         </div>
+
+        {showSpecialEventFields && (
+          <>
+            <Separator />
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-foreground">Información Adicional de Evento</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <FormField
+                  control={form.control}
+                  name="birthDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Fecha de Nacimiento</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                            >
+                              {field.value ? format(field.value, "PPP") : <span>Elige una fecha</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={field.value} onSelect={field.onChange}
+                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")} initialFocus />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="age" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Edad</FormLabel>
+                      <FormControl><Input type="number" placeholder="e.g., 25" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="sex" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sexo</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Seleccione el sexo" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Masculino">Masculino</SelectItem>
+                          <SelectItem value="Femenino">Femenino</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="affiliationStatus" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado de Afiliación</FormLabel>
+                      <FormControl><Input placeholder="e.g., Activo" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="area" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Área</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Seleccione el área" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Rural">Rural</SelectItem>
+                          <SelectItem value="Urbano">Urbano</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField control={form.control} name="settlement" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Asentamiento</FormLabel>
+                      <FormControl><Input placeholder="e.g., Urbano" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="nationality" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nacionalidad</FormLabel>
+                      <FormControl><Input placeholder="e.g., Colombiana" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField control={form.control} name="primaryHealthProvider" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>IPS Atención Primaria</FormLabel>
+                      <FormControl><Input placeholder="e.g., IPS Principal" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="regime" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Régimen</FormLabel>
+                      <FormControl><Input placeholder="e.g., Subsidiado" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="upgdProvider" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre UPGD o Prestador</FormLabel>
+                      <FormControl><Input placeholder="e.g., Hospital Local" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="followUpInterventionType" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Intervención</FormLabel>
+                      <FormControl><Input placeholder="e.g., Psicología" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
 
         <FormField
             control={form.control}

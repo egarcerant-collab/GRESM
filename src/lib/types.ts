@@ -16,4 +16,16 @@ export type Audit = {
   followUpNotes: string;
   nextSteps: string;
   createdAt: Date;
+  // Campos condicionales para eventos específicos
+  birthDate?: Date;
+  age?: number;
+  sex?: 'Masculino' | 'Femenino';
+  affiliationStatus?: string;
+  area?: 'Rural' | 'Urbano';
+  settlement?: string;
+  nationality?: string;
+  primaryHealthProvider?: string;
+  regime?: string;
+  upgdProvider?: string;
+  followUpInterventionType?: string;
 };
