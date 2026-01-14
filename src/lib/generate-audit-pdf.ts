@@ -38,7 +38,8 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
   
-  const headerImage = await fetchImageAsDataUrl('/imagen/IMAGENEN UNIFICADA.jpg');
+  // Use the correctly encoded path for the image
+  const headerImage = await fetchImageAsDataUrl('/imagen/IMAGENEN%20UNIFICADA.jpg');
   const headerImgHeight = 60; // Adjust as needed
 
   const addHeader = () => {
