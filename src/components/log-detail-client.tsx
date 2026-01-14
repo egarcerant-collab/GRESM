@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AiAnalysis } from '@/components/ai-analysis';
 import type { Audit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trash2, FileDown, Loader2 } from 'lucide-react';
@@ -223,7 +222,6 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
           </dl>
         </CardContent>
       </Card>
-      <AiAnalysis audit={audit as Audit} />
     </div>
   );
 }

@@ -5,8 +5,6 @@ import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/db';
 import { auditSchema } from '@/lib/schema';
 import type { Audit } from '@/lib/types';
-import { summarizeAuditLogs } from '@/ai/flows/summarize-audit-logs';
-import { generateActionItems } from '@/ai/flows/generate-action-items';
 import { z } from 'zod';
 
 export async function createAuditAction(values: z.infer<typeof auditSchema>) {
@@ -47,35 +45,6 @@ export async function deleteAuditAction(id: string) {
     console.error('Error al eliminar la auditoría:', error);
     return { error: 'Error al eliminar la auditoría de la base de datos.' };
   }
-}
-
-export async function getAiSummary(audit: Audit) {
-    const auditLogString = `
-      Auditor: ${audit.auditorName}
-      Patient: ${audit.patientName}
-      Document: ${audit.documentType} - ${audit.documentNumber}
-      Event: ${audit.event} (${audit.eventDetails})
-      Follow-up Date: ${new Date(audit.followUpDate).toDateString()}
-      Visit Type: ${audit.visitType}
-      Location: ${audit.municipality}, ${audit.department}
-      Follow-up Notes: ${audit.followUpNotes}
-      Next Steps: ${audit.nextSteps}
-    `;
-    
-    try {
-      const summaryPromise = summarizeAuditLogs({ logs: auditLogString });
-      const actionItemsPromise = generateActionItems({ auditLogs: auditLogString });
-  
-      const [summaryResult, actionItemsResult] = await Promise.all([summaryPromise, actionItemsPromise]);
-      
-      return {
-        summary: summaryResult.summary,
-        actionItems: actionItemsResult.actionItems,
-      };
-    } catch (error) {
-      console.error("AI generation failed:", error);
-      return { error: "Error al generar el análisis de IA." };
-    }
 }
 
 export async function getAuditByIdAction(id: string): Promise<{ audit: Audit | null, error?: string }> {
