@@ -5,7 +5,28 @@ import type { Audit } from "./types";
 
 const FONT = "helvetica"; // Using a standard font
 
-function buildPdf(data: Audit): jsPDF {
+async function fetchImageAsDataUrl(url: string): Promise<string> {
+  try {
+    // In the browser environment, the /IMAGENEN_UNIFICADA.jpg path correctly points to public/IMAGENEN_UNIFICADA.jpg
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error(`Failed to fetch image ${url}:`, error);
+    // Return a transparent pixel as a fallback to prevent PDF generation from failing
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+  }
+}
+
+async function buildPdf(data: Audit): Promise<jsPDF> {
   const doc = new jsPDF("p", "pt", "letter");
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -16,9 +37,15 @@ function buildPdf(data: Audit): jsPDF {
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
 
+  const bgImage = await fetchImageAsDataUrl('/IMAGENEN_UNIFICADA.jpg');
+
   const addPageWithBg = () => {
       doc.addPage();
+      doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
   }
+
+  // Add background to the first page
+  doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
 
   let finalY = topMargin;
 
@@ -41,7 +68,7 @@ function buildPdf(data: Audit): jsPDF {
     startY: finalY,
     body: auditDetails,
     theme: "plain",
-    styles: { font: FONT, fontSize: 10 },
+    styles: { font: FONT, fontSize: 10, fillColor: false }, // transparent fill
     columnStyles: {
       0: { fontStyle: 'bold', cellWidth: 120 },
     }
@@ -56,11 +83,11 @@ function buildPdf(data: Audit): jsPDF {
   finalY += 15;
 
   const patientBody: (string | { content: string; styles: { fontStyle: string; }})[][] = [
-      [{ content: "Nombre:", styles: { fontStyle: "bold" } }, data.patientName],
-      [{ content: "Documento:", styles: { fontStyle: "bold" } }, `${data.documentType} - ${data.documentNumber}`],
-      [{ content: "Etnia:", styles: { fontStyle: "bold" } }, data.ethnicity],
-      [{ content: "Teléfono:", styles: { fontStyle: "bold" } }, data.phoneNumber],
-      [{ content: "Dirección:", styles: { fontStyle: "bold" } }, `${data.address}, ${data.municipality}, ${data.department}`],
+      [{ content: "Nombre:", styles: { fontStyle: "bold" } }, data.patientName || ''],
+      [{ content: "Documento:", styles: { fontStyle: "bold" } }, `${data.documentType || ''} - ${data.documentNumber || ''}`],
+      [{ content: "Etnia:", styles: { fontStyle: "bold" } }, data.ethnicity || ''],
+      [{ content: "Teléfono:", styles: { fontStyle: "bold" } }, data.phoneNumber || ''],
+      [{ content: "Dirección:", styles: { fontStyle: "bold" } }, `${data.address || ''}, ${data.municipality || ''}, ${data.department || ''}`],
   ];
 
   if (data.sex) {
@@ -76,7 +103,7 @@ function buildPdf(data: Audit): jsPDF {
   autoTable(doc, {
     startY: finalY,
     head: [],
-    body: patientBody,
+    body: patientBody.map(row => row.map(cell => (cell === null || cell === undefined) ? '' : cell)),
     theme: "striped",
     styles: { font: FONT, fontSize: 10 },
   });
@@ -89,7 +116,7 @@ function buildPdf(data: Audit): jsPDF {
   doc.text("Información del Evento", leftMargin, finalY);
   finalY += 15;
 
-  const eventBody = [
+  const eventBody: (string | { content: string; styles: { fontStyle: string; }})[][] = [
         [{ content: "Tipo de Visita:", styles: { fontStyle: "bold" } }, data.visitType || ''],
         [{ content: "Fecha de Seguimiento:", styles: { fontStyle: "bold" } }, format(new Date(data.followUpDate), 'yyyy-MM-dd')],
         [{ content: "Evento:", styles: { fontStyle: "bold" } }, data.event || ''],
@@ -177,7 +204,7 @@ function buildPdf(data: Audit): jsPDF {
 export async function generateAuditPdf(
   audit: Audit,
 ): Promise<void> {
-  const doc = buildPdf(audit);
+  const doc = await buildPdf(audit);
   const fileName = `Informe_Auditoria_${audit.id}_${audit.patientName.replace(/ /g, '_')}.pdf`;
   doc.save(fileName);
 }
