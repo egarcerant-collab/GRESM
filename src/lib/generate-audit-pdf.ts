@@ -28,7 +28,8 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   const addFooter = (pageNumber: number, pageCount: number) => {
     doc.setFontSize(8);
     doc.setTextColor(100);
-    doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, pageH - 30, { align: 'center' });
+    // Positioned ~1cm (28.35pts) from the bottom edge. Added extra space for breathing room.
+    doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, pageH - 40, { align: 'center' });
   };
   
   // Add background to the first page
