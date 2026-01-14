@@ -8,7 +8,7 @@ export const auditSchema = z.object({
   event: z.string({ required_error: 'Seleccione un evento.' }).min(1, { message: 'Seleccione un evento.' }),
   eventDetails: z.string().min(2, { message: 'Especifique el evento.' }),
   followUpDate: z.date({ required_error: 'La fecha de seguimiento es requerida.' }),
-  visitType: z.enum(['PRIMERA VEZ', 'Seguimiento'], { required_error: 'Seleccione el tipo de visita.' }),
+  visitType: z.enum(['PRIMERA VEZ', 'Seguimiento', 'CIERRE DE CASO'], { required_error: 'Seleccione el tipo de visita.' }),
   department: z.string().min(2, { message: 'El departamento es requerido.' }),
   municipality: z.string().min(2, { message: 'El municipio es requerido.' }),
   ethnicity: z.string().min(2, { message: 'La etnia es requerida.' }),

@@ -15,6 +15,19 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 
+function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
+    switch (visitType) {
+        case 'PRIMERA VEZ':
+            return 'secondary';
+        case 'CIERRE DE CASO':
+            return 'default';
+        case 'Seguimiento':
+        default:
+            return 'outline';
+    }
+}
+
+
 export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?: (id: string) => void }) {
   const router = useRouter();
 
@@ -51,7 +64,7 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
             <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.event}</TableCell>
             <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{format(new Date(audit.followUpDate), 'PP')}</TableCell>
             <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
-              <Badge variant={audit.visitType === 'PRIMERA VEZ' ? 'secondary' : 'outline'} className="capitalize">
+              <Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">
                 {audit.visitType.toLowerCase().replace('_', ' ')}
               </Badge>
             </TableCell>

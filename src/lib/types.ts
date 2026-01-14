@@ -7,7 +7,7 @@ export type Audit = {
   event: string;
   eventDetails: string;
   followUpDate: Date;
-  visitType: 'PRIMERA VEZ' | 'Seguimiento';
+  visitType: 'PRIMERA VEZ' | 'Seguimiento' | 'CIERRE DE CASO';
   department: string;
   municipality: string;
   ethnicity: string;

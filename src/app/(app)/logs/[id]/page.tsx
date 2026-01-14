@@ -42,6 +42,18 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
   );
 }
 
+function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
+    switch (visitType) {
+        case 'PRIMERA VEZ':
+            return 'secondary';
+        case 'CIERRE DE CASO':
+            return 'default';
+        case 'Seguimiento':
+        default:
+            return 'outline';
+    }
+}
+
 export default function LogDetailPage({ params }: { params: { id: string } }) {
   const [audit, setAudit] = React.useState<Audit | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -146,7 +158,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
                 <DetailItem label="Tipo de Documento" value={audit.documentType} />
                 <DetailItem label="Número de Documento" value={audit.documentNumber} />
                  <DetailItem label="Fecha de Seguimiento" value={format(followUpDate, 'PPP')} />
-                <DetailItem label="Tipo de Visita" value={<Badge variant={audit.visitType === 'PRIMERA VEZ' ? 'secondary' : 'outline'} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
+                <DetailItem label="Tipo de Visita" value={<Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
               </div>
                <div className="divide-y divide-border">
                 <DetailItem label="Evento" value={audit.event} />

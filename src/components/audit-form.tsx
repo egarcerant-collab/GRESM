@@ -239,7 +239,7 @@ export function AuditForm() {
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="flex space-x-4 pt-2"
+                    className="flex flex-wrap gap-x-4 gap-y-2 pt-2"
                   >
                     <FormItem className="flex items-center space-x-3 space-y-0">
                       <FormControl>
@@ -252,6 +252,12 @@ export function AuditForm() {
                         <RadioGroupItem value="Seguimiento" />
                       </FormControl>
                       <FormLabel className="font-normal">Seguimiento</FormLabel>
+                    </FormItem>
+                    <FormItem className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value="CIERRE DE CASO" />
+                      </FormControl>
+                      <FormLabel className="font-normal">Cierre de caso</FormLabel>
                     </FormItem>
                   </RadioGroup>
                 </FormControl>
