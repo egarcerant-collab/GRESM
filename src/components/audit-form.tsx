@@ -68,6 +68,12 @@ const ethnicityOptions = [
   "Otro"
 ];
 
+const upgdProviderOptions = [
+    "UNIPSSAM IPS | Especialistas en Salud Mental",
+    "IPS Vital Salud Guajira S.A.S.",
+    "Insecar - Instituto Neuropsiquiatrico Nuestra Señora del Carmen"
+];
+
 const municipalitiesByDepartment: Record<string, string[]> = {
   CESAR: [
     "BECERRIL", "CHIMICHAGUA", "CHIRIGUANA", "CURUMANÍ", "LA JAGUA DE IBIRICO",
@@ -651,7 +657,7 @@ export function AuditForm() {
                 <FormField control={form.control} name="regime" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Régimen</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Seleccione el régimen" /></SelectTrigger>
                         </FormControl>
@@ -664,10 +670,26 @@ export function AuditForm() {
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="upgdProvider" render={({ field }) => (
+                <FormField
+                  control={form.control}
+                  name="upgdProvider"
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nombre UPGD o Prestador</FormLabel>
-                      <FormControl><Input placeholder="e.g., Hospital Local" {...field} value={field.value ?? ''} /></FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione un prestador" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {upgdProviderOptions.map((provider) => (
+                            <SelectItem key={provider} value={provider}>
+                              {provider}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
