@@ -50,7 +50,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-4 flex items-center justify-center">
             <ShieldCheck className="h-12 w-12 text-primary" />
           </div>
-          <CardTitle>Audit Logger</CardTitle>
+          <CardTitle>ESTRATEGIA GRESM-Gestión Del Riesgo En Salud Mental.</CardTitle>
           <CardDescription>
             Ingrese sus credenciales para acceder al sistema.
           </CardDescription>
