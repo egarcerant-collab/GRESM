@@ -91,6 +91,9 @@ export function AuditForm() {
     },
   });
 
+  const eventSelection = form.watch('event');
+  const isOtherEvent = eventSelection === 'Otro';
+
   useEffect(() => {
     if (departmentSelection !== 'Otro') {
       form.setValue('department', departmentSelection || '');
@@ -213,19 +216,21 @@ export function AuditForm() {
               </FormItem>
             )}
           />
-           <FormField
-            control={form.control}
-            name="eventDetails"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Especifica</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., SPA" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+           {isOtherEvent && (
+            <FormField
+              control={form.control}
+              name="eventDetails"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especifique el Evento</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., SPA" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
            <FormField
             control={form.control}
             name="followUpDate"

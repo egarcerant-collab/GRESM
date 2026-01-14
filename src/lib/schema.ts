@@ -6,7 +6,7 @@ export const auditSchema = z.object({
   documentType: z.string({ required_error: 'Seleccione un tipo de documento.' }).min(1, { message: 'Seleccione un tipo de documento.' }),
   documentNumber: z.string().min(5, { message: 'El número de documento es requerido.' }),
   event: z.string({ required_error: 'Seleccione un evento.' }).min(1, { message: 'Seleccione un evento.' }),
-  eventDetails: z.string().min(2, { message: 'Especifique el evento.' }),
+  eventDetails: z.string().optional(),
   followUpDate: z.date({ required_error: 'La fecha de seguimiento es requerida.' }),
   visitType: z.enum(['PRIMERA VEZ', 'Seguimiento', 'CIERRE DE CASO'], { required_error: 'Seleccione el tipo de visita.' }),
   department: z.string().min(2, { message: 'El departamento es requerido.' }),
@@ -16,4 +16,12 @@ export const auditSchema = z.object({
   phoneNumber: z.string().min(7, { message: 'El número de teléfono es requerido.' }),
   followUpNotes: z.string().min(10, { message: 'Las notas de seguimiento son requeridas.' }),
   nextSteps: z.string().min(10, { message: 'La conducta a seguir es requerida.' }),
+}).refine(data => {
+    if (data.event === 'Otro') {
+        return !!data.eventDetails && data.eventDetails.length >= 2;
+    }
+    return true;
+}, {
+    message: 'Especifique el evento.',
+    path: ['eventDetails'],
 });
