@@ -64,14 +64,14 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
       const result = await deleteAuditAction(audit.id);
       if (result.success) {
         toast({
-          title: 'Audit Deleted',
-          description: 'The audit log has been successfully deleted.',
+          title: 'Auditoría Eliminada',
+          description: 'El registro de auditoría ha sido eliminado exitosamente.',
         });
         router.push('/logs');
       } else {
         toast({
           variant: 'destructive',
-          title: 'Error Deleting Audit',
+          title: 'Error al Eliminar Auditoría',
           description: result.error,
         });
       }
@@ -79,7 +79,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
   };
 
   if (!audit) {
-    return <div>Loading...</div>;
+    return <div>Cargando...</div>;
   }
 
   return (
@@ -89,30 +89,30 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
           <Button variant="outline" size="icon" asChild>
             <Link href="/logs">
               <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back to logs</span>
+              <span className="sr-only">Volver a los registros</span>
             </Link>
           </Button>
-          <h1 className="font-headline text-2xl text-foreground">Audit Details</h1>
+          <h1 className="font-headline text-2xl text-foreground">Detalles de Auditoría</h1>
         </div>
         
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm">
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              Eliminar
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the audit log.
+                Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete}>
-                Continue
+                Continuar
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -121,9 +121,9 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
       </div>
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-xl">Audit ID: {audit.id}</CardTitle>
+          <CardTitle className="font-headline text-xl">Auditoría ID: {audit.id}</CardTitle>
           <CardDescription>
-            Recorded on {format(new Date(audit.createdAt), 'PPPp')}
+            Registrado el {format(new Date(audit.createdAt), 'PPPp')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,27 +131,27 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
               <div className="divide-y divide-border">
                 <DetailItem label="Auditor" value={audit.auditorName} />
-                <DetailItem label="Patient" value={audit.patientName} />
-                <DetailItem label="Document Type" value={audit.documentType} />
-                <DetailItem label="Document Number" value={audit.documentNumber} />
-                 <DetailItem label="Follow-up Date" value={format(new Date(audit.followUpDate), 'PPP')} />
-                <DetailItem label="Visit Type" value={<Badge variant={audit.visitType === 'PRIMERA VEZ' ? 'secondary' : 'outline'} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
+                <DetailItem label="Paciente" value={audit.patientName} />
+                <DetailItem label="Tipo de Documento" value={audit.documentType} />
+                <DetailItem label="Número de Documento" value={audit.documentNumber} />
+                 <DetailItem label="Fecha de Seguimiento" value={format(new Date(audit.followUpDate), 'PPP')} />
+                <DetailItem label="Tipo de Visita" value={<Badge variant={audit.visitType === 'PRIMERA VEZ' ? 'secondary' : 'outline'} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
               </div>
                <div className="divide-y divide-border">
-                <DetailItem label="Event" value={audit.event} />
-                <DetailItem label="Event Details" value={audit.eventDetails} />
-                <DetailItem label="Department" value={audit.department} />
-                <DetailItem label="Municipality" value={audit.municipality} />
-                <DetailItem label="Ethnicity" value={audit.ethnicity} />
-                <DetailItem label="Address" value={audit.address} />
-                <DetailItem label="Phone Number" value={audit.phoneNumber} />
+                <DetailItem label="Evento" value={audit.event} />
+                <DetailItem label="Detalles del Evento" value={audit.eventDetails} />
+                <DetailItem label="Departamento" value={audit.department} />
+                <DetailItem label="Municipio" value={audit.municipality} />
+                <DetailItem label="Etnia" value={audit.ethnicity} />
+                <DetailItem label="Dirección" value={audit.address} />
+                <DetailItem label="Número de Teléfono" value={audit.phoneNumber} />
               </div>
             </div>
             <div className="pt-4">
-              <DetailItem label="Follow-up Notes" value={<p className="whitespace-pre-wrap">{audit.followUpNotes}</p>} />
+              <DetailItem label="Notas de Seguimiento" value={<p className="whitespace-pre-wrap">{audit.followUpNotes}</p>} />
             </div>
             <div className="pt-4">
-              <DetailItem label="Next Steps" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
+              <DetailItem label="Pasos a Seguir" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
             </div>
           </dl>
         </CardContent>

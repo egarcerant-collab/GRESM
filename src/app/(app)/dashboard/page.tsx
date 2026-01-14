@@ -12,9 +12,9 @@ export default function DashboardPage() {
     <div className="max-w-4xl mx-auto">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Create New Audit</CardTitle>
+          <CardTitle className="font-headline text-2xl">Crear Nueva Auditoría</CardTitle>
           <CardDescription>
-            Fill out the form below to log a new audit entry. All fields are required.
+            Complete el siguiente formulario para registrar una nueva entrada de auditoría. Todos los campos son obligatorios.
           </CardDescription>
         </CardHeader>
         <CardContent>

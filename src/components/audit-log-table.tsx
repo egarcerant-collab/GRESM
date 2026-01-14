@@ -21,10 +21,10 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
   if (audits.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
-        <h3 className="text-xl font-semibold text-foreground">No audit logs found.</h3>
-        <p className="mb-4 mt-2">Get started by creating a new audit entry.</p>
+        <h3 className="text-xl font-semibold text-foreground">No se encontraron registros de auditoría.</h3>
+        <p className="mb-4 mt-2">Comience creando una nueva entrada de auditoría.</p>
         <Button onClick={() => router.push('/dashboard')}>
-          Create First Audit
+          Crear Primera Auditoría
         </Button>
       </div>
     );
@@ -36,11 +36,11 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
       <TableHeader>
         <TableRow>
           <TableHead className="w-[80px]">ID</TableHead>
-          <TableHead>Patient</TableHead>
-          <TableHead className="hidden md:table-cell">Event</TableHead>
-          <TableHead className="hidden sm:table-cell">Follow-up Date</TableHead>
-          <TableHead className="hidden sm:table-cell">Visit Type</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead>Paciente</TableHead>
+          <TableHead className="hidden md:table-cell">Evento</TableHead>
+          <TableHead className="hidden sm:table-cell">Fecha de Seguimiento</TableHead>
+          <TableHead className="hidden sm:table-cell">Tipo de Visita</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -56,7 +56,7 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
               </Badge>
             </TableCell>
             <TableCell className="text-right">
-              <Button variant="ghost" size="icon" aria-label="View Details" onClick={() => router.push(`/logs/${audit.id}`)}>
+              <Button variant="ghost" size="icon" aria-label="Ver Detalles" onClick={() => router.push(`/logs/${audit.id}`)}>
                 <Eye className="h-4 w-4" />
               </Button>
             </TableCell>

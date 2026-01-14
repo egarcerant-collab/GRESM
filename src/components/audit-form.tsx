@@ -78,14 +78,14 @@ export function AuditForm() {
       if (result?.error) {
         toast({
           variant: 'destructive',
-          title: 'Error creating audit',
+          title: 'Error al crear la auditoría',
           description: result.error,
         });
       } else {
         // Redirect is handled by the server action
         toast({
-          title: 'Audit Created',
-          description: 'The audit has been successfully logged.',
+          title: 'Auditoría Creada',
+          description: 'La auditoría ha sido registrada exitosamente.',
         });
         form.reset();
       }
@@ -207,7 +207,7 @@ export function AuditForm() {
                         {field.value ? (
                           format(field.value, "PPP")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Elige una fecha</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -357,7 +357,7 @@ export function AuditForm() {
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit Audit
+            Enviar Auditoría
           </Button>
         </div>
       </form>

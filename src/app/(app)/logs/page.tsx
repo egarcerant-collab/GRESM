@@ -18,15 +18,15 @@ export default async function LogsPage() {
     <Card className="shadow-lg">
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <CardTitle className="font-headline text-2xl">Audit Log</CardTitle>
+          <CardTitle className="font-headline text-2xl">Registro de Auditoría</CardTitle>
           <CardDescription>
-            A list of all recorded audit entries. Click 'View' to see details and AI analysis.
+            Una lista de todas las entradas de auditoría registradas. Haga clic en 'Ver' para ver los detalles y el análisis de la IA.
           </CardDescription>
         </div>
         <Button asChild className="w-full md:w-auto">
           <Link href="/dashboard">
             <FilePlus className="mr-2 h-4 w-4" />
-            New Audit
+            Nueva Auditoría
           </Link>
         </Button>
       </CardHeader>

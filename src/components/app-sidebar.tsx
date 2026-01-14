@@ -32,11 +32,11 @@ export function AppSidebar() {
             <SidebarMenuButton
               asChild
               isActive={pathname === '/dashboard'}
-              tooltip="New Audit"
+              tooltip="Nueva Auditoría"
             >
               <Link href="/dashboard">
                 <FilePlus />
-                <span>New Audit</span>
+                <span>Nueva Auditoría</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -44,11 +44,11 @@ export function AppSidebar() {
             <SidebarMenuButton
               asChild
               isActive={pathname.startsWith('/logs')}
-              tooltip="Audit Log"
+              tooltip="Registro de Auditoría"
             >
               <Link href="/logs">
                 <List />
-                <span>Audit Log</span>
+                <span>Registro de Auditoría</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
