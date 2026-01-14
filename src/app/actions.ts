@@ -95,9 +95,6 @@ export async function getImageAsBase64Action(imagePath: string): Promise<string 
   const fullPath = path.join(publicDir, imagePath);
   
   try {
-    // Ensure the directory exists. This will create `public/imagenes` if it doesn't.
-    await fs.mkdir(path.dirname(fullPath), { recursive: true });
-    
     // Check if file exists. If not, access will throw and we'll go to the catch block.
     await fs.access(fullPath);
     
@@ -128,6 +125,16 @@ export async function getImageAsBase64Action(imagePath: string): Promise<string 
   } catch (error) {
     // This will catch errors from fs.access (file not found) or fs.readFile
     console.error(`Error reading image from ${fullPath}:`, error);
+    
+    // If the file doesn't exist, we ensure the directory exists for future uploads.
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      try {
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
+        console.log(`Created directory ${path.dirname(fullPath)} as it did not exist.`);
+      } catch (mkdirError) {
+        console.error(`Failed to create directory for image at ${path.dirname(fullPath)}:`, mkdirError);
+      }
+    }
     return null; // Return null on any error (e.g., file not found)
   }
 }

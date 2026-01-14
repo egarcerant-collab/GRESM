@@ -97,7 +97,7 @@ export default function LogsPage() {
   
     try {
       const zip = new JSZip();
-      const backgroundImage = await getImageAsBase64Action('/imagenes/membrete.jpg');
+      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
   
       for (const audit of filteredAudits) {
         const auditor = await findUserByFullNameAction(audit.auditorName);
