@@ -5,12 +5,7 @@ import type { Audit } from "./types";
 
 const FONT = "helvetica";
 
-async function buildPdf(data: Audit, backgroundImage: string | null): Promise<jsPDF> {
-  const doc = new jsPDF({
-    orientation: "p",
-    unit: "pt",
-    format: "a4"
-  });
+async function buildPdf(data: Audit, backgroundImage: string | null, doc: jsPDF): Promise<jsPDF> {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 70;
@@ -171,13 +166,29 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   return doc;
 }
 
-export async function generateAuditPdf(audit: Audit, backgroundImage: string | null): Promise<void> {
+export async function generateAuditPdf(audit: Audit, backgroundImage: string | null, docInstance?: jsPDF): Promise<jsPDF> {
+  const doc = docInstance || new jsPDF({
+    orientation: "p",
+    unit: "pt",
+    format: "a4"
+  });
+
   try {
-    const doc = await buildPdf(audit, backgroundImage);
-    const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
-    doc.save(fileName);
+    const finalDoc = await buildPdf(audit, backgroundImage, doc);
+    
+    // If it's a single download, save it. If it's a mass download, the calling function will handle it.
+    if (!docInstance) {
+        const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
+        finalDoc.save(fileName);
+    }
+    
+    return finalDoc;
   } catch (error) {
     console.error("Failed to generate PDF:", error);
-    alert("No se pudo generar el PDF. Revise la consola para más detalles.");
+    // Avoid showing an alert if it's a mass download, the caller will handle toast notifications.
+    if (!docInstance) {
+        alert("No se pudo generar el PDF. Revise la consola para más detalles.");
+    }
+    throw error; // Re-throw the error for the caller to handle
   }
 }

@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
+import { jsPDF } from 'jspdf';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -90,7 +91,6 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
     if (audit) {
       setIsDownloading(true);
       try {
-        // Use the Server Action to get the image with the correct path
         const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
         
         await generateAuditPdf(audit, backgroundImage);
