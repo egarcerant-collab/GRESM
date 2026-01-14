@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { AiAnalysis } from '@/components/ai-analysis';
 import type { Audit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -31,6 +31,7 @@ import {
 import { deleteAuditAction, getAuditByIdAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
+import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
@@ -92,6 +93,25 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (audit) {
+      try {
+        await generateAuditPdf(audit);
+        toast({
+          title: 'PDF Generado',
+          description: 'El informe de auditoría se ha descargado.',
+        });
+      } catch (error) {
+        console.error('Error generando el PDF:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error al generar PDF',
+          description: 'No se pudo generar el informe en PDF.',
+        });
+      }
+    }
+  };
+
   if (isLoading) {
     return <div>Cargando...</div>;
   }
@@ -118,28 +138,34 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
           <h1 className="font-headline text-2xl text-foreground">Detalles de Auditoría</h1>
         </div>
         
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>
-                Continuar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex items-center gap-2">
+           <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Descargar PDF
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>
+                  Continuar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
 
       </div>
       <Card className="shadow-lg">
