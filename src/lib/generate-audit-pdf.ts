@@ -64,7 +64,7 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
   doc.text("Información del Paciente", leftMargin, finalY);
   finalY += 15;
 
-  const patientBody = [
+  const patientBody: (string | { content: string; styles: { fontStyle: string; }})[][] = [
       [{ content: "Nombre:", styles: { fontStyle: "bold" } }, data.patientName],
       [{ content: "Documento:", styles: { fontStyle: "bold" } }, `${data.documentType} - ${data.documentNumber}`],
       [{ content: "Etnia:", styles: { fontStyle: "bold" } }, data.ethnicity],
@@ -99,9 +99,9 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
   finalY += 15;
 
   const eventBody = [
-        [{ content: "Tipo de Visita:", styles: { fontStyle: "bold" } }, data.visitType],
+        [{ content: "Tipo de Visita:", styles: { fontStyle: "bold" } }, data.visitType || ''],
         [{ content: "Fecha de Seguimiento:", styles: { fontStyle: "bold" } }, format(new Date(data.followUpDate), 'yyyy-MM-dd')],
-        [{ content: "Evento:", styles: { fontStyle: "bold" } }, data.event],
+        [{ content: "Evento:", styles: { fontStyle: "bold" } }, data.event || ''],
   ];
 
   if (data.eventDetails) {
@@ -135,7 +135,7 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
   autoTable(doc, {
     startY: finalY,
     head: [],
-    body: eventBody.map(row => row.map(cell => cell === null || cell === undefined ? '' : cell)), // Ensure all content is a string
+    body: eventBody.map(row => row.map(cell => (cell === null || cell === undefined) ? '' : cell)),
     theme: "striped",
     styles: { font: FONT, fontSize: 10 },
   });
