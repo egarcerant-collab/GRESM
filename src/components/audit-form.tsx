@@ -123,7 +123,18 @@ export function AuditForm() {
       phoneNumber: '',
       followUpNotes: '',
       nextSteps: '',
-      visitType: 'Seguimiento'
+      visitType: 'Seguimiento',
+      birthDate: undefined,
+      age: undefined,
+      sex: undefined,
+      affiliationStatus: '',
+      area: undefined,
+      settlement: '',
+      nationality: '',
+      primaryHealthProvider: '',
+      regime: '',
+      upgdProvider: '',
+      followUpInterventionType: '',
     },
   });
 
