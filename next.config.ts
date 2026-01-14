@@ -23,20 +23,13 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https'
+        ,
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**',
       },
     ],
-  },
-  webpack: (config, { isServer }) => {
-    // Ignore Genkit files from being watched
-    config.watchOptions.ignored = [
-        ...config.watchOptions.ignored,
-        '**/.genkit/**',
-    ];
-    return config;
   },
 };
 
