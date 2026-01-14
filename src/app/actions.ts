@@ -15,6 +15,16 @@ export async function createAuditAction(values: z.infer<typeof auditSchema>) {
   if (!validatedFields.success) {
     return { error: 'Datos inválidos proporcionados.' };
   }
+
+  const { visitType, documentNumber } = validatedFields.data;
+
+  if (visitType === 'PRIMERA VEZ') {
+    const existingAudits = await dbGetAudits();
+    const patientExists = existingAudits.some(audit => audit.documentNumber === documentNumber);
+    if (patientExists) {
+      return { error: 'Ya existe un registro de primera vez para este número de documento.' };
+    }
+  }
   
   try {
     await dbCreateAudit(validatedFields.data);
