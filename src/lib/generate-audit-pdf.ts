@@ -28,7 +28,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   const addFooter = (pageNumber: number, pageCount: number) => {
     doc.setFontSize(8);
     doc.setTextColor(100);
-    // Positioned ~1cm (28.35pts) from the bottom edge. Added extra space for breathing room.
+    // Positioned ~1.4cm (40pts) from the bottom edge.
     doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, pageH - 40, { align: 'center' });
   };
   
@@ -63,7 +63,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   
   const addSectionTitle = (title: string) => {
       finalY = (doc as any).lastAutoTable.finalY + 30; // Increased spacing
-      if (finalY > pageH - 60) {
+      if (finalY > pageH - 80) { // Keep a bottom margin
         doc.addPage();
         addBackground();
         finalY = leftMargin;
@@ -132,7 +132,8 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
 
   const addTextSection = (title: string, text: string | null | undefined) => {
     finalY = finalY + 30; // Increased spacing before the title
-    if (finalY > pageH - 80) {
+    // Increased bottom margin from 80 to 100 to leave more space
+    if (finalY > pageH - 100) {
       doc.addPage();
       addBackground();
       finalY = leftMargin;
@@ -148,7 +149,8 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
     const splitText = doc.splitTextToSize(safeText, pageW - leftMargin * 2);
 
     splitText.forEach((line: string) => {
-      if (finalY > pageH - 40) {
+      // Increased bottom margin from 40 to 100
+      if (finalY > pageH - 100) {
         doc.addPage();
         addBackground();
         finalY = leftMargin;
