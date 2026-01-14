@@ -2,6 +2,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from 'date-fns';
 import type { Audit } from "./types";
+import fs from 'fs';
+import path from 'path';
 
 const FONT = "helvetica";
 
