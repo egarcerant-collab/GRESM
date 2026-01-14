@@ -63,12 +63,39 @@ const ethnicityOptions = [
   "INDIGENA",
 ];
 
+const municipalitiesByDepartment: Record<string, string[]> = {
+  CESAR: [
+    "BECERRIL", "CHIMICHAGUA", "CHIRIGUANA", "CURUMANÍ", "LA JAGUA DE IBIRICO",
+    "PAILITAS", "TAMALAMEQUE", "ASTREA", "BOSCONIA", "EL COPEY", "EL PASO",
+    "AGUSTÍN CODAZZI", "LA PAZ", "MANAURE", "PUEBLO BELLO", "SAN DIEGO",
+    "VALLEDUPAR", "AGUACHICA", "GAMARRA", "GONZÁLEZ", "LA GLORIA", "PELAYA",
+    "RÍO DE ORO", "SAN ALBERTO", "SAN MARTÍN"
+  ],
+  "LA GUAJIRA": [
+    "ALBANIA", "BARRANCAS", "DIBULLA", "DISTRACCION", "EL MOLINO", "FONSECA",
+    "HATONUEVO", "LA JAGUA DEL PILAR", "MAICAO", "MANAURE", "RIOHACHA",
+    "SAN JUAN DEL CESAR", "URIBIA", "URUMITA", "VILLANUEVA"
+  ],
+  MAGDALENA: [
+    "ALGARROBO", "ARACATACA", "ARIGUANÍ", "CERRO SAN ANTONIO", "CHIBOLO",
+    "CIÉNAGA", "CONCORDIA", "EL BANCO", "EL PIÑON", "EL RETEN", "FUNDACION",
+    "GUAMAL", "NUEVA GRANADA", "PEDRAZA", "PIJIÑO DEL CARMEN", "PIVIJAY",
+    "PLATO", "PUEBLO VIEJO", "REMOLINO", "SABANAS DE SAN ANGEL", "SALAMINA",
+    "SAN SEBASTIAN DE BUENAVISTA", "SAN ZENON", "SANTA ANA", "SANTA BARBARA DE PINTO",
+    "SANTA MARTA", "SITIONUEVO", "TENERIFE", "ZAPAYAN", "ZONA BANANERA"
+  ],
+};
+
 
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [departmentSelection, setDepartmentSelection] = useState<string | undefined>('');
+  const [municipalitySelection, setMunicipalitySelection] = useState<string | undefined>('');
+  const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
   const isOtherDepartment = departmentSelection === 'Otro';
+  const isOtherMunicipality = municipalitySelection === 'Otro';
+
   const [ethnicitySelection, setEthnicitySelection] = useState<string | undefined>('');
   const isOtherEthnicity = ethnicitySelection === 'Otro';
 
@@ -95,12 +122,25 @@ export function AuditForm() {
   const isOtherEvent = eventSelection === 'Otro';
 
   useEffect(() => {
-    if (departmentSelection !== 'Otro') {
-      form.setValue('department', departmentSelection || '');
+    if (departmentSelection && departmentSelection !== 'Otro') {
+      form.setValue('department', departmentSelection);
+      setAvailableMunicipalities(municipalitiesByDepartment[departmentSelection] || []);
     } else {
       form.setValue('department', '');
+      setAvailableMunicipalities([]);
     }
+    // Reset municipality when department changes
+    form.setValue('municipality', '');
+    setMunicipalitySelection('');
   }, [departmentSelection, form]);
+  
+  useEffect(() => {
+    if (municipalitySelection !== 'Otro') {
+      form.setValue('municipality', municipalitySelection || '');
+    } else {
+      form.setValue('municipality', '');
+    }
+  }, [municipalitySelection, form]);
 
   useEffect(() => {
     if (ethnicitySelection !== 'Otro') {
@@ -128,6 +168,7 @@ export function AuditForm() {
         });
         form.reset();
         setDepartmentSelection('');
+        setMunicipalitySelection('');
         setEthnicitySelection('');
       }
     });
@@ -338,19 +379,53 @@ export function AuditForm() {
               )}
             />
           )}
-          <FormField
-            control={form.control}
-            name="municipality"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Municipio</FormLabel>
+          
+          {availableMunicipalities.length > 0 ? (
+            <FormItem>
+              <FormLabel>Municipio</FormLabel>
+              <Select onValueChange={setMunicipalitySelection} value={municipalitySelection}>
                 <FormControl>
-                  <Input placeholder="e.g., MAICAO" {...field} />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un municipio" />
+                  </SelectTrigger>
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                <SelectContent>
+                  {availableMunicipalities.map(muni => <SelectItem key={muni} value={muni}>{muni}</SelectItem>)}
+                  <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+              {isOtherMunicipality && (
+                <FormField
+                  control={form.control}
+                  name="municipality"
+                  render={({ field }) => (
+                    <FormItem className='pt-2'>
+                       <FormLabel>Especifique el Municipio</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., BOGOTA" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </FormItem>
+          ) : (
+            <FormField
+              control={form.control}
+              name="municipality"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Municipio</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., MAICAO" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           <FormItem>
             <FormLabel>Etnia</FormLabel>
             <Select onValueChange={setEthnicitySelection} value={ethnicitySelection}>
