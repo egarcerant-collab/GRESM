@@ -30,6 +30,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    // Ignore Genkit files from being watched
+    config.watchOptions.ignored = [
+        ...config.watchOptions.ignored,
+        '**/.genkit/**',
+    ];
+    return config;
+  },
 };
 
 export default nextConfig;
