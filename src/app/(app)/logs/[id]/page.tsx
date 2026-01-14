@@ -70,7 +70,6 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
 }
 
 export default function LogDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
   const [audit, setAudit] = React.useState<Audit | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -80,6 +79,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
 
   React.useEffect(() => {
+    const { id } = params;
     if (id) {
         getAuditByIdAction(id).then(({ audit: data }) => {
           if (data) {
@@ -90,7 +90,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
           setIsLoading(false);
         });
     }
-  }, [id]);
+  }, [params]);
 
 
   const handleDelete = async () => {
