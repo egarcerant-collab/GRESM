@@ -135,14 +135,14 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
   autoTable(doc, {
     startY: finalY,
     head: [],
-    body: eventBody,
+    body: eventBody.map(row => row.map(cell => cell === null || cell === undefined ? '' : cell)), // Ensure all content is a string
     theme: "striped",
     styles: { font: FONT, fontSize: 10 },
   });
   finalY = (doc as any).lastAutoTable.finalY;
 
   // Function to add text content with page breaks
-  const addTextSection = (title: string, text: string) => {
+  const addTextSection = (title: string, text: string | null | undefined) => {
     finalY += 20;
     if (finalY > pageH - bottomMargin - 40) { // Check if space for title + some text
         addPageWithBg();
@@ -155,7 +155,8 @@ function buildPdf(data: Audit, bgImage: string | null): jsPDF {
     
     doc.setFont(FONT, "normal");
     doc.setFontSize(10);
-    const splitText = doc.splitTextToSize(text, contentWidth);
+    const safeText = text || ''; // Ensure text is not null/undefined
+    const splitText = doc.splitTextToSize(safeText, contentWidth);
 
     splitText.forEach((line: string) => {
         if (finalY > pageH - bottomMargin) {
