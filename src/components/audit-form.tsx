@@ -38,7 +38,10 @@ const documentTypes = [
   "TI: Tarjeta de Identidad", 
   "RC: Registro Civil", 
   "CE: Cédula de Extranjería", 
-  "PA: Pasaporte"
+  "PA: Pasaporte",
+  "PE: Permiso Especial de Permanencia",
+  "AS: Adulto sin Identificación",
+  "MS: Menor sin Identificación"
 ];
 
 const eventTypes = [
