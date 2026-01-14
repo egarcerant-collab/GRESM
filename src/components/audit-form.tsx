@@ -29,7 +29,7 @@ import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
-import { createAuditAction } from '@/app/actions';
+import { createAuditAction, checkExistingPatientAction } from '@/app/actions';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -103,6 +103,9 @@ export function AuditForm() {
   const [ethnicitySelection, setEthnicitySelection] = useState<string | undefined>('');
   const isOtherEthnicity = ethnicitySelection === 'Otro';
 
+  const [isCheckingPatient, setIsCheckingPatient] = useState(false);
+  const [patientWarning, setPatientWarning] = useState<string | null>(null);
+
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
     defaultValues: {
@@ -119,40 +122,74 @@ export function AuditForm() {
       phoneNumber: '',
       followUpNotes: '',
       nextSteps: '',
+      visitType: 'Seguimiento'
     },
   });
 
   const eventSelection = form.watch('event');
   const isOtherEvent = eventSelection === 'Otro';
+  const documentNumberValue = form.watch('documentNumber');
+  const visitTypeValue = form.watch('visitType');
+
+  useEffect(() => {
+    const checkPatient = async () => {
+      if (visitTypeValue === 'PRIMERA VEZ' && documentNumberValue && documentNumberValue.length > 5) {
+        setIsCheckingPatient(true);
+        const { exists } = await checkExistingPatientAction(documentNumberValue);
+        if (exists) {
+          setPatientWarning('Advertencia: ya existe un registro de primera vez para este documento.');
+        } else {
+          setPatientWarning(null);
+        }
+        setIsCheckingPatient(false);
+      } else {
+        setPatientWarning(null);
+      }
+    };
+
+    const handler = setTimeout(() => {
+        checkPatient();
+    }, 500); // Debounce check
+
+    return () => {
+        clearTimeout(handler);
+    };
+}, [documentNumberValue, visitTypeValue]);
 
   useEffect(() => {
     if (departmentSelection && departmentSelection !== 'Otro') {
       form.setValue('department', departmentSelection);
       setAvailableMunicipalities(municipalitiesByDepartment[departmentSelection] || []);
     } else {
-      form.setValue('department', '');
       setAvailableMunicipalities([]);
+      if (!isOtherDepartment) {
+        form.setValue('department', '');
+      }
     }
     // Reset municipality when department changes
     form.setValue('municipality', '');
     setMunicipalitySelection('');
-  }, [departmentSelection, form]);
+  }, [departmentSelection, form, isOtherDepartment]);
   
   useEffect(() => {
     if (municipalitySelection !== 'Otro') {
       form.setValue('municipality', municipalitySelection || '');
     } else {
-      form.setValue('municipality', '');
+       if (!isOtherMunicipality) {
+         form.setValue('municipality', '');
+       }
     }
-  }, [municipalitySelection, form]);
+  }, [municipalitySelection, form, isOtherMunicipality]);
 
   useEffect(() => {
     if (ethnicitySelection !== 'Otro') {
       form.setValue('ethnicity', ethnicitySelection || '');
     } else {
-      form.setValue('ethnicity', '');
+      if (!isOtherEthnicity) {
+        form.setValue('ethnicity', '');
+      }
     }
-  }, [ethnicitySelection, form]);
+  }, [ethnicitySelection, form, isOtherEthnicity]);
 
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
@@ -174,6 +211,7 @@ export function AuditForm() {
         setDepartmentSelection('');
         setMunicipalitySelection('');
         setEthnicitySelection('');
+        setPatientWarning(null);
       }
     });
   }
@@ -237,6 +275,11 @@ export function AuditForm() {
                 <FormControl>
                   <Input type="number" placeholder="e.g., 1006895977" {...field} />
                 </FormControl>
+                 {isCheckingPatient ? (
+                    <FormDescription>Verificando...</FormDescription>
+                ) : patientWarning ? (
+                    <p className="text-sm font-medium text-yellow-600">{patientWarning}</p>
+                ) : null}
                 <FormMessage />
               </FormItem>
             )}
@@ -516,8 +559,8 @@ export function AuditForm() {
           />
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" disabled={isPending || isCheckingPatient || !!patientWarning}>
+            {(isPending || isCheckingPatient) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enviar Auditoría
           </Button>
         </div>

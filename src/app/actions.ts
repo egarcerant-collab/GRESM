@@ -20,7 +20,7 @@ export async function createAuditAction(values: z.infer<typeof auditSchema>) {
 
   if (visitType === 'PRIMERA VEZ') {
     const existingAudits = await dbGetAudits();
-    const patientExists = existingAudits.some(audit => audit.documentNumber === documentNumber);
+    const patientExists = existingAudits.some(audit => audit.documentNumber === documentNumber && audit.visitType === 'PRIMERA VEZ');
     if (patientExists) {
       return { error: 'Ya existe un registro de primera vez para este número de documento.' };
     }
@@ -100,5 +100,20 @@ export async function getAuditsAction(): Promise<{ audits: Audit[], error?: stri
   } catch (error) {
     console.error('Error al obtener las auditorías:', error);
     return { audits: [], error: 'Error al recuperar las auditorías de la base de datos.' };
+  }
+}
+
+export async function checkExistingPatientAction(documentNumber: string): Promise<{ exists: boolean }> {
+  if (!documentNumber) {
+    return { exists: false };
+  }
+  try {
+    const existingAudits = await dbGetAudits();
+    const patientExists = existingAudits.some(audit => audit.documentNumber === documentNumber && audit.visitType === 'PRIMERA VEZ');
+    return { exists: patientExists };
+  } catch (error) {
+    console.error('Error checking for existing patient:', error);
+    // In case of a DB error, we don't block the user, the final validation on submit will catch it.
+    return { exists: false };
   }
 }
