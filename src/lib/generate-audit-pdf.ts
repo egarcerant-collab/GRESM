@@ -128,7 +128,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   }
 
   const addTextSection = (title: string, text: string | null | undefined) => {
-    finalY = finalY + 20;
+    finalY = finalY + 30; // Increased spacing before the title
     if (finalY > pageH - 80) {
       doc.addPage();
       addBackground();
