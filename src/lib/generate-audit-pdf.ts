@@ -5,26 +5,30 @@ import type { Audit } from "./types";
 
 const FONT = "helvetica"; // Using a standard font
 
-async function fetchImageAsDataUrl(url: string): Promise<string> {
+async function fetchImageAsDataUrl(url: string): Promise<string | null> {
   try {
-    // In the browser environment, the /IMAGENEN_UNIFICADA.jpg path correctly points to public/IMAGENEN_UNIFICADA.jpg
+    // In the browser, the path /IMAGENEN_UNIFICADA.jpg correctly points to the public folder.
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
     }
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
+      reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        reject(error);
+      };
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error(`Failed to fetch image ${url}:`, error);
-    // Return a transparent pixel as a fallback to prevent PDF generation from failing
-    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+    console.error(`Failed to fetch and process image from ${url}:`, error);
+    // Return null if fetching fails, so PDF generation can continue without a background.
+    return null;
   }
 }
+
 
 async function buildPdf(data: Audit): Promise<jsPDF> {
   const doc = new jsPDF("p", "pt", "letter");
@@ -41,11 +45,16 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
 
   const addPageWithBg = () => {
       doc.addPage();
-      doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+      if (bgImage) {
+        doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+      }
   }
 
   // Add background to the first page
-  doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+  if (bgImage) {
+    doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
+  }
+
 
   let finalY = topMargin;
 
@@ -59,9 +68,9 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   doc.setFont(FONT, "normal");
   doc.setFontSize(10);
   const auditDetails = [
-    ["ID de Auditoría:", data.id],
-    ["Fecha de Creación:", format(new Date(data.createdAt), 'yyyy-MM-dd HH:mm')],
-    ["Nombre del Auditor:", data.auditorName],
+    ["ID de Auditoría:", data.id || 'N/A'],
+    ["Fecha de Creación:", data.createdAt ? format(new Date(data.createdAt), 'yyyy-MM-dd HH:mm') : 'N/A'],
+    ["Nombre del Auditor:", data.auditorName || 'N/A'],
   ];
 
   autoTable(doc, {
@@ -96,7 +105,7 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   if (data.birthDate) {
     patientBody.push([{ content: "Fecha de Nacimiento:", styles: { fontStyle: "bold" } }, format(new Date(data.birthDate), 'yyyy-MM-dd')]);
   }
-  if (data.age) {
+  if (data.age !== null && data.age !== undefined) {
     patientBody.push([{ content: "Edad:", styles: { fontStyle: "bold" } }, String(data.age)]);
   }
 
@@ -118,7 +127,7 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
 
   const eventBody: (string | { content: string; styles: { fontStyle: string; }})[][] = [
         [{ content: "Tipo de Visita:", styles: { fontStyle: "bold" } }, data.visitType || ''],
-        [{ content: "Fecha de Seguimiento:", styles: { fontStyle: "bold" } }, format(new Date(data.followUpDate), 'yyyy-MM-dd')],
+        [{ content: "Fecha de Seguimiento:", styles: { fontStyle: "bold" } }, data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : ''],
         [{ content: "Evento:", styles: { fontStyle: "bold" } }, data.event || ''],
   ];
 
@@ -173,7 +182,7 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     
     doc.setFont(FONT, "normal");
     doc.setFontSize(10);
-    const safeText = text || ''; // Ensure text is not null/undefined
+    const safeText = text || 'N/A'; // Ensure text is not null/undefined
     const splitText = doc.splitTextToSize(safeText, contentWidth);
 
     splitText.forEach((line: string) => {
@@ -204,7 +213,14 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
 export async function generateAuditPdf(
   audit: Audit,
 ): Promise<void> {
-  const doc = await buildPdf(audit);
-  const fileName = `Informe_Auditoria_${audit.id}_${audit.patientName.replace(/ /g, '_')}.pdf`;
-  doc.save(fileName);
+  try {
+    const doc = await buildPdf(audit);
+    const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
+    doc.save(fileName);
+  } catch (error) {
+    console.error("Failed to generate PDF:", error);
+    // Optional: Inform the user that PDF generation failed.
+    // This could be done via a toast notification or an alert.
+    alert("No se pudo generar el PDF. Revise la consola para más detalles.");
+  }
 }
