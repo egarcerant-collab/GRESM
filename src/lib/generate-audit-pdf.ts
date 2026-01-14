@@ -14,7 +14,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 70;
-  const topMargin = 45; // Aproximadamente 1.5 cm
+  const topMargin = 85; // Aproximadamente 3 cm
 
   const addBackground = () => {
     if (backgroundImage) {
