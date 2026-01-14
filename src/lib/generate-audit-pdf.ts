@@ -14,7 +14,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 70;
-  const topMargin = 85; // Aproximadamente 3cm
+  const topMargin = 45; // Aproximadamente 1.5 cm
 
   const addBackground = () => {
     if (backgroundImage) {
@@ -59,11 +59,10 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
       }
     },
   });
-  finalY = (doc as any).lastAutoTable.finalY + 10;
   
   const addSectionTitle = (title: string) => {
       finalY = (doc as any).lastAutoTable.finalY + 30; // Increased spacing
-      if (finalY > pageH - 80) { // Keep a bottom margin
+      if (finalY > pageH - 100) { // Keep a bottom margin
         doc.addPage();
         addBackground();
         finalY = topMargin;
