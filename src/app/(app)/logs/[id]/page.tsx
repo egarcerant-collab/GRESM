@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useRouter } from 'next/navigation';
@@ -14,7 +15,7 @@ import { format } from 'date-fns';
 import { AiAnalysis } from '@/components/ai-analysis';
 import type { Audit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trash2, FileDown } from 'lucide-react';
+import { ArrowLeft, Trash2, FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -55,14 +56,32 @@ function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
     }
 }
 
+async function fetchImageAsDataUrl(url: string): Promise<string> {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
 export default function LogDetailPage({ params }: { params: { id: string } }) {
   const [audit, setAudit] = React.useState<Audit | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
   const router = useRouter();
   const { toast } = useToast();
+  const id = params.id;
 
   React.useEffect(() => {
-    getAuditByIdAction(params.id).then(({ audit: data }) => {
+    getAuditByIdAction(id).then(({ audit: data }) => {
       if (data) {
         setAudit(data);
       } else {
@@ -70,11 +89,12 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
       }
       setIsLoading(false);
     });
-  }, [params.id]);
+  }, [id]);
 
 
   const handleDelete = async () => {
     if (audit) {
+      setIsDeleting(true);
       const result = await deleteAuditAction(audit.id);
       if (result.success) {
         toast({
@@ -88,14 +108,18 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
           title: 'Error al Eliminar Auditoría',
           description: result.error,
         });
+        setIsDeleting(false);
       }
     }
   };
 
   const handleDownloadPdf = async () => {
     if (audit) {
+      setIsDownloading(true);
       try {
-        await generateAuditPdf(audit);
+        const bgImageUrl = '/imagen/IMAGENEN UNIFICADA.jpg';
+        const bgImageDataUrl = await fetchImageAsDataUrl(bgImageUrl);
+        await generateAuditPdf(audit, bgImageDataUrl);
         toast({
           title: 'PDF Generado',
           description: 'El informe de auditoría se ha descargado.',
@@ -107,12 +131,14 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
           title: 'Error al generar PDF',
           description: 'No se pudo generar el informe en PDF.',
         });
+      } finally {
+        setIsDownloading(false);
       }
     }
   };
 
   if (isLoading) {
-    return <div>Cargando...</div>;
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   if (!audit) {
@@ -138,14 +164,22 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
         </div>
         
         <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-            <FileDown className="mr-2 h-4 w-4" />
+           <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={isDownloading}>
+            {isDownloading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="mr-2 h-4 w-4" />
+            )}
             Descargar PDF
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                <Trash2 className="mr-2 h-4 w-4" />
+              <Button variant="destructive" size="sm" disabled={isDeleting}>
+                {isDeleting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
                 Eliminar
               </Button>
             </AlertDialogTrigger>
@@ -158,8 +192,8 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>
-                  Continuar
+                <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Eliminando...' : 'Continuar'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

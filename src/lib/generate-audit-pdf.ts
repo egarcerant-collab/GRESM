@@ -5,8 +5,8 @@ import type { Audit } from "./types";
 
 const FONT = "helvetica"; // Using a standard font
 
-function buildPdf(data: Audit): jsPDF {
-  const doc = new jsPDF("p", "pt", "a4");
+function buildPdf(data: Audit, bgImage: string | null): jsPDF {
+  const doc = new jsPDF("p", "pt", "letter");
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   
@@ -15,6 +15,19 @@ function buildPdf(data: Audit): jsPDF {
   const leftMargin = 40;
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
+
+  const addBackground = () => {
+    if (bgImage) {
+        doc.addImage(bgImage, 'JPEG', 0, pageH - 200, pageW, 200, undefined, 'FAST');
+    }
+  }
+
+  const addPageWithBg = () => {
+      doc.addPage();
+      addBackground();
+  }
+  
+  addBackground();
 
   let finalY = topMargin;
 
@@ -91,7 +104,7 @@ function buildPdf(data: Audit): jsPDF {
   const addTextSection = (title: string, text: string) => {
     finalY += 20;
     if (finalY > pageH - bottomMargin - 40) { // Check if space for title + some text
-        doc.addPage();
+        addPageWithBg();
         finalY = topMargin;
     }
     doc.setFont(FONT, "bold");
@@ -105,7 +118,7 @@ function buildPdf(data: Audit): jsPDF {
 
     splitText.forEach((line: string) => {
         if (finalY > pageH - bottomMargin) {
-            doc.addPage();
+            addPageWithBg();
             finalY = topMargin;
         }
         doc.text(line, leftMargin, finalY);
@@ -130,8 +143,9 @@ function buildPdf(data: Audit): jsPDF {
 
 export async function generateAuditPdf(
   audit: Audit,
+  bgImage: string | null = null,
 ): Promise<void> {
-  const doc = buildPdf(audit);
+  const doc = buildPdf(audit, bgImage);
   const fileName = `Informe_Auditoria_${audit.id}_${audit.patientName.replace(/ /g, '_')}.pdf`;
   doc.save(fileName);
 }
