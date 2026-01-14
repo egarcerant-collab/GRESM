@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createAudit as dbCreateAudit } from '@/lib/db';
+import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit } from '@/lib/db';
 import { auditSchema } from '@/lib/schema';
 import type { Audit } from '@/lib/types';
 import { summarizeAuditLogs } from '@/ai/flows/summarize-audit-logs';
@@ -25,6 +25,18 @@ export async function createAuditAction(values: z.infer<typeof auditSchema>) {
 
   revalidatePath('/logs');
   redirect('/logs');
+}
+
+export async function deleteAuditAction(id: string) {
+  try {
+    await dbDeleteAudit(id);
+    revalidatePath('/logs');
+    revalidatePath(`/logs/${id}`);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete audit:', error);
+    return { error: 'Failed to delete audit from the database.' };
+  }
 }
 
 export async function getAiSummary(audit: Audit) {

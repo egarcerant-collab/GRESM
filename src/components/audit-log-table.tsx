@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 
-export function AuditLogTable({ audits }: { audits: Audit[] }) {
+export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?: (id: string) => void }) {
   const router = useRouter();
 
   if (audits.length === 0) {
@@ -45,18 +45,18 @@ export function AuditLogTable({ audits }: { audits: Audit[] }) {
       </TableHeader>
       <TableBody>
         {audits.map((audit) => (
-          <TableRow key={audit.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
-            <TableCell className="font-medium">{audit.id}</TableCell>
-            <TableCell>{audit.patientName}</TableCell>
-            <TableCell className="hidden md:table-cell">{audit.event}</TableCell>
-            <TableCell className="hidden sm:table-cell">{format(new Date(audit.followUpDate), 'PP')}</TableCell>
-            <TableCell className="hidden sm:table-cell">
+          <TableRow key={audit.id} className="hover:bg-muted/50">
+            <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.id}</TableCell>
+            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.patientName}</TableCell>
+            <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.event}</TableCell>
+            <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{format(new Date(audit.followUpDate), 'PP')}</TableCell>
+            <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
               <Badge variant={audit.visitType === 'PRIMERA VEZ' ? 'secondary' : 'outline'} className="capitalize">
                 {audit.visitType.toLowerCase().replace('_', ' ')}
               </Badge>
             </TableCell>
             <TableCell className="text-right">
-              <Button variant="ghost" size="icon" aria-label="View Details">
+              <Button variant="ghost" size="icon" aria-label="View Details" onClick={() => router.push(`/logs/${audit.id}`)}>
                 <Eye className="h-4 w-4" />
               </Button>
             </TableCell>

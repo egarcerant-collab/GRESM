@@ -66,3 +66,9 @@ export async function createAudit(auditData: Omit<Audit, 'id' | 'createdAt'>): P
   await writeData(updatedAudits);
   return newAudit;
 }
+
+export async function deleteAudit(id: string): Promise<void> {
+  const audits = await readData();
+  const updatedAudits = audits.filter(audit => audit.id !== id);
+  await writeData(updatedAudits);
+}

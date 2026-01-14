@@ -1,5 +1,8 @@
+
+'use client';
+
 import { getAuditById } from '@/lib/db';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -12,9 +15,24 @@ import { format } from 'date-fns';
 import { AiAnalysis } from '@/components/ai-analysis';
 import type { Audit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteAuditAction } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
+import React from 'react';
+
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -25,23 +43,81 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
   );
 }
 
-export default async function LogDetailPage({ params }: { params: { id: string } }) {
-  const audit = await getAuditById(params.id);
+export default function LogDetailPage({ params }: { params: { id: string } }) {
+  const [audit, setAudit] = React.useState<Audit | null>(null);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    getAuditById(params.id).then(data => {
+      if (data) {
+        setAudit(data);
+      } else {
+        notFound();
+      }
+    });
+  }, [params.id]);
+
+
+  const handleDelete = async () => {
+    if (audit) {
+      const result = await deleteAuditAction(audit.id);
+      if (result.success) {
+        toast({
+          title: 'Audit Deleted',
+          description: 'The audit log has been successfully deleted.',
+        });
+        router.push('/logs');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error Deleting Audit',
+          description: result.error,
+        });
+      }
+    }
+  };
 
   if (!audit) {
-    notFound();
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/logs">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back to logs</span>
-          </Link>
-        </Button>
-        <h1 className="font-headline text-2xl text-foreground">Audit Details</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/logs">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Back to logs</span>
+            </Link>
+          </Button>
+          <h1 className="font-headline text-2xl text-foreground">Audit Details</h1>
+        </div>
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the audit log.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </div>
       <Card className="shadow-lg">
         <CardHeader>
