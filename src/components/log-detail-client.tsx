@@ -67,7 +67,7 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
   });
 }
 
-export default function LogDetailClient({ audit }: { audit: Audit }) {
+export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: Audit, formattedCreatedAt: string }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
 
@@ -121,7 +121,6 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
 
   // Dates are strings after serialization, convert them back
   const followUpDate = new Date(audit.followUpDate);
-  const createdAt = new Date(audit.createdAt);
   const birthDate = audit.birthDate ? new Date(audit.birthDate) : null;
   
   const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
@@ -181,7 +180,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
         <CardHeader>
           <CardTitle className="font-headline text-xl">Auditoría ID: {audit.id}</CardTitle>
           <CardDescription>
-            Registrado el {format(createdAt, 'PPPp')}
+            Registrado el {formattedCreatedAt}
           </CardDescription>
         </CardHeader>
         <CardContent>
