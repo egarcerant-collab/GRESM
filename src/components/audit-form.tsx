@@ -30,7 +30,7 @@ import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { createAuditAction } from '@/app/actions';
-import { useTransition } from 'react';
+import { useTransition, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const documentTypes = [
@@ -48,6 +48,8 @@ const eventTypes = [
   "Salud Mental General",
   "Otro"
 ];
+
+const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA", "Otro"];
 
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
@@ -71,6 +73,21 @@ export function AuditForm() {
       nextSteps: '',
     },
   });
+
+  const departmentValue = form.watch('department');
+  const isOtherDepartment = departmentValue === 'Otro';
+
+  useEffect(() => {
+    if (departmentValue !== 'Otro') {
+       const selectedDepartment = departmentOptions.find(d => d === departmentValue);
+       if(selectedDepartment && form.getValues('department') !== selectedDepartment) {
+          // No es necesario un setValue si el valor ya está en el select
+       }
+    } else {
+        form.setValue('department', '');
+    }
+  }, [departmentValue, form]);
+
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
     startTransition(async () => {
@@ -271,13 +288,35 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Departamento</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., LA GUAJIRA" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un departamento" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
+           {isOtherDepartment && (
+            <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especifique el Departamento</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Cundinamarca" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="municipality"
