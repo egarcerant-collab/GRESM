@@ -7,26 +7,29 @@ const FONT = "helvetica"; // Using a standard font
 
 async function fetchImageAsDataUrl(url: string): Promise<string | null> {
   try {
+    // In a browser environment, the URL for public files is relative to the root.
     const response = await fetch(url);
     if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+      console.error(`Failed to fetch image: ${response.statusText}`);
+      // Return null to indicate failure, so the PDF can still be generated without the image.
       return null;
     }
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = (error) => {
-        console.error("FileReader error:", error);
-        reject(error);
+      reader.onerror = (err) => {
+        console.error("FileReader error:", err);
+        reject(err);
       };
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error(`Failed to fetch and process image from ${url}:`, error);
-    return null;
+    console.error(`Error fetching or processing image from ${url}:`, error);
+    return null; // Ensure generation continues even if image fails
   }
 }
+
 
 async function buildPdf(data: Audit): Promise<jsPDF> {
   const doc = new jsPDF("p", "pt", "letter");
@@ -35,8 +38,8 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
   
-  const headerImage = await fetchImageAsDataUrl('/IMAGENEN_UNIFICADA.jpg');
-  const headerImgHeight = 60;
+  const headerImage = await fetchImageAsDataUrl('/imagen/IMAGENEN UNIFICADA.jpg');
+  const headerImgHeight = 60; // Adjust as needed
 
   const addHeader = () => {
     if (headerImage) {
@@ -48,9 +51,9 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     doc.setFontSize(8);
     doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 30, { align: 'center' });
   };
-  
-  let finalY = headerImgHeight + 20;
 
+  let finalY = headerImage ? headerImgHeight + 20 : leftMargin;
+  
   addHeader();
 
   // Main Title
@@ -64,96 +67,81 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     if (yPosition > doc.internal.pageSize.getHeight() - 60) { // 60 for bottom margin
       doc.addPage();
       addHeader();
-      return headerImgHeight + 20; // Reset Y position for new page
+      return headerImage ? headerImgHeight + 20 : leftMargin; // Reset Y position
     }
     return yPosition;
   };
 
-  // --- Audit Details ---
-  const auditDetails = [
-    ["ID de Auditoría:", data.id || 'N/A'],
-    ["Fecha de Creación:", data.createdAt ? format(new Date(data.createdAt), 'yyyy-MM-dd HH:mm') : 'N/A'],
-    ["Nombre del Auditor:", data.auditorName || 'N/A'],
-  ];
-
+  // --- Audit Details Table ---
   autoTable(doc, {
     startY: finalY,
-    body: auditDetails,
+    body: [
+        [{ content: 'ID de Auditoría:', styles: { fontStyle: 'bold' } }, data.id || 'N/A'],
+        [{ content: 'Fecha de Creación:', styles: { fontStyle: 'bold' } }, data.createdAt ? format(new Date(data.createdAt), 'yyyy-MM-dd HH:mm') : 'N/A'],
+        [{ content: 'Nombre del Auditor:', styles: { fontStyle: 'bold' } }, data.auditorName || 'N/A'],
+    ],
     theme: "plain",
     styles: { font: FONT, fontSize: 10 },
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 120 },
-    }
   });
-  finalY = (doc as any).lastAutoTable.finalY;
+  finalY = (doc as any).lastAutoTable.finalY + 10;
   
-  finalY = checkPageBreak(finalY + 10);
-  
-  // --- Patient Info ---
-  doc.setFont(FONT, "bold");
-  doc.setFontSize(12);
-  doc.text("Información del Paciente", leftMargin, finalY);
-  finalY += 15;
+  // --- Section Title Function ---
+  const addSectionTitle = (title: string) => {
+      finalY = checkPageBreak(finalY);
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(12);
+      doc.text(title, leftMargin, finalY);
+      finalY += 15;
+  };
 
-  const patientBody = [
-      ["Nombre:", data.patientName || 'N/A'],
-      ["Documento:", `${data.documentType || 'N/A'} - ${data.documentNumber || 'N/A'}`],
-      ["Etnia:", data.ethnicity || 'N/A'],
-      ["Teléfono:", data.phoneNumber || 'N/A'],
-      ["Dirección:", `${data.address || 'N/A'}, ${data.municipality || 'N/A'}, ${data.department || 'N/A'}`],
-  ];
-   if (data.sex) patientBody.push(["Sexo:", data.sex]);
-   if (data.birthDate) patientBody.push(["Fecha de Nacimiento:", format(new Date(data.birthDate), 'yyyy-MM-dd')]);
-   if (data.age !== undefined) patientBody.push(["Edad:", String(data.age)]);
-
+  // --- Patient Info Section ---
+  addSectionTitle("Información del Paciente");
   autoTable(doc, {
     startY: finalY,
-    body: patientBody,
+    body: [
+        [{ content: 'Nombre:', styles: { fontStyle: "bold" } }, data.patientName || 'N/A'],
+        [{ content: 'Documento:', styles: { fontStyle: "bold" } }, `${data.documentType || 'N/A'} - ${data.documentNumber || 'N/A'}`],
+        [{ content: 'Etnia:', styles: { fontStyle: "bold" } }, data.ethnicity || 'N/A'],
+        [{ content: 'Teléfono:', styles: { fontStyle: "bold" } }, data.phoneNumber || 'N/A'],
+        [{ content: 'Dirección:', styles: { fontStyle: "bold" } }, `${data.address || 'N/A'}, ${data.municipality || 'N/A'}, ${data.department || 'N/A'}`],
+        ...(data.sex ? [[{ content: 'Sexo:', styles: { fontStyle: "bold" } }, data.sex]] : []),
+        ...(data.birthDate ? [[{ content: 'Fecha de Nacimiento:', styles: { fontStyle: "bold" } }, format(new Date(data.birthDate), 'yyyy-MM-dd')]] : []),
+        ...(data.age !== undefined ? [[{ content: 'Edad:', styles: { fontStyle: "bold" } }, String(data.age)]] : []),
+    ],
     theme: "striped",
-    styles: { font: FONT, fontSize: 10 },
-    columnStyles: { 0: { fontStyle: "bold" } },
+    styles: { font: FONT, fontSize: 10, cellPadding: 5 },
+    didDrawPage: (hookData) => addHeader(), // Add header to new pages created by this table
   });
-  finalY = (doc as any).lastAutoTable.finalY;
-  
-  finalY = checkPageBreak(finalY + 10);
+  finalY = (doc as any).lastAutoTable.finalY + 10;
 
-  // --- Event Info ---
-  doc.setFont(FONT, "bold");
-  doc.setFontSize(12);
-  doc.text("Información del Evento", leftMargin, finalY);
-  finalY += 15;
-
-  const eventBody = [
-      ["Tipo de Visita:", data.visitType || 'N/A'],
-      ["Fecha de Seguimiento:", data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : 'N/A'],
-      ["Evento:", data.event || 'N/A'],
-  ];
-  if (data.eventDetails) eventBody.push(["Detalles del Evento:", data.eventDetails]);
-  if (data.affiliationStatus) eventBody.push(["Estado Afiliación:", data.affiliationStatus]);
-  if (data.area) eventBody.push(["Área:", data.area]);
-  if (data.settlement) eventBody.push(["Asentamiento:", data.settlement]);
-  if (data.nationality) eventBody.push(["Nacionalidad:", data.nationality]);
-  if (data.primaryHealthProvider) eventBody.push(["IPS Primaria:", data.primaryHealthProvider]);
-  if (data.regime) eventBody.push(["Régimen:", data.regime]);
-  if (data.upgdProvider) eventBody.push(["UPGD/Prestador:", data.upgdProvider]);
-  if (data.followUpInterventionType) eventBody.push(["Tipo Intervención:", data.followUpInterventionType]);
-
+  // --- Event Info Section ---
+  addSectionTitle("Información del Evento");
   autoTable(doc, {
     startY: finalY,
-    body: eventBody,
+    body: [
+        [{ content: 'Tipo de Visita:', styles: { fontStyle: "bold" } }, data.visitType || 'N/A'],
+        [{ content: 'Fecha de Seguimiento:', styles: { fontStyle: "bold" } }, data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : 'N/A'],
+        [{ content: 'Evento:', styles: { fontStyle: "bold" } }, data.event || 'N/A'],
+        ...(data.eventDetails ? [[{ content: 'Detalles del Evento:', styles: { fontStyle: "bold" } }, data.eventDetails]] : []),
+        ...(data.affiliationStatus ? [[{ content: 'Estado Afiliación:', styles: { fontStyle: "bold" } }, data.affiliationStatus]] : []),
+        ...(data.area ? [[{ content: 'Área:', styles: { fontStyle: "bold" } }, data.area]] : []),
+        ...(data.settlement ? [[{ content: 'Asentamiento:', styles: { fontStyle: "bold" } }, data.settlement]] : []),
+        ...(data.nationality ? [[{ content: 'Nacionalidad:', styles: { fontStyle: "bold" } }, data.nationality]] : []),
+        ...(data.primaryHealthProvider ? [[{ content: 'IPS Primaria:', styles: { fontStyle: "bold" } }, data.primaryHealthProvider]] : []),
+        ...(data.regime ? [[{ content: 'Régimen:', styles: { fontStyle: "bold" } }, data.regime]] : []),
+        ...(data.upgdProvider ? [[{ content: 'UPGD/Prestador:', styles: { fontStyle: "bold" } }, data.upgdProvider]] : []),
+        ...(data.followUpInterventionType ? [[{ content: 'Tipo Intervención:', styles: { fontStyle: "bold" } }, data.followUpInterventionType]] : []),
+    ],
     theme: "striped",
-    styles: { font: FONT, fontSize: 10 },
-    columnStyles: { 0: { fontStyle: "bold" } },
+    styles: { font: FONT, fontSize: 10, cellPadding: 5 },
+    didDrawPage: (hookData) => addHeader(),
   });
   finalY = (doc as any).lastAutoTable.finalY;
 
   // --- Text Sections ---
   const addTextSection = (title: string, text: string | null | undefined) => {
     finalY = checkPageBreak(finalY + 20);
-    doc.setFont(FONT, "bold");
-    doc.setFontSize(12);
-    doc.text(title, leftMargin, finalY);
-    finalY += 15;
+    addSectionTitle(title);
     
     doc.setFont(FONT, "normal");
     doc.setFontSize(10);
@@ -187,6 +175,7 @@ export async function generateAuditPdf(audit: Audit): Promise<void> {
     doc.save(fileName);
   } catch (error) {
     console.error("Failed to generate PDF:", error);
+    // Use alert for user feedback in case of an unexpected error during build/save
     alert("No se pudo generar el PDF. Revise la consola para más detalles.");
   }
 }
