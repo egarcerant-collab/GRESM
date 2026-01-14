@@ -61,6 +61,7 @@ const ethnicityOptions = [
   "INGA",
   "SIN ETNIA",
   "INDIGENA",
+  "Otro"
 ];
 
 const municipalitiesByDepartment: Record<string, string[]> = {
@@ -231,7 +232,7 @@ export function AuditForm() {
               <FormItem>
                 <FormLabel>Número de Documento</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., 1006895977" {...field} />
+                  <Input type="number" placeholder="e.g., 1006895977" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -380,7 +381,7 @@ export function AuditForm() {
             />
           )}
           
-          {availableMunicipalities.length > 0 ? (
+          {availableMunicipalities.length > 0 && !isOtherDepartment ? (
             <FormItem>
               <FormLabel>Municipio</FormLabel>
               <Select onValueChange={setMunicipalitySelection} value={municipalitySelection}>
@@ -436,7 +437,6 @@ export function AuditForm() {
               </FormControl>
               <SelectContent>
                 {ethnicityOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                <SelectItem value="Otro">Otro</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />
@@ -476,7 +476,7 @@ export function AuditForm() {
               <FormItem>
                 <FormLabel>Número Telefónico</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., 3215402336" {...field} />
+                  <Input type="number" placeholder="e.g., 3215402336" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
