@@ -47,9 +47,10 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
   const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  const id = params.id;
 
   React.useEffect(() => {
-    getAuditByIdAction(params.id).then(({ audit: data }) => {
+    getAuditByIdAction(id).then(({ audit: data }) => {
       if (data) {
         setAudit(data);
       } else {
@@ -57,7 +58,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
       }
       setIsLoading(false);
     });
-  }, [params.id]);
+  }, [id]);
 
 
   const handleDelete = async () => {
