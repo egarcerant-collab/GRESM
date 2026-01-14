@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import React from 'react';
 
 export default function AppLayout({
   children,
@@ -28,13 +29,15 @@ export default function AppLayout({
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
-  if (loading) {
-    return <div>Loading...</div>; // O un componente de carga más elegante
-  }
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
 
-  if (!user) {
-    router.push('/login');
-    return null;
+
+  if (loading || !user) {
+    return <div>Loading...</div>; // O un componente de carga más elegante
   }
 
   return (
