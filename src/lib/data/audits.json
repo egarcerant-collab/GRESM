@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "auditorName": "ALICE",
+    "patientName": "CRISTHIAN BELLO DIAZ",
+    "documentType": "CC: Cédula de Ciudadanía",
+    "documentNumber": "1007398620",
+    "event": "Intento de Suicidio",
+    "eventDetails": "SPA",
+    "followUpDate": "2026-01-13T05:00:00.000Z",
+    "visitType": "PRIMERA VEZ",
+    "department": "LA GUAJIRA",
+    "municipality": "MAICAO",
+    "ethnicity": "YUKPA",
+    "address": "VGNJLODNLFNBO",
+    "phoneNumber": "3014343544",
+    "followUpNotes": "\"El 13 de abril de 2024, Duskawi EPS realizó seguimiento a un caso por parte de un psicólogo del programa MHGAP, asegurando la prestación de servicios en salud mental conforme a los protocolos y lineamientos establecidos para la atención de personas con uso indebido de sustancias psicoactivas. Se notificó al prestador de primer nivel y se reportó el caso a Clínica Vital Salud Guajira para programar una cita con especialista psiquiatra y enviar un informe en dos meses. Se estableció un plan de tratamiento integral que incluye opciones farmacológicas y psicoterapéuticas. Se realizará un seguimiento por parte de la EPS en un mes para evaluar la adherencia al tratamiento, el progreso del paciente y la oportunidad de citas.\n\"\n",
+    "nextSteps": "1. cita de control por psiquiatria, 2. continuar psicoterapia individual por psicologia, 3: seguimiento por la eps en 2 meses.\n",
+    "id": "1",
+    "createdAt": "2026-01-14T16:32:11.919Z"
+  }
+]

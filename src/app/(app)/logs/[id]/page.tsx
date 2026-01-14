@@ -1,7 +1,6 @@
 
 'use client';
 
-import { getAuditById } from '@/lib/db';
 import { notFound, useRouter } from 'next/navigation';
 import {
   Card,
@@ -29,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteAuditAction } from '@/app/actions';
+import { deleteAuditAction, getAuditByIdAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 
@@ -45,16 +44,18 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
 
 export default function LogDetailPage({ params }: { params: { id: string } }) {
   const [audit, setAudit] = React.useState<Audit | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
   React.useEffect(() => {
-    getAuditById(params.id).then(data => {
+    getAuditByIdAction(params.id).then(({ audit: data }) => {
       if (data) {
         setAudit(data);
       } else {
         notFound();
       }
+      setIsLoading(false);
     });
   }, [params.id]);
 
@@ -78,9 +79,18 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
     }
   };
 
-  if (!audit) {
+  if (isLoading) {
     return <div>Cargando...</div>;
   }
+
+  if (!audit) {
+    return notFound();
+  }
+  
+  // Dates are strings after serialization, convert them back
+  const followUpDate = new Date(audit.followUpDate);
+  const createdAt = new Date(audit.createdAt);
+
 
   return (
     <div className="space-y-6">
@@ -123,7 +133,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
         <CardHeader>
           <CardTitle className="font-headline text-xl">Auditoría ID: {audit.id}</CardTitle>
           <CardDescription>
-            Registrado el {format(new Date(audit.createdAt), 'PPPp')}
+            Registrado el {format(createdAt, 'PPPp')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -134,7 +144,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
                 <DetailItem label="Paciente" value={audit.patientName} />
                 <DetailItem label="Tipo de Documento" value={audit.documentType} />
                 <DetailItem label="Número de Documento" value={audit.documentNumber} />
-                 <DetailItem label="Fecha de Seguimiento" value={format(new Date(audit.followUpDate), 'PPP')} />
+                 <DetailItem label="Fecha de Seguimiento" value={format(followUpDate, 'PPP')} />
                 <DetailItem label="Tipo de Visita" value={<Badge variant={audit.visitType === 'PRIMERA VEZ' ? 'secondary' : 'outline'} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
               </div>
                <div className="divide-y divide-border">

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit } from '@/lib/db';
+import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById } from '@/lib/db';
 import { auditSchema } from '@/lib/schema';
 import type { Audit } from '@/lib/types';
 import { summarizeAuditLogs } from '@/ai/flows/summarize-audit-logs';
@@ -66,4 +66,19 @@ export async function getAiSummary(audit: Audit) {
       console.error("AI generation failed:", error);
       return { error: "Failed to generate AI analysis." };
     }
+}
+
+export async function getAuditByIdAction(id: string): Promise<{ audit: Audit | null, error?: string }> {
+  try {
+    const audit = await dbGetAuditById(id);
+    if (!audit) {
+      return { audit: null, error: 'Audit not found' };
+    }
+    // The date objects are not serializable from server actions to client components directly.
+    // We need to convert them to string or number.
+    return { audit: JSON.parse(JSON.stringify(audit)) };
+  } catch (error) {
+    console.error('Failed to get audit:', error);
+    return { audit: null, error: 'Failed to retrieve audit from the database.' };
+  }
 }
