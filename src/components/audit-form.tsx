@@ -132,7 +132,7 @@ export function AuditForm() {
       settlement: '',
       nationality: '',
       primaryHealthProvider: '',
-      regime: '',
+      regime: undefined,
       upgdProvider: '',
       followUpInterventionType: '',
     },
@@ -579,7 +579,7 @@ export function AuditForm() {
                 <FormField control={form.control} name="age" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Edad</FormLabel>
-                      <FormControl><Input type="number" placeholder="e.g., 25" {...field} /></FormControl>
+                      <FormControl><Input type="number" placeholder="e.g., 25" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -603,7 +603,7 @@ export function AuditForm() {
                 <FormField control={form.control} name="affiliationStatus" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Estado de Afiliación</FormLabel>
-                      <FormControl><Input placeholder="e.g., Activo" {...field} /></FormControl>
+                      <FormControl><Input placeholder="e.g., Activo" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -627,7 +627,7 @@ export function AuditForm() {
                  <FormField control={form.control} name="settlement" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Asentamiento</FormLabel>
-                      <FormControl><Input placeholder="e.g., Urbano" {...field} /></FormControl>
+                      <FormControl><Input placeholder="e.g., Urbano" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -635,7 +635,7 @@ export function AuditForm() {
                 <FormField control={form.control} name="nationality" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nacionalidad</FormLabel>
-                      <FormControl><Input placeholder="e.g., Colombiana" {...field} /></FormControl>
+                      <FormControl><Input placeholder="e.g., Colombiana" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -643,7 +643,7 @@ export function AuditForm() {
                  <FormField control={form.control} name="primaryHealthProvider" render={({ field }) => (
                     <FormItem>
                       <FormLabel>IPS Atención Primaria</FormLabel>
-                      <FormControl><Input placeholder="e.g., IPS Principal" {...field} /></FormControl>
+                      <FormControl><Input placeholder="e.g., IPS Principal" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -651,7 +651,15 @@ export function AuditForm() {
                 <FormField control={form.control} name="regime" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Régimen</FormLabel>
-                      <FormControl><Input placeholder="e.g., Subsidiado" {...field} /></FormControl>
+                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Seleccione el régimen" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Subsidiado">Subsidiado</SelectItem>
+                          <SelectItem value="Contributivo">Contributivo</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -659,7 +667,7 @@ export function AuditForm() {
                 <FormField control={form.control} name="upgdProvider" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nombre UPGD o Prestador</FormLabel>
-                      <FormControl><Input placeholder="e.g., Hospital Local" {...field} /></FormControl>
+                      <FormControl><Input placeholder="e.g., Hospital Local" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -667,7 +675,7 @@ export function AuditForm() {
                 <FormField control={form.control} name="followUpInterventionType" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Intervención</FormLabel>
-                      <FormControl><Input placeholder="e.g., Psicología" {...field} /></FormControl>
+                      <FormControl><Input placeholder="e.g., Psicología" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

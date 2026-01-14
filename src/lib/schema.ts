@@ -26,7 +26,7 @@ export const auditSchema = z.object({
   settlement: z.string().optional(),
   nationality: z.string().optional(),
   primaryHealthProvider: z.string().optional(),
-  regime: z.string().optional(),
+  regime: z.enum(['Subsidiado', 'Contributivo']).optional(),
   upgdProvider: z.string().optional(),
   followUpInterventionType: z.string().optional(),
 

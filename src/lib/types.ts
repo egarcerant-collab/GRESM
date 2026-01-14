@@ -25,7 +25,7 @@ export type Audit = {
   settlement?: string;
   nationality?: string;
   primaryHealthProvider?: string;
-  regime?: string;
+  regime?: 'Subsidiado' | 'Contributivo';
   upgdProvider?: string;
   followUpInterventionType?: string;
 };
