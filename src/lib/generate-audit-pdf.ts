@@ -14,7 +14,8 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 70;
-  
+  const topMargin = 85; // Aproximadamente 3cm
+
   const addBackground = () => {
     if (backgroundImage) {
       try {
@@ -35,8 +36,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   // Add background to the first page
   addBackground();
 
-  // Adjusted top margin by approximately 3cm (85 points)
-  let finalY = leftMargin + 85;
+  let finalY = topMargin;
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(14); // Slightly smaller font for the longer title
@@ -66,7 +66,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
       if (finalY > pageH - 80) { // Keep a bottom margin
         doc.addPage();
         addBackground();
-        finalY = leftMargin;
+        finalY = topMargin;
       }
       doc.setFont(FONT, "bold");
       doc.setFontSize(12);
@@ -136,7 +136,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
     if (finalY > pageH - 100) {
       doc.addPage();
       addBackground();
-      finalY = leftMargin;
+      finalY = topMargin;
     }
     doc.setFont(FONT, "bold");
     doc.setFontSize(12);
@@ -153,7 +153,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
       if (finalY > pageH - 100) {
         doc.addPage();
         addBackground();
-        finalY = leftMargin;
+        finalY = topMargin;
       }
       doc.text(line, leftMargin, finalY, { align: 'justify' });
       finalY += 12;
