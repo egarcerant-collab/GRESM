@@ -32,12 +32,13 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   // Add background to the first page
   addBackground();
 
-  let finalY = leftMargin;
+  // Adjusted top margin by approximately 3cm (85 points)
+  let finalY = leftMargin + 85;
 
   doc.setFont(FONT, "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(14); // Slightly smaller font for the longer title
   doc.setTextColor(0);
-  doc.text("Informe de Auditoría", pageW / 2, finalY, { align: "center" });
+  doc.text("ESTRATEGIA GRESM-Gestión Del Riesgo En Salud Mental", pageW / 2, finalY, { align: "center" });
   finalY += 30;
 
   autoTable(doc, {
