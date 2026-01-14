@@ -30,7 +30,6 @@ import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
-import { jsPDF } from 'jspdf';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -113,7 +112,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
     }
   };
 
-  const followUpDate = new Date(audit.followUpDate);
+  const createdAt = new Date(audit.createdAt);
   const birthDate = audit.birthDate ? new Date(audit.birthDate) : null;
   
   const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
@@ -190,7 +189,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
                 <DetailItem label="Paciente" value={audit.patientName} />
                 <DetailItem label="Tipo de Documento" value={audit.documentType} />
                 <DetailItem label="Número de Documento" value={audit.documentNumber} />
-                 <DetailItem label="Fecha de Seguimiento" value={format(followUpDate, 'PPP')} />
+                 <DetailItem label="Fecha de Creación" value={format(createdAt, 'PPP')} />
                 <DetailItem label="Tipo de Visita" value={<Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
               </div>
                <div className="divide-y divide-border">
@@ -233,7 +232,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
               <DetailItem label="Notas de Seguimiento" value={<p className="whitespace-pre-wrap">{audit.followUpNotes}</p>} />
             </div>
             <div className="pt-4">
-              <DetailItem label="Pasos a Seguir" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
+              <DetailItem label="Conducta a Seguir" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
             </div>
           </dl>
         </CardContent>

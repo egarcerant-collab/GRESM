@@ -44,7 +44,7 @@ const months = [
   { value: '8', label: 'Septiembre' },
   { value: '9', label: 'Octubre' },
   { value: '10', label: 'Noviembre' },
-  { value: '11', label: 'Diciembre' },
+  { value: '11', 'label': 'Diciembre' },
 ];
 
 export default function LogsPage() {
@@ -70,7 +70,7 @@ export default function LogsPage() {
 
   const filteredAudits = useMemo(() => {
     return audits.filter((audit) => {
-      const auditDate = new Date(audit.followUpDate);
+      const auditDate = new Date(audit.createdAt);
       const yearMatch = auditDate.getFullYear().toString() === selectedYear;
       const monthMatch =
         selectedMonth === 'all' ||
@@ -170,7 +170,7 @@ export default function LogsPage() {
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
-            <p className="text-sm font-medium">Filtrar por fecha de seguimiento:</p>
+            <p className="text-sm font-medium">Filtrar por fecha de creación:</p>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
                 <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Año" />
