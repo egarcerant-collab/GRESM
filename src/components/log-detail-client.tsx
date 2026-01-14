@@ -55,9 +55,13 @@ function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
 export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: Audit, formattedCreatedAt: string }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
-
+  const [isMounted, setIsMounted] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleDelete = async () => {
     if (audit) {
@@ -107,6 +111,10 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
   const birthDate = audit.birthDate ? new Date(audit.birthDate) : null;
   
   const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
