@@ -2,13 +2,15 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from 'date-fns';
 import type { Audit } from "./types";
-import fs from 'fs';
-import path from 'path';
 
 const FONT = "helvetica";
 
 async function buildPdf(data: Audit, backgroundImage: string | null): Promise<jsPDF> {
-  const doc = new jsPDF("p", "a4", true);
+  const doc = new jsPDF({
+    orientation: "p",
+    unit: "pt",
+    format: "a4"
+  });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 70;
