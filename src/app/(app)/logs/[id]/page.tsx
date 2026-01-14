@@ -79,9 +79,9 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const { id } = params;
-    if (id) {
-        getAuditByIdAction(id).then(({ audit: data }) => {
+    const auditId = params.id;
+    if (auditId) {
+        getAuditByIdAction(auditId).then(({ audit: data }) => {
           if (data) {
             setAudit(data);
           } else {
@@ -90,7 +90,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
           setIsLoading(false);
         });
     }
-  }, [params]);
+  }, [params.id]);
 
 
   const handleDelete = async () => {
