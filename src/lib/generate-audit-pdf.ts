@@ -7,10 +7,10 @@ const FONT = "helvetica"; // Using a standard font
 
 async function fetchImageAsDataUrl(url: string): Promise<string | null> {
   try {
-    // In the browser, the path /IMAGENEN_UNIFICADA.jpg correctly points to the public folder.
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+      console.error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
+      return null;
     }
     const blob = await response.blob();
     return new Promise((resolve, reject) => {
@@ -24,49 +24,52 @@ async function fetchImageAsDataUrl(url: string): Promise<string | null> {
     });
   } catch (error) {
     console.error(`Failed to fetch and process image from ${url}:`, error);
-    // Return null if fetching fails, so PDF generation can continue without a background.
     return null;
   }
 }
 
-
 async function buildPdf(data: Audit): Promise<jsPDF> {
   const doc = new jsPDF("p", "pt", "letter");
   const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  
-  const topMargin = 80;
-  const bottomMargin = 60;
   const leftMargin = 40;
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
+  
+  const headerImage = await fetchImageAsDataUrl('/IMAGENEN_UNIFICADA.jpg');
+  const headerImgHeight = 60;
 
-  const bgImage = await fetchImageAsDataUrl('/IMAGENEN_UNIFICADA.jpg');
+  const addHeader = () => {
+    if (headerImage) {
+      doc.addImage(headerImage, 'JPEG', 0, 0, pageW, headerImgHeight);
+    }
+  };
 
-  const addPageWithBg = () => {
-      doc.addPage();
-      if (bgImage) {
-        doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
-      }
-  }
+  const addFooter = (pageNumber: number, pageCount: number) => {
+    doc.setFontSize(8);
+    doc.text(`Página ${pageNumber} de ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 30, { align: 'center' });
+  };
+  
+  let finalY = headerImgHeight + 20;
 
-  // Add background to the first page
-  if (bgImage) {
-    doc.addImage(bgImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
-  }
+  addHeader();
 
-
-  let finalY = topMargin;
-
-  // Header
+  // Main Title
   doc.setFont(FONT, "bold");
   doc.setFontSize(16);
   doc.text("Informe de Auditoría", pageW / 2, finalY, { align: "center" });
   finalY += 30;
 
-  // Audit Details Table
-  doc.setFont(FONT, "normal");
-  doc.setFontSize(10);
+  // Function to check for page overflow and add a new page if needed
+  const checkPageBreak = (yPosition: number) => {
+    if (yPosition > doc.internal.pageSize.getHeight() - 60) { // 60 for bottom margin
+      doc.addPage();
+      addHeader();
+      return headerImgHeight + 20; // Reset Y position for new page
+    }
+    return yPosition;
+  };
+
+  // --- Audit Details ---
   const auditDetails = [
     ["ID de Auditoría:", data.id || 'N/A'],
     ["Fecha de Creación:", data.createdAt ? format(new Date(data.createdAt), 'yyyy-MM-dd HH:mm') : 'N/A'],
@@ -77,104 +80,76 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     startY: finalY,
     body: auditDetails,
     theme: "plain",
-    styles: { font: FONT, fontSize: 10, fillColor: false }, // transparent fill
+    styles: { font: FONT, fontSize: 10 },
     columnStyles: {
       0: { fontStyle: 'bold', cellWidth: 120 },
     }
   });
-
-  finalY = (doc as any).lastAutoTable.finalY + 20;
-
-  // Patient Info
+  finalY = (doc as any).lastAutoTable.finalY;
+  
+  finalY = checkPageBreak(finalY + 10);
+  
+  // --- Patient Info ---
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
   doc.text("Información del Paciente", leftMargin, finalY);
   finalY += 15;
 
-  const patientBody: (string | { content: string; styles: { fontStyle: string; }})[][] = [
-      [{ content: "Nombre:", styles: { fontStyle: "bold" } }, data.patientName || ''],
-      [{ content: "Documento:", styles: { fontStyle: "bold" } }, `${data.documentType || ''} - ${data.documentNumber || ''}`],
-      [{ content: "Etnia:", styles: { fontStyle: "bold" } }, data.ethnicity || ''],
-      [{ content: "Teléfono:", styles: { fontStyle: "bold" } }, data.phoneNumber || ''],
-      [{ content: "Dirección:", styles: { fontStyle: "bold" } }, `${data.address || ''}, ${data.municipality || ''}, ${data.department || ''}`],
+  const patientBody = [
+      ["Nombre:", data.patientName || 'N/A'],
+      ["Documento:", `${data.documentType || 'N/A'} - ${data.documentNumber || 'N/A'}`],
+      ["Etnia:", data.ethnicity || 'N/A'],
+      ["Teléfono:", data.phoneNumber || 'N/A'],
+      ["Dirección:", `${data.address || 'N/A'}, ${data.municipality || 'N/A'}, ${data.department || 'N/A'}`],
   ];
-
-  if (data.sex) {
-      patientBody.push([{ content: "Sexo:", styles: { fontStyle: "bold" } }, data.sex]);
-  }
-  if (data.birthDate) {
-    patientBody.push([{ content: "Fecha de Nacimiento:", styles: { fontStyle: "bold" } }, format(new Date(data.birthDate), 'yyyy-MM-dd')]);
-  }
-  if (data.age !== null && data.age !== undefined) {
-    patientBody.push([{ content: "Edad:", styles: { fontStyle: "bold" } }, String(data.age)]);
-  }
+   if (data.sex) patientBody.push(["Sexo:", data.sex]);
+   if (data.birthDate) patientBody.push(["Fecha de Nacimiento:", format(new Date(data.birthDate), 'yyyy-MM-dd')]);
+   if (data.age !== undefined) patientBody.push(["Edad:", String(data.age)]);
 
   autoTable(doc, {
     startY: finalY,
-    head: [],
-    body: patientBody.map(row => row.map(cell => (cell === null || cell === undefined) ? '' : cell)),
+    body: patientBody,
     theme: "striped",
     styles: { font: FONT, fontSize: 10 },
+    columnStyles: { 0: { fontStyle: "bold" } },
   });
   finalY = (doc as any).lastAutoTable.finalY;
+  
+  finalY = checkPageBreak(finalY + 10);
 
-  // Event Info
-  finalY += 20;
+  // --- Event Info ---
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
   doc.text("Información del Evento", leftMargin, finalY);
   finalY += 15;
 
-  const eventBody: (string | { content: string; styles: { fontStyle: string; }})[][] = [
-        [{ content: "Tipo de Visita:", styles: { fontStyle: "bold" } }, data.visitType || ''],
-        [{ content: "Fecha de Seguimiento:", styles: { fontStyle: "bold" } }, data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : ''],
-        [{ content: "Evento:", styles: { fontStyle: "bold" } }, data.event || ''],
+  const eventBody = [
+      ["Tipo de Visita:", data.visitType || 'N/A'],
+      ["Fecha de Seguimiento:", data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : 'N/A'],
+      ["Evento:", data.event || 'N/A'],
   ];
-
-  if (data.eventDetails) {
-    eventBody.push([{ content: "Detalles del Evento:", styles: { fontStyle: "bold" } }, data.eventDetails]);
-  }
-  if (data.affiliationStatus) {
-    eventBody.push([{ content: "Estado Afiliación:", styles: { fontStyle: "bold" } }, data.affiliationStatus]);
-  }
-  if (data.area) {
-    eventBody.push([{ content: "Área:", styles: { fontStyle: "bold" } }, data.area]);
-  }
-  if (data.settlement) {
-    eventBody.push([{ content: "Asentamiento:", styles: { fontStyle: "bold" } }, data.settlement]);
-  }
-  if (data.nationality) {
-    eventBody.push([{ content: "Nacionalidad:", styles: { fontStyle: "bold" } }, data.nationality]);
-  }
-  if (data.primaryHealthProvider) {
-    eventBody.push([{ content: "IPS Primaria:", styles: { fontStyle: "bold" } }, data.primaryHealthProvider]);
-  }
-  if (data.regime) {
-    eventBody.push([{ content: "Régimen:", styles: { fontStyle: "bold" } }, data.regime]);
-  }
-  if (data.upgdProvider) {
-    eventBody.push([{ content: "UPGD/Prestador:", styles: { fontStyle: "bold" } }, data.upgdProvider]);
-  }
-  if (data.followUpInterventionType) {
-    eventBody.push([{ content: "Tipo Intervención:", styles: { fontStyle: "bold" } }, data.followUpInterventionType]);
-  }
+  if (data.eventDetails) eventBody.push(["Detalles del Evento:", data.eventDetails]);
+  if (data.affiliationStatus) eventBody.push(["Estado Afiliación:", data.affiliationStatus]);
+  if (data.area) eventBody.push(["Área:", data.area]);
+  if (data.settlement) eventBody.push(["Asentamiento:", data.settlement]);
+  if (data.nationality) eventBody.push(["Nacionalidad:", data.nationality]);
+  if (data.primaryHealthProvider) eventBody.push(["IPS Primaria:", data.primaryHealthProvider]);
+  if (data.regime) eventBody.push(["Régimen:", data.regime]);
+  if (data.upgdProvider) eventBody.push(["UPGD/Prestador:", data.upgdProvider]);
+  if (data.followUpInterventionType) eventBody.push(["Tipo Intervención:", data.followUpInterventionType]);
 
   autoTable(doc, {
     startY: finalY,
-    head: [],
-    body: eventBody.map(row => row.map(cell => (cell === null || cell === undefined) ? '' : cell)),
+    body: eventBody,
     theme: "striped",
     styles: { font: FONT, fontSize: 10 },
+    columnStyles: { 0: { fontStyle: "bold" } },
   });
   finalY = (doc as any).lastAutoTable.finalY;
 
-  // Function to add text content with page breaks
+  // --- Text Sections ---
   const addTextSection = (title: string, text: string | null | undefined) => {
-    finalY += 20;
-    if (finalY > pageH - bottomMargin - 40) { // Check if space for title + some text
-        addPageWithBg();
-        finalY = topMargin;
-    }
+    finalY = checkPageBreak(finalY + 20);
     doc.setFont(FONT, "bold");
     doc.setFontSize(12);
     doc.text(title, leftMargin, finalY);
@@ -182,45 +157,36 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     
     doc.setFont(FONT, "normal");
     doc.setFontSize(10);
-    const safeText = text || 'N/A'; // Ensure text is not null/undefined
+    const safeText = text || 'N/A';
     const splitText = doc.splitTextToSize(safeText, contentWidth);
 
     splitText.forEach((line: string) => {
-        if (finalY > pageH - bottomMargin) {
-            addPageWithBg();
-            finalY = topMargin;
-        }
-        doc.text(line, leftMargin, finalY);
+        finalY = checkPageBreak(finalY);
+        doc.text(line, leftMargin, finalY, { align: 'justify' });
         finalY += 12; // Line height
     });
   }
 
-  // Follow-up Notes and Next Steps
   addTextSection("Notas de Seguimiento", data.followUpNotes);
   addTextSection("Conducta a Seguir", data.nextSteps);
 
-  // Footer with page number
+  // --- Finalize with page numbers ---
   const pageCount = (doc as any).internal.getNumberOfPages();
-  for(let i = 1; i <= pageCount; i++) {
+  for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.text(`Página ${i} de ${pageCount}`, pageW / 2, pageH - 30, { align: 'center' });
+    addFooter(i, pageCount);
   }
 
   return doc;
 }
 
-export async function generateAuditPdf(
-  audit: Audit,
-): Promise<void> {
+export async function generateAuditPdf(audit: Audit): Promise<void> {
   try {
     const doc = await buildPdf(audit);
     const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
     doc.save(fileName);
   } catch (error) {
     console.error("Failed to generate PDF:", error);
-    // Optional: Inform the user that PDF generation failed.
-    // This could be done via a toast notification or an alert.
     alert("No se pudo generar el PDF. Revise la consola para más detalles.");
   }
 }
