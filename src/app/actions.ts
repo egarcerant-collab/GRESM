@@ -6,6 +6,8 @@ import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditByI
 import { auditSchema } from '@/lib/schema';
 import type { Audit } from '@/lib/types';
 import { z } from 'zod';
+import fs from 'fs/promises';
+import path from 'path';
 
 export async function createAuditAction(values: z.infer<typeof auditSchema>) {
   const validatedFields = auditSchema.safeParse(values);
@@ -84,5 +86,25 @@ export async function checkExistingPatientAction(documentNumber: string): Promis
     console.error('Error checking for existing patient:', error);
     // In case of a DB error, we don't block the user, the final validation on submit will catch it.
     return { exists: false };
+  }
+}
+
+export async function getImageAsBase64Action(imagePath: string): Promise<string | null> {
+  try {
+    // Construct path relative to the project root
+    const fullPath = path.join(process.cwd(), 'public', imagePath);
+    
+    // Check if file exists
+    await fs.access(fullPath);
+    
+    const file = await fs.readFile(fullPath);
+    const base64 = file.toString('base64');
+    const extension = path.extname(imagePath).substring(1).toLowerCase();
+    const mimeType = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+
+    return `data:${mimeType};base64,${base64}`;
+  } catch (error) {
+    console.error(`Error reading image from ${imagePath}:`, error);
+    return null; // Return null on error
   }
 }

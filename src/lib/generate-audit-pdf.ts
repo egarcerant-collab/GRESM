@@ -2,47 +2,26 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from 'date-fns';
 import type { Audit } from "./types";
-import fs from 'fs';
-import path from 'path';
 
-const FONT = "helvetica"; // Using a standard font
+const FONT = "helvetica";
 
-function getImageAsDataUrl(imagePath: string): string | null {
-  try {
-    const fullPath = path.join(process.cwd(), 'public', imagePath);
-    if (!fs.existsSync(fullPath)) {
-      console.error(`Image not found at path: ${fullPath}`);
-      return null;
-    }
-    const file = fs.readFileSync(fullPath);
-    const base64 = file.toString('base64');
-    const extension = path.extname(imagePath).substring(1).toLowerCase();
-    
-    // Support for common image types
-    const mimeType = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
-
-    return `data:${mimeType};base64,${base64}`;
-  } catch (error) {
-    console.error(`Error reading image from ${imagePath}:`, error);
-    return null; 
-  }
-}
-
-
-async function buildPdf(data: Audit): Promise<jsPDF> {
+async function buildPdf(data: Audit, headerImage: string | null): Promise<jsPDF> {
   const doc = new jsPDF("p", "pt", "letter");
   const pageW = doc.internal.pageSize.getWidth();
   const leftMargin = 40;
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
   
-  // Correctly encoded path for the image, read directly from filesystem.
-  const headerImage = getImageAsDataUrl('/imagen/IMAGENEN UNIFICADA.jpg');
   const headerImgHeight = 60;
 
   const addHeader = () => {
     if (headerImage) {
-      doc.addImage(headerImage, 'JPEG', 0, 0, pageW, headerImgHeight);
+      try {
+        const extension = headerImage.split(';')[0].split('/')[1].toUpperCase();
+        doc.addImage(headerImage, extension, 0, 0, pageW, headerImgHeight);
+      } catch (e) {
+        console.error("Error adding header image to PDF:", e);
+      }
     }
   };
 
@@ -55,23 +34,20 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   
   addHeader();
 
-  // Main Title
   doc.setFont(FONT, "bold");
   doc.setFontSize(16);
   doc.text("Informe de Auditoría", pageW / 2, finalY, { align: "center" });
   finalY += 30;
 
-  // Function to check for page overflow and add a new page if needed
   const checkPageBreak = (yPosition: number) => {
-    if (yPosition > doc.internal.pageSize.getHeight() - 60) { // 60 for bottom margin
+    if (yPosition > doc.internal.pageSize.getHeight() - 60) {
       doc.addPage();
       addHeader();
-      return headerImage ? headerImgHeight + 20 : leftMargin; // Reset Y position
+      return headerImage ? headerImgHeight + 20 : leftMargin;
     }
     return yPosition;
   };
 
-  // --- Audit Details Table ---
   autoTable(doc, {
     startY: finalY,
     body: [
@@ -85,7 +61,6 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   });
   finalY = (doc as any).lastAutoTable.finalY + 10;
   
-  // --- Section Title Function ---
   const addSectionTitle = (title: string) => {
       finalY = checkPageBreak(finalY);
       doc.setFont(FONT, "bold");
@@ -94,7 +69,6 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
       finalY += 15;
   };
 
-  // --- Patient Info Section ---
   addSectionTitle("Información del Paciente");
   autoTable(doc, {
     startY: finalY,
@@ -114,7 +88,6 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   });
   finalY = (doc as any).lastAutoTable.finalY + 10;
 
-  // --- Event Info Section ---
   addSectionTitle("Información del Evento");
   autoTable(doc, {
     startY: finalY,
@@ -138,7 +111,6 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   });
   finalY = (doc as any).lastAutoTable.finalY;
 
-  // --- Text Sections ---
   const addTextSection = (title: string, text: string | null | undefined) => {
     finalY = checkPageBreak(finalY + 20);
     addSectionTitle(title);
@@ -151,14 +123,13 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     splitText.forEach((line: string) => {
         finalY = checkPageBreak(finalY);
         doc.text(line, leftMargin, finalY, { align: 'justify' });
-        finalY += 12; // Line height
+        finalY += 12;
     });
   }
 
   addTextSection("Notas de Seguimiento", data.followUpNotes);
   addTextSection("Conducta a Seguir", data.nextSteps);
 
-  // --- Finalize with page numbers ---
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -168,14 +139,13 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   return doc;
 }
 
-export async function generateAuditPdf(audit: Audit): Promise<void> {
+export async function generateAuditPdf(audit: Audit, headerImage: string | null): Promise<void> {
   try {
-    const doc = await buildPdf(audit);
+    const doc = await buildPdf(audit, headerImage);
     const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
     doc.save(fileName);
   } catch (error) {
     console.error("Failed to generate PDF:", error);
-    // Use alert for user feedback in case of an unexpected error during build/save
     alert("No se pudo generar el PDF. Revise la consola para más detalles.");
   }
 }

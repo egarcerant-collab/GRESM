@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteAuditAction } from '@/app/actions';
+import { deleteAuditAction, getImageAsBase64Action } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
@@ -88,7 +88,12 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
     if (audit) {
       setIsDownloading(true);
       try {
-        await generateAuditPdf(audit);
+        // Use the Server Action to get the image
+        const headerImage = await getImageAsBase64Action('imagen/IMAGENEN UNIFICADA.jpg');
+        
+        // Pass the image data to the PDF generator
+        await generateAuditPdf(audit, headerImage);
+        
         toast({
           title: 'PDF Generado',
           description: 'El informe de auditoría se ha descargado.',
@@ -106,7 +111,6 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
     }
   };
 
-  // Dates are strings after serialization, convert them back
   const followUpDate = new Date(audit.followUpDate);
   const birthDate = audit.birthDate ? new Date(audit.birthDate) : null;
   
