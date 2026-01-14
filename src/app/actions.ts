@@ -90,9 +90,12 @@ export async function checkExistingPatientAction(documentNumber: string): Promis
 }
 
 export async function getImageAsBase64Action(imagePath: string): Promise<string | null> {
+  const publicDir = path.join(process.cwd(), 'public');
+  const fullPath = path.join(publicDir, imagePath);
+  
   try {
-    // Construct path relative to the project root
-    const fullPath = path.join(process.cwd(), 'public', imagePath);
+    // Ensure the directory exists. This will create `public/imagenes` if it doesn't.
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
     
     // Check if file exists. If not, access will throw and we'll go to the catch block.
     await fs.access(fullPath);
@@ -123,7 +126,7 @@ export async function getImageAsBase64Action(imagePath: string): Promise<string 
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
     // This will catch errors from fs.access (file not found) or fs.readFile
-    console.error(`Error reading image from ${imagePath}:`, error);
+    console.error(`Error reading image from ${fullPath}:`, error);
     return null; // Return null on any error (e.g., file not found)
   }
 }
