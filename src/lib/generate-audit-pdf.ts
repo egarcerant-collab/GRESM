@@ -8,7 +8,7 @@ import path from 'path';
 const FONT = "helvetica";
 
 async function buildPdf(data: Audit, backgroundImage: string | null): Promise<jsPDF> {
-  const doc = new jsPDF("p", "pt", "a4");
+  const doc = new jsPDF("p", "a4", true);
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 70;
@@ -16,7 +16,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   const addBackground = () => {
     if (backgroundImage) {
       try {
-        doc.addImage(backgroundImage, 'JPEG', 0, 0, pageW, pageH);
+        doc.addImage(backgroundImage, 'JPEG', 0, 0, pageW, pageH, undefined, 'FAST');
       } catch (e) {
         console.error("Error adding background image to PDF:", e);
       }
@@ -59,7 +59,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   finalY = (doc as any).lastAutoTable.finalY + 10;
   
   const addSectionTitle = (title: string) => {
-      finalY = (doc as any).lastAutoTable.finalY + 20;
+      finalY = (doc as any).lastAutoTable.finalY + 30; // Increased spacing
       if (finalY > pageH - 60) {
         doc.addPage();
         addBackground();
@@ -88,7 +88,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
 
   addSectionTitle("Información del Evento");
   autoTable(doc, {
-    startY: (doc as any).lastAutoTable.finalY + 15,
+    startY: finalY,
     body: [
         [{ content: 'Tipo de Visita:', styles: { fontStyle: "bold" } }, data.visitType || 'N/A'],
         [{ content: 'Fecha de Seguimiento:', styles: { fontStyle: "bold" } }, data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : 'N/A'],
