@@ -6,7 +6,7 @@ import type { Audit } from "./types";
 const FONT = "helvetica";
 
 async function buildPdf(data: Audit, backgroundImage: string | null): Promise<jsPDF> {
-  const doc = new jsPDF("p", "pt", "a4"); // Set page size to A4
+  const doc = new jsPDF("p", "pt", "a4");
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const leftMargin = 40;
@@ -56,7 +56,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
   finalY = (doc as any).lastAutoTable.finalY + 10;
   
   const addSectionTitle = (title: string) => {
-      finalY = (doc as any).lastAutoTable.finalY + 20; // Use last finalY to position correctly after tables
+      finalY = (doc as any).lastAutoTable.finalY + 20;
       if (finalY > pageH - 60) {
         doc.addPage();
         addBackground();
@@ -77,13 +77,10 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
         [{ content: 'Etnia:', styles: { fontStyle: "bold" } }, data.ethnicity || 'N/A'],
         [{ content: 'Teléfono:', styles: { fontStyle: "bold" } }, data.phoneNumber || 'N/A'],
         [{ content: 'Dirección:', styles: { fontStyle: "bold" } }, `${data.address || 'N/A'}, ${data.municipality || 'N/A'}, ${data.department || 'N/A'}`],
-        ...(data.sex ? [[{ content: 'Sexo:', styles: { fontStyle: "bold" } }, data.sex]] : []),
-        ...(data.birthDate ? [[{ content: 'Fecha de Nacimiento:', styles: { fontStyle: "bold" } }, format(new Date(data.birthDate), 'yyyy-MM-dd')]] : []),
-        ...(data.age !== undefined ? [[{ content: 'Edad:', styles: { fontStyle: "bold" } }, String(data.age)]] : []),
     ],
     theme: "striped",
     styles: { font: FONT, fontSize: 10, cellPadding: 5 },
-    didDrawPage: (hookData) => { addBackground(); },
+    didDrawPage: (hookData) => { if(hookData.pageNumber > 1) addBackground(); },
   });
 
   addSectionTitle("Información del Evento");
@@ -94,6 +91,23 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
         [{ content: 'Fecha de Seguimiento:', styles: { fontStyle: "bold" } }, data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : 'N/A'],
         [{ content: 'Evento:', styles: { fontStyle: "bold" } }, data.event || 'N/A'],
         ...(data.eventDetails ? [[{ content: 'Detalles del Evento:', styles: { fontStyle: "bold" } }, data.eventDetails]] : []),
+    ],
+    theme: "striped",
+    styles: { font: FONT, fontSize: 10, cellPadding: 5 },
+    didDrawPage: (hookData) => { if(hookData.pageNumber > 1) addBackground(); },
+  });
+  finalY = (doc as any).lastAutoTable.finalY;
+
+  const showSpecialEventFields = data.event === 'Intento de Suicidio' || data.event === 'Consumo de Sustancia Psicoactivas';
+
+  if (showSpecialEventFields) {
+    addSectionTitle("Información Adicional de Evento");
+    autoTable(doc, {
+      startY: finalY,
+      body: [
+        ...(data.birthDate ? [[{ content: 'Fecha de Nacimiento:', styles: { fontStyle: "bold" } }, format(new Date(data.birthDate), 'yyyy-MM-dd')]] : []),
+        ...(data.age !== undefined ? [[{ content: 'Edad:', styles: { fontStyle: "bold" } }, String(data.age)]] : []),
+        ...(data.sex ? [[{ content: 'Sexo:', styles: { fontStyle: "bold" } }, data.sex]] : []),
         ...(data.affiliationStatus ? [[{ content: 'Estado Afiliación:', styles: { fontStyle: "bold" } }, data.affiliationStatus]] : []),
         ...(data.area ? [[{ content: 'Área:', styles: { fontStyle: "bold" } }, data.area]] : []),
         ...(data.settlement ? [[{ content: 'Asentamiento:', styles: { fontStyle: "bold" } }, data.settlement]] : []),
@@ -102,15 +116,16 @@ async function buildPdf(data: Audit, backgroundImage: string | null): Promise<js
         ...(data.regime ? [[{ content: 'Régimen:', styles: { fontStyle: "bold" } }, data.regime]] : []),
         ...(data.upgdProvider ? [[{ content: 'UPGD/Prestador:', styles: { fontStyle: "bold" } }, data.upgdProvider]] : []),
         ...(data.followUpInterventionType ? [[{ content: 'Tipo Intervención:', styles: { fontStyle: "bold" } }, data.followUpInterventionType]] : []),
-    ],
-    theme: "striped",
-    styles: { font: FONT, fontSize: 10, cellPadding: 5 },
-    didDrawPage: (hookData) => { addBackground(); },
-  });
-  finalY = (doc as any).lastAutoTable.finalY;
+      ],
+      theme: "striped",
+      styles: { font: FONT, fontSize: 10, cellPadding: 5 },
+      didDrawPage: (hookData) => { if(hookData.pageNumber > 1) addBackground(); },
+    });
+    finalY = (doc as any).lastAutoTable.finalY;
+  }
 
   const addTextSection = (title: string, text: string | null | undefined) => {
-    finalY = finalY + 20; // Spacing
+    finalY = finalY + 20;
     if (finalY > pageH - 80) {
       doc.addPage();
       addBackground();
