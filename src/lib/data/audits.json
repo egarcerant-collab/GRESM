@@ -36,5 +36,30 @@
     "nextSteps": "1. cita de control por psiquiatria, 2. continuar psicoterapia individual por  psicologia, 3: seguimiento por la eps en 2 meses.",
     "id": "2",
     "createdAt": "2026-01-14T16:39:41.814Z"
+  },
+  {
+    "auditorName": "Administrador Principal",
+    "patientName": "jesus vanega",
+    "documentType": "CC: Cédula de Ciudadanía",
+    "documentNumber": "416461631616",
+    "event": "Salud Mental General",
+    "eventDetails": "",
+    "followUpDate": "2026-01-14T05:00:00.000Z",
+    "visitType": "PRIMERA VEZ",
+    "department": "CESAR",
+    "municipality": "VALLEDUPAR",
+    "ethnicity": "ARHUACO",
+    "address": "Flores de maria 2 manzana I casa 16",
+    "phoneNumber": "3123349844",
+    "followUpNotes": "28/08/2024. Dusakawi Epsi ha garantizado atención integral en salud mental, correspondiente. Paciente remitida del Hospital Agustín Codazzi, refiriendo deseo de rehabilitación por el consumo de sustancias psicoactivas, desde hace aproximadamente 5 meses; atención 18/04/2024. Valoración intrahospitalaria por psiquiatría, prestador  UNIPSSAM. Plan de tratamiento. Internación en servicio de complejidad mediana 18/04/2024- 18/05/2024.Medicamentos, atención intrahospitalaria diaria por psiquiatría, vigilancia estricta por enfermería, inmovilizar por razón necesaria, psicoterapia familia por psiquiatría y psicología, psicoterapia individual por psiquiatría y psicología, psicoterapia grupal interdiaria por psiquiatría y psicología, educación grupal en salud por trabajo social, terapia física integral y evaluación del estado mental por el equipo interdisciplinario. Después de este periodo de internación la evolución es lenta, continua intranquila con ansiedad, un poco angustiada, dificultad para conciliar el sueño. Por lo anterior se decide continuar manejo medico intrahospitalario. 18/05/2024-21/06/2024, con tratamiento farmacológico. Actualmente, se establece contacto telefónico al número 3155176965 no se logra establecer contacto con la usuaria. ",
+    "nextSteps": "seguimiento epsi en 15 dias * estrategia mhGAP - RBC comunitario * gestionar atencion prestador vital salud (RIAS), acompañamiento psicosocial enfoque intercultural, tratameinto psicoterapeutico, psicoeducacion en escenario familiar, equipo interdiciplinario segun lineamiento y protocolo para prevencion del suicidio.",
+    "affiliationStatus": "CESAR",
+    "settlement": "",
+    "nationality": "",
+    "primaryHealthProvider": "",
+    "upgdProvider": "",
+    "followUpInterventionType": "",
+    "id": "3",
+    "createdAt": "2026-01-14T23:00:26.148Z"
   }
 ]

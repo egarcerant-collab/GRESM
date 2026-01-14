@@ -91,7 +91,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
     if (audit) {
       setIsDownloading(true);
       try {
-        const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
+        const backgroundImage = await getImageAsBase64Action('/imagenes/membrete.jpg');
         const auditor = await findUserByFullNameAction(audit.auditorName);
         
         await generateAuditPdf(audit, backgroundImage, auditor);

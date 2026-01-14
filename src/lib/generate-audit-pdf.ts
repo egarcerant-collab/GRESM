@@ -8,8 +8,9 @@ const FONT = "helvetica";
 async function buildPdf(data: Audit, backgroundImage: string | null, auditor: User | null, doc: jsPDF): Promise<jsPDF> {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const leftMargin = 70;
   const topMargin = 115;
+  const leftMargin = 70;
+  const bottomMargin = pageH - 85; 
 
   const addBackground = () => {
     if (backgroundImage) {
@@ -52,10 +53,11 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
       }
     },
   });
+  finalY = (doc as any).lastAutoTable.finalY;
   
   const addSectionTitle = (title: string) => {
       finalY = (doc as any).lastAutoTable.finalY + 30;
-      if (finalY > pageH - 100) {
+      if (finalY > bottomMargin) {
         doc.addPage();
         addBackground();
         finalY = topMargin;
@@ -80,6 +82,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
     styles: { font: FONT, fontSize: 10, cellPadding: 5 },
     didDrawPage: (hookData) => { if(hookData.pageNumber > 1) addBackground(); },
   });
+  finalY = (doc as any).lastAutoTable.finalY;
 
   addSectionTitle("Información del Evento");
   autoTable(doc, {
@@ -124,7 +127,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
 
   const addTextSection = (title: string, text: string | null | undefined) => {
     finalY = finalY + 30;
-    if (finalY > pageH - 100) {
+    if (finalY > bottomMargin) {
       doc.addPage();
       addBackground();
       finalY = topMargin;
@@ -140,7 +143,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
     const splitText = doc.splitTextToSize(safeText, pageW - leftMargin * 2);
 
     splitText.forEach((line: string) => {
-      if (finalY > pageH - 100) {
+      if (finalY > bottomMargin) {
         doc.addPage();
         addBackground();
         finalY = topMargin;
@@ -153,24 +156,33 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
   addTextSection("Notas de Seguimiento", data.followUpNotes);
   addTextSection("Conducta a Seguir", data.nextSteps);
 
-  if (auditor?.signature) {
+  if (auditor) {
     finalY += 40; // Space before signature
-    if (finalY > pageH - 150) { // Check if there is enough space for the signature block
+    if (finalY > bottomMargin) { // Check if there is enough space for the signature block
         doc.addPage();
         addBackground();
         finalY = topMargin;
     }
-    try {
-      doc.addImage(auditor.signature, 'PNG', leftMargin, finalY, 120, 60, undefined, 'FAST');
-    } catch (e) {
-      console.error("Error adding signature image:", e);
-      doc.text('[Error al cargar la firma]', leftMargin, finalY + 30);
-    }
 
-    finalY += 70; // Position below signature image
+    if (auditor.signature) {
+      try {
+        doc.addImage(auditor.signature, 'PNG', leftMargin, finalY, 120, 60, undefined, 'FAST');
+        finalY += 70; // Position below signature image
+      } catch (e) {
+        console.error("Error adding signature image:", e);
+        doc.text('[Error al cargar la firma]', leftMargin, finalY + 30);
+        finalY += 45;
+      }
+    } else {
+        finalY += 70; // Reserve space even if there's no signature image
+    }
+    
+    doc.setLineWidth(0.5);
+    doc.line(leftMargin, finalY - 10, leftMargin + 180, finalY - 10);
+    
     doc.setFont(FONT, "bold");
     doc.setFontSize(10);
-    doc.text(auditor.fullName || '', leftMargin, finalY);
+    doc.text(auditor.fullName || auditor.username, leftMargin, finalY);
     finalY += 12;
     doc.setFont(FONT, "normal");
     doc.text(auditor.cargo || '', leftMargin, finalY);
