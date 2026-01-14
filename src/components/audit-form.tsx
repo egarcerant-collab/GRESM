@@ -50,12 +50,27 @@ const eventTypes = [
 ];
 
 const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
+const ethnicityOptions = [
+  "YUKPA",
+  "ARHUACO",
+  "WIWA",
+  "CHIMILA",
+  "KANKUAMO",
+  "WAYUU",
+  "ZENU",
+  "INGA",
+  "SIN ETNIA",
+  "INDIGENA",
+];
+
 
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [departmentSelection, setDepartmentSelection] = useState<string | undefined>('');
   const isOtherDepartment = departmentSelection === 'Otro';
+  const [ethnicitySelection, setEthnicitySelection] = useState<string | undefined>('');
+  const isOtherEthnicity = ethnicitySelection === 'Otro';
 
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
@@ -84,6 +99,14 @@ export function AuditForm() {
     }
   }, [departmentSelection, form]);
 
+  useEffect(() => {
+    if (ethnicitySelection !== 'Otro') {
+      form.setValue('ethnicity', ethnicitySelection || '');
+    } else {
+      form.setValue('ethnicity', '');
+    }
+  }, [ethnicitySelection, form]);
+
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
     startTransition(async () => {
@@ -102,6 +125,7 @@ export function AuditForm() {
         });
         form.reset();
         setDepartmentSelection('');
+        setEthnicitySelection('');
       }
     });
   }
@@ -322,19 +346,36 @@ export function AuditForm() {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="ethnicity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Etnia</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., SIN ETNIA" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormItem>
+            <FormLabel>Etnia</FormLabel>
+            <Select onValueChange={setEthnicitySelection} value={ethnicitySelection}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione una etnia" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {ethnicityOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                <SelectItem value="Otro">Otro</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+           {isOtherEthnicity && (
+            <FormField
+              control={form.control}
+              name="ethnicity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especifique la Etnia</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., MESTIZO" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="address"
