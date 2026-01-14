@@ -2,31 +2,29 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from 'date-fns';
 import type { Audit } from "./types";
+import fs from 'fs';
+import path from 'path';
 
 const FONT = "helvetica"; // Using a standard font
 
-async function fetchImageAsDataUrl(url: string): Promise<string | null> {
+function getImageAsDataUrl(imagePath: string): string | null {
   try {
-    // In a browser environment, the URL for public files is relative to the root.
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`Failed to fetch image: ${response.statusText}`);
-      // Return null to indicate failure, so the PDF can still be generated without the image.
+    const fullPath = path.join(process.cwd(), 'public', imagePath);
+    if (!fs.existsSync(fullPath)) {
+      console.error(`Image not found at path: ${fullPath}`);
       return null;
     }
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = (err) => {
-        console.error("FileReader error:", err);
-        reject(err);
-      };
-      reader.readAsDataURL(blob);
-    });
+    const file = fs.readFileSync(fullPath);
+    const base64 = file.toString('base64');
+    const extension = path.extname(imagePath).substring(1).toLowerCase();
+    
+    // Support for common image types
+    const mimeType = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+
+    return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.error(`Error fetching or processing image from ${url}:`, error);
-    return null; // Ensure generation continues even if image fails
+    console.error(`Error reading image from ${imagePath}:`, error);
+    return null; 
   }
 }
 
@@ -38,9 +36,9 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
   const rightMargin = 40;
   const contentWidth = pageW - leftMargin - rightMargin;
   
-  // Use the correctly encoded path for the image
-  const headerImage = await fetchImageAsDataUrl('/imagen/IMAGENEN%20UNIFICADA.jpg');
-  const headerImgHeight = 60; // Adjust as needed
+  // Correctly encoded path for the image, read directly from filesystem.
+  const headerImage = getImageAsDataUrl('/imagen/IMAGENEN UNIFICADA.jpg');
+  const headerImgHeight = 60;
 
   const addHeader = () => {
     if (headerImage) {
@@ -83,6 +81,7 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     ],
     theme: "plain",
     styles: { font: FONT, fontSize: 10 },
+    didDrawPage: (hookData) => { if (hookData.pageNumber > 1) addHeader(); },
   });
   finalY = (doc as any).lastAutoTable.finalY + 10;
   
@@ -111,7 +110,7 @@ async function buildPdf(data: Audit): Promise<jsPDF> {
     ],
     theme: "striped",
     styles: { font: FONT, fontSize: 10, cellPadding: 5 },
-    didDrawPage: (hookData) => addHeader(), // Add header to new pages created by this table
+    didDrawPage: (hookData) => addHeader(),
   });
   finalY = (doc as any).lastAutoTable.finalY + 10;
 
