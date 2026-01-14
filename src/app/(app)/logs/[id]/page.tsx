@@ -70,6 +70,7 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
 }
 
 export default function LogDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [audit, setAudit] = React.useState<Audit | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -77,7 +78,6 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
 
   const router = useRouter();
   const { toast } = useToast();
-  const id = params.id;
 
   React.useEffect(() => {
     getAuditByIdAction(id).then(({ audit: data }) => {
@@ -116,7 +116,7 @@ export default function LogDetailPage({ params }: { params: { id: string } }) {
     if (audit) {
       setIsDownloading(true);
       try {
-        const bgImageUrl = '/imagen/IMAGENEN UNIFICADA.jpg';
+        const bgImageUrl = '/IMAGENEN_UNIFICADA.jpg';
         const bgImageDataUrl = await fetchImageAsDataUrl(bgImageUrl);
         await generateAuditPdf(audit, bgImageDataUrl);
         toast({
