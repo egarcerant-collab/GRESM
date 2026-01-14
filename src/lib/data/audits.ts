@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import type { Audit } from './types';
+import type { Audit } from '../types';
 
 // NOTE: This file-based "database" is for demonstration purposes and works in a Node.js environment.
 // It is not suitable for serverless environments like Vercel or Firebase App Hosting's default setup
@@ -17,6 +17,7 @@ async function readData(): Promise<Audit[]> {
       ...audit,
       followUpDate: new Date(audit.followUpDate),
       createdAt: new Date(audit.createdAt),
+      birthDate: audit.birthDate ? new Date(audit.birthDate) : undefined,
     }));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -54,7 +55,7 @@ export async function getAuditById(id: string): Promise<Audit | undefined> {
 
 export async function createAudit(auditData: Omit<Audit, 'id' | 'createdAt'>): Promise<Audit> {
   const audits = await readData();
-  const newId = audits.length > 0 ? String(Math.max(...audits.map(a => parseInt(a.id, 10))) + 1) : "1";
+  const newId = audits.length > 0 ? String(Math.max(...audits.map(a => parseInt(a.id, 10) || 0)) + 1) : "1";
   
   const newAudit: Audit = {
     ...auditData,

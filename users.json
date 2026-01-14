@@ -1,0 +1,16 @@
+[
+  {
+    "username": "admin",
+    "fullName": "Administrador Principal",
+    "password": "admin",
+    "role": "admin",
+    "cargo": "Administrador del Sistema"
+  },
+  {
+    "username": "user",
+    "fullName": "Usuario de Prueba",
+    "password": "user",
+    "role": "user",
+    "cargo": "Usuario Estándar"
+  }
+]

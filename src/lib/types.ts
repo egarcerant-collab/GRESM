@@ -29,3 +29,12 @@ export type Audit = {
   upgdProvider?: string;
   followUpInterventionType?: string;
 };
+
+export type User = {
+    username: string;
+    fullName?: string;
+    password?: string;
+    role: 'admin' | 'user';
+    cargo?: string;
+    signature?: string; // As base64 data URL
+};
