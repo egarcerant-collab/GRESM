@@ -66,7 +66,6 @@ const ethnicityOptions = [
   "INGA",
   "SIN ETNIA",
   "INDIGENA",
-  "Otro"
 ];
 
 const upgdProviderOptions = [
@@ -103,14 +102,11 @@ export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [departmentSelection, setDepartmentSelection] = useState<string | undefined>('');
-  const [municipalitySelection, setMunicipalitySelection] = useState<string | undefined>('');
+  const [departmentSelection, setDepartmentSelection] = useState<string>('');
+  const [municipalitySelection, setMunicipalitySelection] = useState<string>('');
   const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
-  const isOtherDepartment = departmentSelection === 'Otro';
-  const isOtherMunicipality = municipalitySelection === 'Otro';
-
-  const [ethnicitySelection, setEthnicitySelection] = useState<string | undefined>('');
-  const isOtherEthnicity = ethnicitySelection === 'Otro';
+  const [ethnicitySelection, setEthnicitySelection] = useState<string>('');
+  const [upgdProviderSelection, setUpgdProviderSelection] = useState<string>('');
 
   const [isCheckingPatient, setIsCheckingPatient] = useState(false);
   const [patientWarning, setPatientWarning] = useState<string | null>(null);
@@ -153,10 +149,14 @@ export function AuditForm() {
   }, [user, form]);
 
   const eventSelection = form.watch('event');
-  const isOtherEvent = eventSelection === 'Otro';
-  const showSpecialEventFields = eventSelection === 'Intento de Suicidio' || eventSelection === 'Consumo de Sustancia Psicoactivas';
   const documentNumberValue = form.watch('documentNumber');
   const visitTypeValue = form.watch('visitType');
+  const isOtherEvent = eventSelection === 'Otro';
+  const isOtherDepartment = departmentSelection === 'Otro';
+  const isOtherMunicipality = municipalitySelection === 'Otro';
+  const isOtherEthnicity = ethnicitySelection === 'Otro';
+  const isOtherUpgdProvider = upgdProviderSelection === 'Otro';
+  const showSpecialEventFields = eventSelection === 'Intento de Suicidio' || eventSelection === 'Consumo de Sustancia Psicoactivas';
 
   useEffect(() => {
     const checkPatient = async () => {
@@ -187,36 +187,38 @@ export function AuditForm() {
     if (departmentSelection && departmentSelection !== 'Otro') {
       form.setValue('department', departmentSelection);
       setAvailableMunicipalities(municipalitiesByDepartment[departmentSelection] || []);
-    } else {
+    } else if (departmentSelection !== 'Otro') {
       setAvailableMunicipalities([]);
-      if (!isOtherDepartment) {
-        form.setValue('department', '');
-      }
+      form.setValue('department', '');
     }
     // Reset municipality when department changes
     form.setValue('municipality', '');
     setMunicipalitySelection('');
-  }, [departmentSelection, form, isOtherDepartment]);
+  }, [departmentSelection, form]);
   
   useEffect(() => {
-    if (municipalitySelection !== 'Otro') {
-      form.setValue('municipality', municipalitySelection || '');
-    } else {
-       if (!isOtherMunicipality) {
-         form.setValue('municipality', '');
-       }
+    if (municipalitySelection && municipalitySelection !== 'Otro') {
+      form.setValue('municipality', municipalitySelection);
+    } else if (municipalitySelection !== 'Otro') {
+       form.setValue('municipality', '');
     }
-  }, [municipalitySelection, form, isOtherMunicipality]);
+  }, [municipalitySelection, form]);
 
   useEffect(() => {
-    if (ethnicitySelection !== 'Otro') {
-      form.setValue('ethnicity', ethnicitySelection || '');
-    } else {
-      if (!isOtherEthnicity) {
-        form.setValue('ethnicity', '');
-      }
+    if (ethnicitySelection && ethnicitySelection !== 'Otro') {
+      form.setValue('ethnicity', ethnicitySelection);
+    } else if (ethnicitySelection !== 'Otro') {
+      form.setValue('ethnicity', '');
     }
-  }, [ethnicitySelection, form, isOtherEthnicity]);
+  }, [ethnicitySelection, form]);
+
+  useEffect(() => {
+    if (upgdProviderSelection && upgdProviderSelection !== 'Otro') {
+      form.setValue('upgdProvider', upgdProviderSelection);
+    } else if (upgdProviderSelection !== 'Otro') {
+      form.setValue('upgdProvider', '');
+    }
+  }, [upgdProviderSelection, form]);
 
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
@@ -238,6 +240,7 @@ export function AuditForm() {
         setDepartmentSelection('');
         setMunicipalitySelection('');
         setEthnicitySelection('');
+        setUpgdProviderSelection('');
         setPatientWarning(null);
       }
     });
@@ -423,112 +426,105 @@ export function AuditForm() {
               </FormItem>
             )}
           />
-          <FormItem>
-            <FormLabel>Departamento</FormLabel>
-            <Select onValueChange={setDepartmentSelection} value={departmentSelection}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un departamento" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                <SelectItem value="Otro">Otro</SelectItem>
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-           {isOtherDepartment && (
-            <FormField
-              control={form.control}
-              name="department"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Especifique el Departamento</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Cundinamarca" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-          
-          {availableMunicipalities.length > 0 && !isOtherDepartment ? (
+           <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
             <FormItem>
-              <FormLabel>Municipio</FormLabel>
-              <Select onValueChange={setMunicipalitySelection} value={municipalitySelection}>
+              <FormLabel>Departamento</FormLabel>
+              <Select onValueChange={setDepartmentSelection} value={departmentSelection}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un municipio" />
+                    <SelectValue placeholder="Seleccione un departamento" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableMunicipalities.map(muni => <SelectItem key={muni} value={muni}>{muni}</SelectItem>)}
+                  {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
                   <SelectItem value="Otro">Otro</SelectItem>
                 </SelectContent>
               </Select>
-              {isOtherMunicipality && (
-                <FormField
-                  control={form.control}
-                  name="municipality"
-                  render={({ field }) => (
-                    <FormItem className='pt-2'>
-                       <FormLabel>Especifique el Municipio</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., BOGOTA" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
             </FormItem>
-          ) : (
-            <FormField
-              control={form.control}
-              name="municipality"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Municipio</FormLabel>
+            {isOtherDepartment && (
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Especifique el Departamento</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Cundinamarca" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+          
+           <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
+            {availableMunicipalities.length > 0 && !isOtherDepartment ? (
+              <FormItem>
+                <FormLabel>Municipio</FormLabel>
+                <Select onValueChange={setMunicipalitySelection} value={municipalitySelection}>
                   <FormControl>
-                    <Input placeholder="e.g., MAICAO" {...field} />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un municipio" />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+                  <SelectContent>
+                    {availableMunicipalities.map(muni => <SelectItem key={muni} value={muni}>{muni}</SelectItem>)}
+                    <SelectItem value="Otro">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            ) : (
+               !isOtherDepartment && <div /> 
+            )}
+             {(isOtherMunicipality || isOtherDepartment) && (
+              <FormField
+                control={form.control}
+                name="municipality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Especifique el Municipio</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., BOGOTA" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
 
-          <FormItem>
-            <FormLabel>Etnia</FormLabel>
-            <Select onValueChange={setEthnicitySelection} value={ethnicitySelection}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione una etnia" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {ethnicityOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-           {isOtherEthnicity && (
-            <FormField
-              control={form.control}
-              name="ethnicity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Especifique la Etnia</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., MESTIZO" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
+            <FormItem>
+              <FormLabel>Etnia</FormLabel>
+              <Select onValueChange={setEthnicitySelection} value={ethnicitySelection}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione una etnia" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {ethnicityOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                   <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormItem>
+            {isOtherEthnicity && (
+              <FormField
+                control={form.control}
+                name="ethnicity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Especifique la Etnia</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., MESTIZO" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
           <FormField
             control={form.control}
             name="address"
@@ -678,13 +674,10 @@ export function AuditForm() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="upgdProvider"
-                  render={({ field }) => (
+                <div className="lg:col-span-2 grid md:grid-cols-2 gap-8 items-start">
                     <FormItem>
                       <FormLabel>Nombre UPGD o Prestador</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={setUpgdProviderSelection} value={upgdProviderSelection}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccione un prestador" />
@@ -696,12 +689,27 @@ export function AuditForm() {
                               {provider}
                             </SelectItem>
                           ))}
+                          <SelectItem value="Otro">Otro</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
                     </FormItem>
-                  )}
-                />
+                    {isOtherUpgdProvider && (
+                      <FormField
+                          control={form.control}
+                          name="upgdProvider"
+                          render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Especifique el prestador</FormLabel>
+                              <FormControl>
+                                  <Input placeholder="Nombre del prestador" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                    )}
+                </div>
+
                 <FormField control={form.control} name="followUpInterventionType" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Intervención</FormLabel>

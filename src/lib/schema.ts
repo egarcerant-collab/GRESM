@@ -51,7 +51,7 @@ export const auditSchema = z.object({
             data.nationality &&
             data.primaryHealthProvider &&
             data.regime &&
-            data.upgdProvider &&
+            data.upgdProvider && data.upgdProvider.length > 0 &&
             data.followUpInterventionType
         );
     }
