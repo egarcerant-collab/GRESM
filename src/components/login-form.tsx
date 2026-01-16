@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -48,7 +47,7 @@ export function LoginForm() {
             description: 'Redirigiendo a su panel...',
         });
         // Use window.location to force a full page reload, ensuring the new session cookie is picked up.
-        window.location.href = '/dashboard';
+        window.location.href = '/logs';
       }
     });
   }
