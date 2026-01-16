@@ -99,7 +99,7 @@ const municipalitiesByDepartment: Record<string, string[]> = {
 };
 
 
-export function AuditForm() {
+export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [departmentSelection, setDepartmentSelection] = useState<string>('');
@@ -115,7 +115,7 @@ export function AuditForm() {
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
     defaultValues: {
-      auditorName: '',
+      auditorName: auditor ? auditor.fullName || auditor.username : '',
       patientName: '',
       documentType: '',
       documentNumber: '',
@@ -262,7 +262,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Auditor</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={!!auditor}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione un auditor" />
