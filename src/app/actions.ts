@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/data/audits';
-import { findUserByFullName as dbFindUserByFullName } from '@/lib/data/users';
+import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers } from '@/lib/data/users';
 import { auditSchema } from '@/lib/schema';
 import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
@@ -151,5 +151,15 @@ export async function findUserByFullNameAction(fullName: string): Promise<User |
   } catch (error) {
     console.error('Error finding user by full name:', error);
     return null;
+  }
+}
+
+export async function getUsersAction(): Promise<{ users: Omit<User, 'password'>[], error?: string }> {
+  try {
+    const users = await dbGetUsers();
+    return { users: users as Omit<User, 'password'>[] };
+  } catch (error) {
+    console.error('Error al obtener los usuarios:', error);
+    return { users: [], error: 'Error al recuperar los usuarios de la base de datos.' };
   }
 }
