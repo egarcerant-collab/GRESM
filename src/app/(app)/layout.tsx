@@ -27,14 +27,11 @@ export default function AppLayout({
     async function fetchUser() {
       try {
         const currentUser = await getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-        } else {
-          // This should be handled by middleware, but as a fallback
-          window.location.href = '/login';
-        }
+        setUser(currentUser);
       } catch (e) {
-        window.location.href = '/login';
+        console.error("Failed to fetch user, relying on middleware to redirect.", e);
+        // If there's an error, we can't get user info, but we won't redirect here.
+        // The middleware is the source of truth for auth enforcement.
       } finally {
         setLoading(false);
       }

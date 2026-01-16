@@ -32,7 +32,8 @@ export async function loginAction(values: z.infer<typeof loginSchema>) {
     const { password: _, signature: __, ...userWithoutPassword } = user;
     session.user = userWithoutPassword;
     await session.save();
-
+    
+    revalidatePath('/', 'layout');
     redirect('/dashboard');
 }
 
