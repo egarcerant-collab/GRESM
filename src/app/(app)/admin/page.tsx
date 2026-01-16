@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -9,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getUsersAction, deleteUserAction } from '@/app/actions';
+import { getUsersAction, deleteUserAction, findUserByUsernameAction } from '@/app/actions';
 import type { User } from '@/lib/types';
 import { Loader2, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false); // for edit dialog
-  const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   const [password, setPassword] = useState('');
@@ -67,8 +68,17 @@ export default function AdminPage() {
     fetchUsers();
   }, [fetchUsers]);
   
-  const handleEditClick = (user: Omit<User, 'password'>) => {
-    setEditingUser(user);
+  const handleEditClick = async (user: Omit<User, 'password'>) => {
+    const { user: fullUser, error } = await findUserByUsernameAction(user.username);
+    if (error || !fullUser) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error || 'No se pudo cargar la información completa del usuario.',
+        });
+        return;
+    }
+    setEditingUser(fullUser);
     setIsFormOpen(true);
   };
   

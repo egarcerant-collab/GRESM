@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import type { User } from '@/lib/types';
 import Image from 'next/image';
 
-export function UserForm({ onFinished, initialData }: { onFinished: () => void, initialData?: Omit<User, 'password'> | null }) {
+export function UserForm({ onFinished, initialData }: { onFinished: () => void, initialData?: User | null }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +38,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
     defaultValues: {
       username: initialData?.username || '',
       fullName: initialData?.fullName || '',
-      password: '',
+      password: initialData?.password || '',
       cargo: initialData?.cargo || '',
       role: initialData?.role || 'user',
       signature: initialData?.signature || '',
@@ -49,7 +50,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
       form.reset({
         username: initialData.username,
         fullName: initialData.fullName,
-        password: '',
+        password: initialData.password || '',
         cargo: initialData.cargo,
         role: initialData.role,
         signature: initialData.signature,
@@ -154,7 +155,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Contraseña</FormLabel>
-                {isEditMode && <FormDescription>Dejar en blanco para no cambiar la contraseña.</FormDescription>}
+                {isEditMode && <FormDescription>Deje este campo en blanco para no cambiar la contraseña.</FormDescription>}
                 <div className="relative">
                     <FormControl>
                     <Input type={showPassword ? 'text' : 'password'} placeholder={isEditMode ? '•••••••• (opcional)' : 'Contraseña requerida'} {...field} />

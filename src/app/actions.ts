@@ -144,6 +144,19 @@ export async function getUsersAction(): Promise<{ users: Omit<User, 'password'>[
   }
 }
 
+export async function findUserByUsernameAction(username: string): Promise<{ user: User | null, error?: string }> {
+  try {
+    const user = await findUserByUsernameForLogin(username);
+    if (!user) {
+      return { user: null, error: 'Usuario no encontrado.' };
+    }
+    return { user: JSON.parse(JSON.stringify(user)) };
+  } catch (error) {
+    console.error('Error al obtener el usuario:', error);
+    return { user: null, error: 'Error al recuperar los datos del usuario.' };
+  }
+}
+
 export async function createUserAction(values: z.infer<typeof userSchema>) {
   if (!values.password || values.password.length < 1) {
     return { error: 'La contraseña es requerida para crear un usuario.' };
