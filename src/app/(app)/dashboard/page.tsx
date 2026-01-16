@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { FilePlus, KeyRound, User as UserIcon } from 'lucide-react';
+import { FilePlus, KeyRound, User as UserIcon, LogOut } from 'lucide-react';
 import { getUsersAction } from '@/app/actions';
 import type { User } from '@/lib/types';
 import {
@@ -70,19 +70,33 @@ export default function DashboardPage() {
     }
   };
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setSelectedUser('');
+    setPassword('');
+  };
+
   const auditor = users.find((u) => u.username === selectedUser);
 
   if (isAuthenticated && auditor) {
     return (
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl flex items-center gap-2">
-            <FilePlus />
-            Nueva Auditoría
-          </CardTitle>
-          <CardDescription>
-            Sesión iniciada como <strong>{auditor.fullName}</strong>. Rellene el siguiente formulario para registrar una nueva entrada de auditoría.
-          </CardDescription>
+           <div className="flex justify-between items-start gap-4">
+            <div>
+              <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                <FilePlus />
+                Nueva Auditoría
+              </CardTitle>
+              <CardDescription>
+                Sesión iniciada como <strong>{auditor.fullName}</strong>. Rellene el siguiente formulario para registrar una nueva entrada de auditoría.
+              </CardDescription>
+            </div>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Cerrar Sesión
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <AuditForm auditor={auditor} />
