@@ -28,6 +28,8 @@ export type Audit = {
   regime?: 'Subsidiado' | 'Contributivo';
   upgdProvider?: string;
   followUpInterventionType?: string;
+  genderViolenceType?: string;
+  genderViolenceTypeDetails?: string;
 };
 
 export type User = {

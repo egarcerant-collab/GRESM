@@ -35,6 +35,8 @@ export const auditSchema = z.object({
   regime: z.enum(['Subsidiado', 'Contributivo']).optional(),
   upgdProvider: z.string().optional(),
   followUpInterventionType: z.string().optional(),
+  genderViolenceType: z.string().optional(),
+  genderViolenceTypeDetails: z.string().optional(),
 
 }).refine(data => {
     if (data.event === 'Otro') {
@@ -67,6 +69,22 @@ export const auditSchema = z.object({
     // This is a generic message, we'll handle specific messages in the form.
     // We set a path, but it won't be used directly. The check is what matters.
     path: ['birthDate'], 
+}).refine(data => {
+    if (data.event === 'Violencia de Género') {
+        return !!data.genderViolenceType && data.genderViolenceType.length > 0;
+    }
+    return true;
+}, {
+    message: 'El tipo de violencia es requerido.',
+    path: ['genderViolenceType'],
+}).refine(data => {
+    if (data.event === 'Violencia de Género' && data.genderViolenceType === 'otros') {
+        return !!data.genderViolenceTypeDetails && data.genderViolenceTypeDetails.length > 1;
+    }
+    return true;
+}, {
+    message: 'Especifique el tipo de violencia.',
+    path: ['genderViolenceTypeDetails'],
 });
 
 export const userSchema = z.object({

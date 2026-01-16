@@ -55,6 +55,14 @@ const eventTypes = [
   "Otro"
 ];
 
+const genderViolenceTypes = [
+    "Violencia física",
+    "Negligencia y abandono",
+    "Acoso sexual",
+    "Abuso sexual",
+    "otros"
+];
+
 const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
 const ethnicityOptions = [
   "YUKPA",
@@ -111,6 +119,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
 
   const [isCheckingPatient, setIsCheckingPatient] = useState(false);
   const [patientWarning, setPatientWarning] = useState<string | null>(null);
+  const [genderViolenceTypeSelection, setGenderViolenceTypeSelection] = useState<string>('');
 
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
@@ -140,6 +149,8 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
       regime: undefined,
       upgdProvider: '',
       followUpInterventionType: '',
+      genderViolenceType: '',
+      genderViolenceTypeDetails: '',
     },
   });
 
@@ -152,6 +163,9 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
   const isOtherEthnicity = ethnicitySelection === 'Otro';
   const isOtherUpgdProvider = upgdProviderSelection === 'Otro';
   const showSpecialEventFields = eventSelection === 'Intento de Suicidio' || eventSelection === 'Consumo de Sustancia Psicoactivas';
+  const isGenderViolenceEvent = eventSelection === 'Violencia de Género';
+  const isOtherGenderViolenceType = genderViolenceTypeSelection === 'otros';
+
 
   useEffect(() => {
     async function fetchUsers() {
@@ -231,6 +245,14 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
       form.setValue('upgdProvider', '');
     }
   }, [upgdProviderSelection, form]);
+
+  useEffect(() => {
+    if (genderViolenceTypeSelection && genderViolenceTypeSelection !== 'otros') {
+        form.setValue('genderViolenceType', genderViolenceTypeSelection);
+    } else {
+        form.setValue('genderViolenceType', '');
+    }
+  }, [genderViolenceTypeSelection, form]);
 
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
@@ -365,6 +387,45 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
                 </FormItem>
               )}
             />
+          )}
+          {isGenderViolenceEvent && (
+            <div className="md:col-span-2 grid md:grid-cols-2 gap-8 -mt-4">
+                <FormField
+                    control={form.control}
+                    name="genderViolenceType"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Tipo de Violencia de Género</FormLabel>
+                            <Select onValueChange={(value) => { field.onChange(value); setGenderViolenceTypeSelection(value); }} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seleccione un tipo de violencia" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {genderViolenceTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                {isOtherGenderViolenceType && (
+                    <FormField
+                        control={form.control}
+                        name="genderViolenceTypeDetails"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Especifique Otro Tipo</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Especifique otro tipo" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+            </div>
           )}
            <FormField
             control={form.control}

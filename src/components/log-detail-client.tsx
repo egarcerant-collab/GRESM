@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -227,6 +228,12 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
                <div className="divide-y divide-border">
                 <DetailItem label="Evento" value={audit.event} />
                 <DetailItem label="Detalles del Evento" value={audit.eventDetails} />
+                {audit.event === 'Violencia de Género' && (
+                    <>
+                        <DetailItem label="Tipo de Violencia" value={audit.genderViolenceType} />
+                        <DetailItem label="Detalles Violencia" value={audit.genderViolenceTypeDetails} />
+                    </>
+                )}
                 <DetailItem label="Departamento" value={audit.department} />
                 <DetailItem label="Municipio" value={audit.municipality} />
                 <DetailItem label="Etnia" value={audit.ethnicity} />
