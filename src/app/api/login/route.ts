@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getIronSession } from 'iron-session';
-import { sessionOptions, type SessionData } from '@/lib/session';
+import { sessionOptions, type SessionData } from '@/lib/session-options';
 import { findUserByUsernameForLogin } from '@/lib/data/users';
 import { cookies } from 'next/headers';
 import { loginSchema } from '@/lib/schema';
