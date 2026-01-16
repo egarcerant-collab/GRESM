@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useTransition, useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { loginAction } from '@/app/actions';
 import { loginSchema } from '@/lib/schema';
 
 export function LoginForm() {
@@ -35,20 +34,36 @@ export function LoginForm() {
 
   function onSubmit(values: z.infer<typeof loginSchema>) {
     startTransition(async () => {
-      const result = await loginAction(values);
-      if (result?.error) {
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(values),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          toast({
+            variant: 'destructive',
+            title: 'Error de inicio de sesión',
+            description: result.error || 'Ocurrió un error inesperado.',
+          });
+        } else if (result.success) {
+          toast({
+            title: 'Inicio de sesión exitoso',
+            description: 'Redirigiendo a su panel de control...',
+          });
+          window.location.assign('/dashboard');
+        }
+      } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Error de inicio de sesión',
-          description: result.error,
+          title: 'Error de conexión',
+          description: 'No se pudo conectar con el servidor.',
         });
-      }
-      if (result?.success) {
-        toast({
-          title: 'Inicio de sesión exitoso',
-          description: 'Redirigiendo a su panel de control...',
-        });
-        window.location.assign('/dashboard');
       }
     });
   }

@@ -5,37 +5,12 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/data/audits';
 import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser, updateUser as dbUpdateUser, deleteUser as dbDeleteUser, findUserByUsernameForLogin } from '@/lib/data/users';
-import { auditSchema, userSchema, loginSchema } from '@/lib/schema';
+import { auditSchema, userSchema } from '@/lib/schema';
 import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
 import { getSession } from '@/lib/session';
-
-export async function loginAction(values: z.infer<typeof loginSchema>) {
-    const validatedFields = loginSchema.safeParse(values);
-
-    if (!validatedFields.success) {
-        return { error: 'Datos inválidos.' };
-    }
-
-    const { username, password } = validatedFields.data;
-
-    const user = await findUserByUsernameForLogin(username);
-
-    if (!user || user.password !== password) {
-        return { error: 'Nombre de usuario o contraseña incorrectos.' };
-    }
-
-    const session = await getSession();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, signature: __, ...userWithoutPassword } = user;
-    session.user = userWithoutPassword;
-    await session.save();
-    
-    revalidatePath('/', 'layout');
-    return { success: true };
-}
 
 export async function logoutAction() {
     const session = await getSession();
