@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getUsersAction } from '@/app/actions';
+import { getUsersAction, deleteUserAction } from '@/app/actions';
 import type { User } from '@/lib/types';
 import { UserTable } from '@/components/user-table';
 import { Loader2, PlusCircle } from 'lucide-react';
@@ -21,12 +21,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { UserForm } from '@/components/admin/user-form';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminPage() {
   const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
+  const { toast } = useToast();
 
   async function fetchUsers() {
     setLoading(true);
@@ -59,6 +61,23 @@ export default function AdminPage() {
   const handleCreateClick = () => {
     setEditingUser(null);
     setIsFormOpen(true);
+  };
+
+  const handleDeleteUser = async (username: string) => {
+    const result = await deleteUserAction(username);
+    if (result.error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error al eliminar',
+        description: result.error,
+      });
+    } else {
+      toast({
+        title: 'Usuario Eliminado',
+        description: 'El usuario ha sido eliminado exitosamente.',
+      });
+      fetchUsers();
+    }
   };
 
   return (
@@ -94,7 +113,7 @@ export default function AdminPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <UserTable users={users} onEdit={handleEditClick} />
+            <UserTable users={users} onEdit={handleEditClick} onDelete={handleDeleteUser} />
           )}
         </CardContent>
       </Card>

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/data/audits';
-import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser, updateUser as dbUpdateUser } from '@/lib/data/users';
+import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser, updateUser as dbUpdateUser, deleteUser as dbDeleteUser } from '@/lib/data/users';
 import { auditSchema, userSchema } from '@/lib/schema';
 import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
@@ -211,5 +211,18 @@ export async function updateUserAction(username: string, values: z.infer<typeof 
         return { error: error.message };
     }
     return { error: 'Ocurrió un error inesperado al actualizar el usuario.' };
+  }
+}
+
+export async function deleteUserAction(username: string) {
+  try {
+    await dbDeleteUser(username);
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    if (error instanceof Error) {
+        return { error: error.message };
+    }
+    return { error: 'Ocurrió un error inesperado al eliminar el usuario.' };
   }
 }

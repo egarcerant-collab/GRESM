@@ -12,7 +12,7 @@ async function readUsers(): Promise<User[]> {
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
             const defaultUsers: User[] = [
-                { username: 'eg', fullName: 'EG', password: '1', role: 'admin', cargo: 'Mega Usuario' },
+                { username: 'eg', fullName: 'EG', password: 'eg', role: 'admin', cargo: 'Mega Usuario' },
             ];
             await writeUsers(defaultUsers);
             return defaultUsers;
@@ -87,4 +87,16 @@ export async function updateUser(username: string, userData: Partial<Omit<User, 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userToReturn } = users[userIndex];
     return userToReturn;
+}
+
+export async function deleteUser(username: string): Promise<void> {
+  if (username === 'eg') {
+    throw new Error('No se puede eliminar al mega usuario.');
+  }
+  const users = await readUsers(true) as User[];
+  const updatedUsers = users.filter(user => user.username !== username);
+  if (users.length === updatedUsers.length) {
+    throw new Error('Usuario no encontrado para eliminar.');
+  }
+  await writeUsers(updatedUsers);
 }
