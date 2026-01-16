@@ -5,11 +5,10 @@ import { getIronSession } from 'iron-session';
 import { sessionOptions, type SessionData } from '@/lib/session-options';
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  
-  // getIronSession(req.cookies, ...) is the correct way for App Router Middleware
-  const session = await getIronSession<SessionData>(request.cookies, sessionOptions);
+  const response = NextResponse.next();
+  const session = await getIronSession<SessionData>(request, response, sessionOptions);
   const user = session.user;
+  const { pathname } = request.nextUrl;
 
   // Handle redirects for the root path
   if (pathname === '/') {
@@ -26,7 +25,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     // Allow unauthenticated users to access the login page
-    return NextResponse.next();
+    return response;
   }
 
   // For all other routes, check for an active session
@@ -42,7 +41,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // If all checks pass, allow the request to proceed
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
