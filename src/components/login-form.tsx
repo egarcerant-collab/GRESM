@@ -19,13 +19,11 @@ import { useTransition, useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { loginAction } from '@/app/actions';
 import { loginSchema } from '@/lib/schema';
-import { useRouter } from 'next/navigation';
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -49,7 +47,8 @@ export function LoginForm() {
             title: 'Inicio de sesión exitoso',
             description: 'Redirigiendo a su panel...',
         });
-        router.push('/dashboard');
+        // Use window.location to force a full page reload, ensuring the new session cookie is picked up.
+        window.location.href = '/dashboard';
       }
     });
   }
