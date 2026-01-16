@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -71,7 +72,9 @@ export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        {/* Footer is empty as user info has been removed */}
+         <div className="text-xs text-muted-foreground p-2 text-center group-data-[collapsible=icon]:hidden">
+            Login deshabilitado.
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

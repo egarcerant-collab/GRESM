@@ -30,7 +30,7 @@ import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
-import { createAuditAction, checkExistingPatientAction, getCurrentUser } from '@/app/actions';
+import { createAuditAction, checkExistingPatientAction } from '@/app/actions';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
@@ -141,16 +141,6 @@ export function AuditForm() {
     },
   });
 
-  useEffect(() => {
-    async function fetchCurrentUser() {
-        const user = await getCurrentUser();
-        if (user) {
-            form.setValue('auditorName', user.fullName);
-        }
-    }
-    fetchCurrentUser();
-  }, [form]);
-
   const eventSelection = form.watch('event');
   const documentNumberValue = form.watch('documentNumber');
   const visitTypeValue = form.watch('visitType');
@@ -254,7 +244,7 @@ export function AuditForm() {
               <FormItem>
                 <FormLabel>Nombre del Auditor</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Alice Plata" {...field} disabled />
+                  <Input placeholder="e.g., Alice Plata" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

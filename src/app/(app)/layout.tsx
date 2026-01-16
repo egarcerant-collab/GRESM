@@ -7,25 +7,24 @@ import {
 } from "@/components/ui/sidebar";
 import { ShieldCheck } from 'lucide-react';
 import React from 'react';
-import { UserMenu } from '@/components/user-menu';
-import { getSession } from '@/lib/session';
-import { redirect } from 'next/navigation';
+import type { User } from '@/lib/types';
 
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
-  const user = session.user;
-
-  if (!user) {
-    redirect('/login');
-  }
+  // Mock user to allow navigation to all sections, including admin, since login is removed.
+  const mockUser: Omit<User, 'password' | 'signature'> = {
+    username: 'admin',
+    fullName: 'Admin User',
+    role: 'admin',
+    cargo: 'Administrator'
+  };
 
   return (
     <SidebarProvider>
-      <AppSidebar user={user} />
+      <AppSidebar user={mockUser} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
           <div className='md:hidden'>
@@ -36,7 +35,7 @@ export default async function AppLayout({
             <h1 className="text-lg font-semibold font-headline">Audit Logger</h1>
           </div>
           <div className="flex w-full items-center justify-end gap-4">
-            <UserMenu user={user} />
+            {/* UserMenu removed as there is no login system */}
           </div>
         </header>
         <div className="flex-1 p-4 sm:p-6 lg:p-8">
