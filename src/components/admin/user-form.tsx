@@ -15,20 +15,22 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useTransition, useState } from 'react';
+import { useTransition, useState, useEffect } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { createUserAction, updateUserAction } from '@/app/actions';
 import { userSchema } from '@/lib/schema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { User } from '@/lib/types';
+import Image from 'next/image';
 
 export function UserForm({ onFinished, initialData }: { onFinished: () => void, initialData?: Omit<User, 'password'> | null }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const [signatureFileName, setSignatureFileName] = useState(initialData?.signature ? 'Firma existente' : '');
-
+  
   const isEditMode = !!initialData;
+  
+  const [signaturePreview, setSignaturePreview] = useState(initialData?.signature || '');
 
   const form = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
@@ -42,18 +44,47 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        username: initialData.username,
+        fullName: initialData.fullName,
+        password: '',
+        cargo: initialData.cargo,
+        role: initialData.role,
+        signature: initialData.signature,
+      });
+      setSignaturePreview(initialData.signature || '');
+    } else {
+        form.reset({
+            username: '',
+            fullName: '',
+            password: '',
+            cargo: '',
+            role: 'user',
+            signature: '',
+        });
+        setSignaturePreview('');
+    }
+  }, [initialData, form]);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    const currentInput = event.currentTarget;
     if (file) {
-      setSignatureFileName(file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
-        form.setValue('signature', reader.result as string);
+        const result = reader.result as string;
+        form.setValue('signature', result);
+        setSignaturePreview(result);
       };
       reader.readAsDataURL(file);
     } else {
-        setSignatureFileName('');
         form.setValue('signature', undefined);
+        setSignaturePreview('');
+        if (currentInput) {
+            currentInput.value = "";
+        }
     }
   };
 
@@ -76,6 +107,10 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
           title: `Usuario ${isEditMode ? 'Actualizado' : 'Creado'}`,
           description: `El usuario ha sido ${isEditMode ? 'actualizado' : 'registrado'} exitosamente.`,
         });
+        if (!isEditMode) {
+            form.reset();
+            setSignaturePreview('');
+        }
         onFinished();
       }
     });
@@ -122,7 +157,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
                 {isEditMode && <FormDescription>Dejar en blanco para no cambiar la contraseña.</FormDescription>}
                 <div className="relative">
                     <FormControl>
-                    <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
+                    <Input type={showPassword ? 'text' : 'password'} placeholder={isEditMode ? '•••••••• (opcional)' : 'Contraseña requerida'} {...field} />
                     </FormControl>
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -153,7 +188,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Rol</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                     <SelectTrigger>
                         <SelectValue placeholder="Seleccione un rol" />
@@ -174,7 +209,12 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
             <FormControl>
                 <Input type="file" onChange={handleFileChange} accept="image/png, image/jpeg" />
             </FormControl>
-            {signatureFileName && <p className="text-sm text-muted-foreground mt-2">Archivo: {signatureFileName}</p>}
+            {signaturePreview && (
+              <div className="mt-2 p-2 border rounded-md bg-muted">
+                  <p className="text-sm font-medium mb-1">Previsualización:</p>
+                  <Image src={signaturePreview} alt="Previsualización de la firma" width={150} height={75} className="bg-white object-contain rounded-md" />
+              </div>
+            )}
             <FormMessage />
         </FormItem>
 
