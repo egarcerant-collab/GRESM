@@ -9,7 +9,7 @@ import {
   SidebarContent,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { FilePlus, LayoutDashboard, List, ShieldCheck, Users } from 'lucide-react';
+import { FilePlus, List, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { User } from '@/lib/types';
@@ -34,21 +34,9 @@ export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'
             <SidebarMenuButton
               asChild
               isActive={pathname === '/dashboard'}
-              tooltip="Indicadores"
-            >
-              <Link href="/dashboard">
-                <LayoutDashboard />
-                <span>Indicadores</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === '/audits/new'}
               tooltip="Nueva Auditoría"
             >
-              <Link href="/audits/new">
+              <Link href="/dashboard">
                 <FilePlus />
                 <span>Nueva Auditoría</span>
               </Link>

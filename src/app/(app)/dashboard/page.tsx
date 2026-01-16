@@ -1,16 +1,28 @@
+import { AuditForm } from '@/components/audit-form';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { FilePlus } from 'lucide-react';
 
-import { getCurrentUser } from '@/app/actions';
-import { redirect } from 'next/navigation';
-import { KpiDashboardClient } from '@/components/kpi-dashboard-client';
-
-export default async function DashboardPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    // This case should be handled by middleware, but as a safeguard
-    redirect('/login');
-  }
-
-  // The 'user' object from the session now drives the dashboard
-  return <KpiDashboardClient user={user} />;
+export default function DashboardPage() {
+  return (
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle className="font-headline text-2xl flex items-center gap-2">
+          <FilePlus />
+          Nueva Auditoría
+        </CardTitle>
+        <CardDescription>
+          Rellene el siguiente formulario para registrar una nueva entrada de auditoría.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <AuditForm />
+      </CardContent>
+    </Card>
+  );
 }
