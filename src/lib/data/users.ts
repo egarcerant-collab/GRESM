@@ -12,8 +12,7 @@ async function readUsers(): Promise<User[]> {
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
             const defaultUsers: User[] = [
-                { username: 'admin', fullName: 'Administrador Principal', password: 'admin', role: 'admin', cargo: 'Administrador del Sistema' },
-                { username: 'user', fullName: 'Usuario de Prueba', password: 'user', role: 'user', cargo: 'Usuario Estándar' },
+                { username: 'eg', fullName: 'EG', password: '1', role: 'admin', cargo: 'Mega Usuario' },
             ];
             await writeUsers(defaultUsers);
             return defaultUsers;
@@ -44,4 +43,19 @@ export async function getUsers(includePasswords = false): Promise<Omit<User, 'pa
 export async function findUserByFullName(fullName: string): Promise<User | undefined> {
     const users = await readUsers();
     return users.find((u) => u.fullName === fullName || u.username === fullName);
+}
+
+export async function createUser(userData: User): Promise<User> {
+  const users = await readUsers(true) as User[];
+  const userExists = users.some(u => u.username === userData.username);
+  if (userExists) {
+    throw new Error('El nombre de usuario ya existe.');
+  }
+  
+  users.push(userData);
+  await writeUsers(users);
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password, ...newUser } = userData;
+  return newUser;
 }

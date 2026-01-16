@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/data/audits';
-import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers } from '@/lib/data/users';
-import { auditSchema } from '@/lib/schema';
+import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser } from '@/lib/data/users';
+import { auditSchema, userSchema } from '@/lib/schema';
 import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
 import fs from 'fs/promises';
@@ -161,5 +161,24 @@ export async function getUsersAction(): Promise<{ users: Omit<User, 'password'>[
   } catch (error) {
     console.error('Error al obtener los usuarios:', error);
     return { users: [], error: 'Error al recuperar los usuarios de la base de datos.' };
+  }
+}
+
+export async function createUserAction(values: z.infer<typeof userSchema>) {
+  const validatedFields = userSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return { error: 'Datos inválidos proporcionados.' };
+  }
+
+  try {
+    await dbCreateUser(validatedFields.data as User);
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    if (error instanceof Error) {
+        return { error: error.message };
+    }
+    return { error: 'Ocurrió un error inesperado al crear el usuario.' };
   }
 }

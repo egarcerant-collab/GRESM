@@ -62,3 +62,12 @@ export const auditSchema = z.object({
     // We set a path, but it won't be used directly. The check is what matters.
     path: ['birthDate'], 
 });
+
+export const userSchema = z.object({
+  username: z.string().min(3, { message: "El nombre de usuario debe tener al menos 3 caracteres." }),
+  fullName: z.string().min(3, { message: "El nombre completo es requerido." }),
+  password: z.string().min(1, { message: "La contraseña es requerida." }),
+  cargo: z.string().min(2, { message: "El cargo es requerido." }),
+  role: z.enum(['admin', 'user']),
+  signature: z.string().optional(),
+});
