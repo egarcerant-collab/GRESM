@@ -17,6 +17,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<Omit<User, 'password' | 'signature'> | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -27,7 +28,8 @@ export default function AppLayout({
         setUser(null);
       }
     }
-    handleAuthChange(); // initial check
+    handleAuthChange();
+    setIsMounted(true);
     
     window.addEventListener('auth-change', handleAuthChange);
 
@@ -45,7 +47,7 @@ export default function AppLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar user={userForSidebar} />
+      <AppSidebar user={isMounted ? userForSidebar : { username: 'guest', fullName: 'Guest', role: 'user', cargo: 'Guest' }} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
           <div className='md:hidden'>
