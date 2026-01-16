@@ -34,6 +34,8 @@ import {
 import { UserForm } from '@/components/admin/user-form';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function AdminPage() {
   const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
@@ -41,6 +43,9 @@ export default function AdminPage() {
   const [isFormOpen, setIsFormOpen] = useState(false); // for edit dialog
   const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
   const { toast } = useToast();
+
+  const [password, setPassword] = useState('');
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -67,8 +72,20 @@ export default function AdminPage() {
     setIsFormOpen(true);
   };
   
-  const handleDeleteUser = async (username: string) => {
-    if (username === 'eg') {
+  const handleDeleteUser = async () => {
+    if (password !== '123456') {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Contraseña incorrecta.',
+      });
+      setPassword('');
+      return;
+    }
+    
+    if (!userToDelete) return;
+
+    if (userToDelete === 'eg') {
         toast({
             variant: 'destructive',
             title: 'Acción no permitida',
@@ -77,7 +94,7 @@ export default function AdminPage() {
         return;
     }
 
-    const result = await deleteUserAction(username);
+    const result = await deleteUserAction(userToDelete);
     if (result.error) {
       toast({
         variant: 'destructive',
@@ -97,6 +114,13 @@ export default function AdminPage() {
       setIsFormOpen(false);
       setEditingUser(null);
       fetchUsers();
+  }
+
+  const onOpenChange = (open: boolean) => {
+    if (!open) {
+      setPassword('');
+      setUserToDelete(null);
+    }
   }
 
   return (
@@ -157,9 +181,9 @@ export default function AdminPage() {
                             <Edit className="h-4 w-4" />
                             <span className="sr-only">Editar Usuario</span>
                         </Button>
-                         <AlertDialog>
+                         <AlertDialog onOpenChange={onOpenChange}>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={user.username === 'eg'}>
+                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={user.username === 'eg'} onClick={() => setUserToDelete(user.username)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Eliminar Usuario</span>
                                 </Button>
@@ -168,12 +192,22 @@ export default function AdminPage() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Esto eliminará permanentemente al usuario.
+                                    Esta acción no se puede deshacer. Esto eliminará permanentemente al usuario. Para confirmar, introduce la contraseña.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
+                                <div className="space-y-2 py-2">
+                                    <Label htmlFor="delete-password-admin">Contraseña</Label>
+                                    <Input
+                                        id="delete-password-admin"
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Introduce la contraseña"
+                                    />
+                                </div>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user.username)}>
+                                <AlertDialogAction onClick={handleDeleteUser}>
                                     Eliminar
                                 </AlertDialogAction>
                                 </AlertDialogFooter>

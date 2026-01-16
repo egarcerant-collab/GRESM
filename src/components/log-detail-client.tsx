@@ -29,6 +29,8 @@ import { deleteAuditAction, getImageAsBase64Action, findUserByFullNameAction } f
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -58,12 +60,23 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
   const [isMounted, setIsMounted] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const [password, setPassword] = React.useState('');
 
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const handleDelete = async () => {
+    if(password !== '123456'){
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Contraseña incorrecta.',
+      });
+      setPassword('');
+      return;
+    }
+
     if (audit) {
       setIsDeleting(true);
       const result = await deleteAuditAction(audit.id);
@@ -110,6 +123,12 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
     }
   };
 
+  const onOpenChange = (open: boolean) => {
+    if (!open) {
+      setPassword('');
+    }
+  };
+
   const createdAt = new Date(audit.createdAt);
   const birthDate = audit.birthDate ? new Date(audit.birthDate) : null;
   
@@ -141,7 +160,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
             )}
             Descargar PDF
           </Button>
-          <AlertDialog>
+          <AlertDialog onOpenChange={onOpenChange}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={isDeleting}>
                 {isDeleting ? (
@@ -156,9 +175,19 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría.
+                  Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría. Para confirmar, introduce la contraseña.
                 </AlertDialogDescription>
               </AlertDialogHeader>
+              <div className="space-y-2 py-2">
+                <Label htmlFor="delete-password-detail">Contraseña</Label>
+                <Input
+                    id="delete-password-detail"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Introduce la contraseña"
+                />
+              </div>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
