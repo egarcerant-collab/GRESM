@@ -1,8 +1,8 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getIronSession } from 'iron-session';
-import { sessionOptions, type SessionData } from '@/lib/session';
+import { getIronSession } from 'iron-session/edge';
+import { sessionOptions, type SessionData } from '@/lib/session-options';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
