@@ -1,6 +1,4 @@
 
-'use client';
-
 import { AppSidebar } from '@/components/app-sidebar';
 import {
   SidebarProvider,
@@ -10,20 +8,20 @@ import {
 import { ShieldCheck } from 'lucide-react';
 import React from 'react';
 import { UserMenu } from '@/components/user-menu';
-import type { User } from '@/lib/types';
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Hardcoded mock user to bypass login.
-  const user: Omit<User, 'password'|'signature'> = {
-    username: 'eg',
-    fullName: 'EG (Admin)',
-    role: 'admin',
-    cargo: 'Mega Usuario'
-  };
+  const session = await getSession();
+  const user = session.user;
+
+  if (!user) {
+    redirect('/login');
+  }
 
   return (
     <SidebarProvider>

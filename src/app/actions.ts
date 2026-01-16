@@ -9,15 +9,11 @@ import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
+import { getSession } from './lib/session';
 
 export async function getCurrentUser() {
-    // Return a mock admin user as login is disabled.
-    return {
-        username: 'eg',
-        fullName: 'EG (Admin)',
-        role: 'admin',
-        cargo: 'Mega Usuario'
-    };
+    const session = await getSession();
+    return session.user;
 }
 
 export async function createAuditAction(values: z.infer<typeof auditSchema>) {
@@ -135,6 +131,7 @@ export async function findUserByFullNameAction(fullName: string): Promise<User |
     if (!user) {
       return null;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   } catch (error) {
@@ -177,6 +174,7 @@ export async function createUserAction(values: z.infer<typeof userSchema>) {
 }
 
 export async function updateUserAction(username: string, values: z.infer<typeof userSchema>) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { username: formUsername, ...updateValues } = values;
 
   const validatedFields = userSchema.safeParse(values);

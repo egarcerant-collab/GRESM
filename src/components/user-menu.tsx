@@ -4,12 +4,16 @@
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from './ui/button';
 import type { User } from '@/lib/types';
+import { LogOut } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 function getInitials(name: string) {
     if (!name) return '';
@@ -23,6 +27,26 @@ function getInitials(name: string) {
 
 
 export function UserMenu({ user }: { user: Omit<User, 'password' | 'signature'> }) {
+    const { toast } = useToast();
+
+    const handleLogout = async () => {
+        try {
+            const response = await fetch('/api/logout', { method: 'POST' });
+            if (response.ok) {
+                toast({ title: "Sesión cerrada", description: "Has cerrado sesión exitosamente." });
+                window.location.href = '/login';
+            } else {
+                throw new Error('Failed to log out');
+            }
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: "No se pudo cerrar la sesión.",
+            });
+        }
+    };
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -41,6 +65,11 @@ export function UserMenu({ user }: { user: Omit<User, 'password' | 'signature'> 
                         </p>
                     </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );

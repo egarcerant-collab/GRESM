@@ -1,13 +1,29 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getIronSession } from 'iron-session';
+import { sessionOptions, type SessionData } from '@/lib/session';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const session = await getIronSession<SessionData>(request.cookies, sessionOptions);
+  const user = session.user;
 
-  // Redirect root and login page to the dashboard, as login is no longer needed.
-  if (pathname === '/' || pathname === '/login') {
+  // If user is not logged in and tries to access a protected route (not login), redirect to /login
+  if (!user && pathname !== '/login') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // If user is logged in and tries to access /login, redirect to /dashboard
+  if (user && pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+  
+  if (pathname === '/') {
+    if (user) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.next();
