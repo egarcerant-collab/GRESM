@@ -33,7 +33,7 @@ export async function loginAction(values: z.infer<typeof loginSchema>) {
     session.user = userWithoutPassword;
     await session.save();
     
-    redirect('/dashboard');
+    return { success: true };
 }
 
 export async function logoutAction() {
@@ -75,7 +75,7 @@ export async function createAuditAction(values: z.infer<typeof auditSchema>) {
   }
 
   revalidatePath('/logs');
-  redirect('/logs');
+  return { success: true };
 }
 
 export async function deleteAuditAction(id: string) {

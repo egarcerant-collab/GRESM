@@ -233,24 +233,12 @@ export function AuditForm() {
           title: 'Error al crear la auditoría',
           description: result.error,
         });
-      } else {
-        // Redirect is handled by the server action
+      } else if (result?.success) {
         toast({
           title: 'Auditoría Creada',
-          description: 'La auditoría ha sido registrada exitosamente.',
+          description: 'La auditoría ha sido registrada exitosamente. Redirigiendo...',
         });
-        form.reset();
-        // Reset select states
-        setDepartmentSelection('');
-        setMunicipalitySelection('');
-        setEthnicitySelection('');
-        setUpgdProviderSelection('');
-        setPatientWarning(null);
-        // Refetch user for the form
-        const user = await getCurrentUser();
-        if (user) {
-            form.setValue('auditorName', user.fullName);
-        }
+        window.location.assign('/logs');
       }
     });
   }

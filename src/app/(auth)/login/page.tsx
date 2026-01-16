@@ -8,6 +8,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   return (
     <Card className="shadow-lg">

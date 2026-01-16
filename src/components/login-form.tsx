@@ -43,6 +43,13 @@ export function LoginForm() {
           description: result.error,
         });
       }
+      if (result?.success) {
+        toast({
+          title: 'Inicio de sesión exitoso',
+          description: 'Redirigiendo a su panel de control...',
+        });
+        window.location.assign('/dashboard');
+      }
     });
   }
 
