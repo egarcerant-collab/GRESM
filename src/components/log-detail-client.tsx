@@ -61,9 +61,14 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
   const router = useRouter();
   const { toast } = useToast();
   const [password, setPassword] = React.useState('');
+  const [currentUser, setCurrentUser] = React.useState<Omit<User, 'password' | 'signature'> | null>(null);
 
   React.useEffect(() => {
     setIsMounted(true);
+    const storedUser = localStorage.getItem('loggedInUser');
+    if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+    }
   }, []);
 
   const handleDelete = async () => {
@@ -160,42 +165,44 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
             )}
             Descargar PDF
           </Button>
-          <AlertDialog onOpenChange={onOpenChange}>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={isDeleting}>
-                {isDeleting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="mr-2 h-4 w-4" />
-                )}
-                Eliminar
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría. Para confirmar, introduce la contraseña.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="space-y-2 py-2">
-                <Label htmlFor="delete-password-detail">Contraseña</Label>
-                <Input
-                    id="delete-password-detail"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Introduce la contraseña"
-                />
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-                  {isDeleting ? 'Eliminando...' : 'Continuar'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {currentUser?.role === 'admin' && (
+            <AlertDialog onOpenChange={onOpenChange}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={isDeleting}>
+                  {isDeleting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-2 h-4 w-4" />
+                  )}
+                  Eliminar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría. Para confirmar, introduce la contraseña.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2 py-2">
+                  <Label htmlFor="delete-password-detail">Contraseña</Label>
+                  <Input
+                      id="delete-password-detail"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Introduce la contraseña"
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                    {isDeleting ? 'Eliminando...' : 'Continuar'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
       </div>

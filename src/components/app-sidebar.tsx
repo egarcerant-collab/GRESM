@@ -55,7 +55,7 @@ export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-           {user.username === 'eg' && (
+           {user.role === 'admin' && (
             <SidebarMenuItem>
                 <SidebarMenuButton
                 asChild

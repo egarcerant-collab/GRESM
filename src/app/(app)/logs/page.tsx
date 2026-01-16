@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { FilePlus, Loader2, Download } from 'lucide-react';
-import type { Audit } from '@/lib/types';
+import type { Audit, User } from '@/lib/types';
 import {
   Select,
   SelectContent,
@@ -52,6 +52,7 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
+  const [currentUser, setCurrentUser] = useState<Omit<User, 'password' | 'signature'> | null>(null);
 
   const [selectedYear, setSelectedYear] = useState<string>(
     new Date().getFullYear().toString()
@@ -66,6 +67,11 @@ export default function LogsPage() {
       setLoading(false);
     }
     fetchAudits();
+
+    const storedUser = localStorage.getItem('loggedInUser');
+    if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+    }
   }, []);
 
   const handleDeleteAudit = async (id: string) => {
@@ -219,7 +225,7 @@ export default function LogsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         ) : (
-          <AuditLogTable audits={filteredAudits} onDelete={handleDeleteAudit} />
+          <AuditLogTable audits={filteredAudits} onDelete={currentUser?.role === 'admin' ? handleDeleteAudit : undefined} />
         )}
       </CardContent>
     </Card>
