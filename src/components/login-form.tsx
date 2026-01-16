@@ -19,13 +19,11 @@ import { useTransition, useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { loginAction } from '@/app/actions';
 import { loginSchema } from '@/lib/schema';
-import { useRouter } from 'next/navigation';
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -44,12 +42,6 @@ export function LoginForm() {
           title: 'Error de inicio de sesión',
           description: result.error,
         });
-      } else if (result?.success) {
-        toast({
-            title: 'Inicio de sesión exitoso',
-            description: 'Redirigiendo a su panel...',
-        });
-        router.push('/dashboard');
       }
     });
   }
