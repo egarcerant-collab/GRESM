@@ -6,7 +6,8 @@ import { sessionOptions, type SessionData } from '@/lib/session-options';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session = await getIronSession<SessionData>(request.cookies, sessionOptions);
+  const res = NextResponse.next();
+  const session = await getIronSession<SessionData>(request, res, sessionOptions);
   const user = session.user;
 
   // If user is not logged in and tries to access a protected route (not login), redirect to /login
@@ -26,7 +27,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  return NextResponse.next();
+  return res;
 }
 
 export const config = {
