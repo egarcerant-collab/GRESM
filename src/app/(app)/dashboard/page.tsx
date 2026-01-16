@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { FilePlus, KeyRound, User as UserIcon, LogOut } from 'lucide-react';
-import { getUsersAction } from '@/app/actions';
+import { getUsersAction, findUserByUsernameAction } from '@/app/actions';
 import type { User } from '@/lib/types';
 import {
   Select,
@@ -25,10 +25,10 @@ import {
 } from '@/components/ui/select';
 
 export default function DashboardPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<Omit<User, 'password' | 'signature'> | null>(null);
   const [password, setPassword] = useState('');
   const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
-  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedUsername, setSelectedUsername] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,10 +46,17 @@ export default function DashboardPage() {
       }
     }
     fetchUsers();
+
+    const storedUserJson = localStorage.getItem('loggedInUser');
+    if (storedUserJson) {
+        const storedUser = JSON.parse(storedUserJson);
+        setCurrentUser(storedUser);
+        setSelectedUsername(storedUser.username);
+    }
   }, [toast]);
 
-  const handleAuth = () => {
-    if (!selectedUser) {
+  const handleAuth = async () => {
+    if (!selectedUsername) {
       toast({
         variant: 'destructive',
         title: 'Selección Requerida',
@@ -58,8 +65,22 @@ export default function DashboardPage() {
       return;
     }
 
-    if (password === '123456') {
-      setIsAuthenticated(true);
+    const { user: fullUser, error } = await findUserByUsernameAction(selectedUsername);
+    if (error || !fullUser || !fullUser.password) {
+      toast({
+        variant: 'destructive',
+        title: 'Error de Autenticación',
+        description: error || 'No se pudo verificar el usuario.',
+      });
+      return;
+    }
+
+    if (password === fullUser.password) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _p, ...auditor } = fullUser;
+      setCurrentUser(auditor);
+      localStorage.setItem('loggedInUser', JSON.stringify(auditor));
+      window.dispatchEvent(new CustomEvent('auth-change'));
     } else {
       toast({
         variant: 'destructive',
@@ -71,14 +92,15 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    setSelectedUser('');
+    setCurrentUser(null);
+    setSelectedUsername('');
     setPassword('');
+    localStorage.removeItem('loggedInUser');
+    window.dispatchEvent(new CustomEvent('auth-change'));
   };
 
-  const auditor = users.find((u) => u.username === selectedUser);
 
-  if (isAuthenticated && auditor) {
+  if (currentUser) {
     return (
       <Card className="shadow-lg">
         <CardHeader>
@@ -89,7 +111,7 @@ export default function DashboardPage() {
                 Nueva Auditoría
               </CardTitle>
               <CardDescription>
-                Sesión iniciada como <strong>{auditor.fullName}</strong>. Rellene el siguiente formulario para registrar una nueva entrada de auditoría.
+                Sesión iniciada como <strong>{currentUser.fullName}</strong>. Rellene el siguiente formulario para registrar una nueva entrada de auditoría.
               </CardDescription>
             </div>
             <Button variant="outline" onClick={handleLogout}>
@@ -99,7 +121,7 @@ export default function DashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <AuditForm auditor={auditor} />
+          <AuditForm auditor={currentUser} />
         </CardContent>
       </Card>
     );
@@ -127,7 +149,7 @@ export default function DashboardPage() {
           >
             <div className="space-y-2">
                <Label htmlFor="user-select" className='flex items-center gap-2'><UserIcon className='h-4 w-4 text-muted-foreground' />Usuario</Label>
-              <Select value={selectedUser} onValueChange={setSelectedUser}>
+              <Select value={selectedUsername} onValueChange={setSelectedUsername}>
                 <SelectTrigger id="user-select">
                   <SelectValue placeholder="Seleccione un usuario" />
                 </SelectTrigger>

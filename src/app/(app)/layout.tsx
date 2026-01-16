@@ -1,4 +1,6 @@
 
+'use client';
+
 import { AppSidebar } from '@/components/app-sidebar';
 import {
   SidebarProvider,
@@ -6,25 +8,44 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ShieldCheck } from 'lucide-react';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User } from '@/lib/types';
 
-export default async function AppLayout({
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Mock user to allow navigation to all sections, including admin, since login is removed.
-  const mockUser: Omit<User, 'password' | 'signature'> = {
-    username: 'admin',
-    fullName: 'Admin User',
-    role: 'admin',
-    cargo: 'Administrator'
+  const [user, setUser] = useState<Omit<User, 'password' | 'signature'> | null>(null);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const storedUser = localStorage.getItem('loggedInUser');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        setUser(null);
+      }
+    }
+    handleAuthChange(); // initial check
+    
+    window.addEventListener('auth-change', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+    }
+  }, []);
+
+  const userForSidebar: Omit<User, 'password' | 'signature'> = user || {
+    username: 'guest',
+    fullName: 'Guest',
+    role: 'user',
+    cargo: 'Guest'
   };
 
   return (
     <SidebarProvider>
-      <AppSidebar user={mockUser} />
+      <AppSidebar user={userForSidebar} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
           <div className='md:hidden'>
