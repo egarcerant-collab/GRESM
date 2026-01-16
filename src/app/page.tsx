@@ -1,5 +1,8 @@
+
 import { redirect } from 'next/navigation';
 
 export default function HomePage() {
-  redirect('/dashboard');
+  // The middleware will handle the redirection based on auth status.
+  // This is just a fallback.
+  redirect('/login');
 }

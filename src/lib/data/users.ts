@@ -1,3 +1,4 @@
+
 import fs from 'fs/promises';
 import path from 'path';
 import type { User } from '../types';
@@ -29,6 +30,11 @@ async function writeUsers(users: User[]): Promise<void> {
     } catch (error) {
         console.error('Failed to write users file:', error);
     }
+}
+
+export async function findUserByUsernameForLogin(username: string): Promise<User | undefined> {
+    const users = await readUsers();
+    return users.find((u) => u.username === username);
 }
 
 export async function getUsers(includePasswords = false): Promise<Omit<User, 'password'>[] | User[]> {

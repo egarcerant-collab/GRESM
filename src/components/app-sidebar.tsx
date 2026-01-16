@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,8 +13,9 @@ import {
 import { FilePlus, List, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { User } from '@/lib/types';
 
-export function AppSidebar() {
+export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'> }) {
   const pathname = usePathname();
 
   return (
@@ -53,18 +55,20 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith('/admin')}
-              tooltip="Administración"
-            >
-              <Link href="/admin">
-                <Users />
-                <span>Administración</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+           {user.role === 'admin' && (
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/admin')}
+                tooltip="Administración"
+                >
+                <Link href="/admin">
+                    <Users />
+                    <span>Administración</span>
+                </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+           )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>

@@ -1,4 +1,10 @@
+
 import { z } from 'zod';
+
+export const loginSchema = z.object({
+  username: z.string().min(1, { message: "El nombre de usuario es requerido." }),
+  password: z.string().min(1, { message: "La contraseña es requerida." }),
+});
 
 export const auditSchema = z.object({
   auditorName: z.string().min(2, { message: 'El nombre del auditor es requerido.' }),
