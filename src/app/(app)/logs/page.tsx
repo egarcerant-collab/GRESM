@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getAuditsAction, findUserByFullNameAction } from '@/app/actions';
+import { getAuditsAction, findUserByFullNameAction, deleteAuditAction } from '@/app/actions';
 import { AuditLogTable } from '@/components/audit-log-table';
 import { DownloadAuditsButton } from '@/components/download-audits-button';
 import {
@@ -67,6 +67,23 @@ export default function LogsPage() {
     }
     fetchAudits();
   }, []);
+
+  const handleDeleteAudit = async (id: string) => {
+    const result = await deleteAuditAction(id);
+    if (result?.error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error al eliminar',
+        description: result.error,
+      });
+    } else {
+      setAudits((prevAudits) => prevAudits.filter((audit) => audit.id !== id));
+      toast({
+        title: 'Auditoría Eliminada',
+        description: 'El registro ha sido eliminado exitosamente.',
+      });
+    }
+  };
 
   const filteredAudits = useMemo(() => {
     return audits.filter((audit) => {
@@ -202,7 +219,7 @@ export default function LogsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         ) : (
-          <AuditLogTable audits={filteredAudits} />
+          <AuditLogTable audits={filteredAudits} onDelete={handleDeleteAudit} />
         )}
       </CardContent>
     </Card>
