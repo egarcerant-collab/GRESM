@@ -2,31 +2,25 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/data/audits';
-import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser, updateUser as dbUpdateUser, deleteUser as dbDeleteUser, findUserByUsernameForLogin } from '@/lib/data/users';
+import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser, updateUser as dbUpdateUser, deleteUser as dbDeleteUser } from '@/lib/data/users';
 import { auditSchema, userSchema } from '@/lib/schema';
 import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
-import { getSession } from '@/lib/session';
-
-export async function logoutAction() {
-    const session = await getSession();
-    session.destroy();
-    redirect('/login');
-}
 
 export async function getCurrentUser() {
-    const session = await getSession();
-    return session.user;
+    // Return a mock admin user as login is disabled.
+    return {
+        username: 'eg',
+        fullName: 'EG (Admin)',
+        role: 'admin',
+        cargo: 'Mega Usuario'
+    };
 }
 
 export async function createAuditAction(values: z.infer<typeof auditSchema>) {
-  const session = await getSession();
-  if (!session.user) return { error: 'No autorizado' };
-
   const validatedFields = auditSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -55,9 +49,6 @@ export async function createAuditAction(values: z.infer<typeof auditSchema>) {
 }
 
 export async function deleteAuditAction(id: string) {
-  const session = await getSession();
-  if (!session.user) return { error: 'No autorizado' };
-  
   try {
     await dbDeleteAudit(id);
     revalidatePath('/logs');
@@ -70,9 +61,6 @@ export async function deleteAuditAction(id: string) {
 }
 
 export async function getAuditByIdAction(id: string): Promise<{ audit: Audit | null, error?: string }> {
-  const session = await getSession();
-  if (!session.user) return { audit: null, error: 'No autorizado' };
-  
   try {
     const audit = await dbGetAuditById(id);
     if (!audit) {
@@ -86,9 +74,6 @@ export async function getAuditByIdAction(id: string): Promise<{ audit: Audit | n
 }
 
 export async function getAuditsAction(): Promise<{ audits: Audit[], error?: string }> {
-    const session = await getSession();
-    if (!session.user) return { audits: [], error: 'No autorizado' };
-
   try {
     const audits = await dbGetAudits();
     return { audits: JSON.parse(JSON.stringify(audits)) };
@@ -99,9 +84,6 @@ export async function getAuditsAction(): Promise<{ audits: Audit[], error?: stri
 }
 
 export async function checkExistingPatientAction(documentNumber: string): Promise<{ exists: boolean }> {
-  const session = await getSession();
-  if (!session.user) return { exists: false };
-
   if (!documentNumber) {
     return { exists: false };
   }
@@ -148,8 +130,6 @@ export async function getImageAsBase64Action(imagePath: string): Promise<string 
 }
 
 export async function findUserByFullNameAction(fullName: string): Promise<User | null> {
-  const session = await getSession();
-  if (!session.user) return null;
   try {
     const user = await dbFindUserByFullName(fullName);
     if (!user) {
@@ -164,10 +144,6 @@ export async function findUserByFullNameAction(fullName: string): Promise<User |
 }
 
 export async function getUsersAction(): Promise<{ users: Omit<User, 'password'>[], error?: string }> {
-  const session = await getSession();
-  if (!session.user || session.user.role !== 'admin') {
-    return { users: [], error: 'No autorizado' };
-  }
   try {
     const users = await dbGetUsers();
     return { users: users as Omit<User, 'password'>[] };
@@ -178,10 +154,6 @@ export async function getUsersAction(): Promise<{ users: Omit<User, 'password'>[
 }
 
 export async function createUserAction(values: z.infer<typeof userSchema>) {
-  const session = await getSession();
-  if (!session.user || session.user.role !== 'admin') {
-    return { error: 'No autorizado para crear usuarios.' };
-  }
   if (!values.password || values.password.length < 1) {
     return { error: 'La contraseña es requerida para crear un usuario.' };
   }
@@ -205,10 +177,6 @@ export async function createUserAction(values: z.infer<typeof userSchema>) {
 }
 
 export async function updateUserAction(username: string, values: z.infer<typeof userSchema>) {
-  const session = await getSession();
-  if (!session.user || session.user.role !== 'admin') {
-    return { error: 'No autorizado para actualizar usuarios.' };
-  }
   const { username: formUsername, ...updateValues } = values;
 
   const validatedFields = userSchema.safeParse(values);
@@ -236,10 +204,6 @@ export async function updateUserAction(username: string, values: z.infer<typeof 
 }
 
 export async function deleteUserAction(username: string) {
-  const session = await getSession();
-  if (!session.user || session.user.role !== 'admin') {
-    return { error: 'No autorizado para eliminar usuarios.' };
-  }
   try {
     await dbDeleteUser(username);
     revalidatePath('/admin');

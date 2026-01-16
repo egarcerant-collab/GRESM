@@ -7,45 +7,23 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { ShieldCheck } from 'lucide-react';
+import React from 'react';
 import { UserMenu } from '@/components/user-menu';
-import { getCurrentUser } from '@/app/actions';
 import type { User } from '@/lib/types';
-import { usePathname } from 'next/navigation';
 
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [user, setUser] = useState<Omit<User, 'password'|'signature'> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch (e) {
-        console.error("Failed to fetch user, relying on middleware to redirect.", e);
-        // If there's an error, we can't get user info, but we won't redirect here.
-        // The middleware is the source of truth for auth enforcement.
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchUser();
-  }, [pathname]);
-
-  if (loading || !user) {
-    return (
-       <div className="flex h-screen w-full items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  // Hardcoded mock user to bypass login.
+  const user: Omit<User, 'password'|'signature'> = {
+    username: 'eg',
+    fullName: 'EG (Admin)',
+    role: 'admin',
+    cargo: 'Mega Usuario'
+  };
 
   return (
     <SidebarProvider>

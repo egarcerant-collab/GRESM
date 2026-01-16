@@ -4,18 +4,15 @@
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from './ui/button';
-import { LogOut } from 'lucide-react';
 import type { User } from '@/lib/types';
-import { logoutAction } from '@/app/actions';
 
 function getInitials(name: string) {
+    if (!name) return '';
     const names = name.split(' ');
     let initials = names[0].substring(0, 1).toUpperCase();
     if (names.length > 1) {
@@ -44,15 +41,6 @@ export function UserMenu({ user }: { user: Omit<User, 'password' | 'signature'> 
                         </p>
                     </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <form action={logoutAction} className='w-full'>
-                    <DropdownMenuItem asChild>
-                        <button type="submit" className="w-full cursor-pointer">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Cerrar Sesión</span>
-                        </button>
-                    </DropdownMenuItem>
-                </form>
             </DropdownMenuContent>
         </DropdownMenu>
     );
