@@ -1,24 +1,9 @@
-
 [
-  {
-    "username": "admin",
-    "fullName": "Administrador Principal",
-    "password": "admin",
-    "role": "admin",
-    "cargo": "Administrador del Sistema"
-  },
   {
     "username": "eg",
     "fullName": "EG",
     "password": "eg",
     "role": "admin",
     "cargo": "Mega Usuario"
-  },
-  {
-    "username": "user",
-    "fullName": "Usuario de Prueba",
-    "password": "user",
-    "role": "user",
-    "cargo": "Usuario Estándar"
   }
 ]
