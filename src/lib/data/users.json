@@ -8,6 +8,13 @@
     "cargo": "Administrador del Sistema"
   },
   {
+    "username": "eg",
+    "fullName": "EG",
+    "password": "eg",
+    "role": "admin",
+    "cargo": "Mega Usuario"
+  },
+  {
     "username": "user",
     "fullName": "Usuario de Prueba",
     "password": "user",
