@@ -9,7 +9,7 @@ import {
   SidebarContent,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { FilePlus, List, ShieldCheck } from 'lucide-react';
+import { FilePlus, List, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -50,6 +50,18 @@ export function AppSidebar() {
               <Link href="/logs">
                 <List />
                 <span>Registro de Auditoría</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/admin')}
+              tooltip="Administración"
+            >
+              <Link href="/admin">
+                <Users />
+                <span>Administración</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
