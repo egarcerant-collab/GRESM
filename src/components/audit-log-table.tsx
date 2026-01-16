@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -93,6 +94,7 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
         <TableRow>
           <TableHead className="w-[80px]">ID</TableHead>
           <TableHead>Paciente</TableHead>
+          <TableHead>Auditor</TableHead>
           <TableHead className="hidden md:table-cell">Evento</TableHead>
           <TableHead className="hidden sm:table-cell">Fecha de Seguimiento</TableHead>
           <TableHead className="hidden sm:table-cell">Tipo de Visita</TableHead>
@@ -104,6 +106,7 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
           <TableRow key={audit.id} className="hover:bg-muted/50">
             <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.id}</TableCell>
             <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.patientName}</TableCell>
+            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.auditorName}</TableCell>
             <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.event}</TableCell>
             <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{format(new Date(audit.followUpDate), 'PP')}</TableCell>
             <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
