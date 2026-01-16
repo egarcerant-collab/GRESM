@@ -11,5 +11,6 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
+  // The 'user' object from the session now drives the dashboard
   return <KpiDashboardClient user={user} />;
 }

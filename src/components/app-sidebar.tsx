@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -10,7 +9,7 @@ import {
   SidebarContent,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { FilePlus, List, ShieldCheck, Users } from 'lucide-react';
+import { FilePlus, LayoutDashboard, List, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { User } from '@/lib/types';
@@ -35,9 +34,21 @@ export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'
             <SidebarMenuButton
               asChild
               isActive={pathname === '/dashboard'}
-              tooltip="Nueva Auditoría"
+              tooltip="Indicadores"
             >
               <Link href="/dashboard">
+                <LayoutDashboard />
+                <span>Indicadores</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === '/audits/new'}
+              tooltip="Nueva Auditoría"
+            >
+              <Link href="/audits/new">
                 <FilePlus />
                 <span>Nueva Auditoría</span>
               </Link>
