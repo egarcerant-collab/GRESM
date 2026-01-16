@@ -30,10 +30,11 @@ import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
-import { createAuditAction, checkExistingPatientAction } from '@/app/actions';
+import { createAuditAction, checkExistingPatientAction, getUsersAction } from '@/app/actions';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
+import type { User } from '@/lib/types';
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -106,6 +107,7 @@ export function AuditForm() {
   const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
   const [ethnicitySelection, setEthnicitySelection] = useState<string>('');
   const [upgdProviderSelection, setUpgdProviderSelection] = useState<string>('');
+  const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
 
   const [isCheckingPatient, setIsCheckingPatient] = useState(false);
   const [patientWarning, setPatientWarning] = useState<string | null>(null);
@@ -150,6 +152,23 @@ export function AuditForm() {
   const isOtherEthnicity = ethnicitySelection === 'Otro';
   const isOtherUpgdProvider = upgdProviderSelection === 'Otro';
   const showSpecialEventFields = eventSelection === 'Intento de Suicidio' || eventSelection === 'Consumo de Sustancia Psicoactivas';
+
+  useEffect(() => {
+    async function fetchUsers() {
+      const { users: fetchedUsers, error } = await getUsersAction();
+      if (error) {
+        console.error('Failed to fetch users:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error al cargar usuarios',
+          description: 'No se pudieron obtener los usuarios para el selector.',
+        });
+      } else if (fetchedUsers) {
+        setUsers(fetchedUsers);
+      }
+    }
+    fetchUsers();
+  }, [toast]);
 
   useEffect(() => {
     const checkPatient = async () => {
@@ -243,9 +262,20 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Auditor</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Alice Plata" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un auditor" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.username} value={user.fullName || user.username}>
+                        {user.fullName || user.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
