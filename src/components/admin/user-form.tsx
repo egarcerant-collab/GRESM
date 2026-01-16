@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -16,25 +17,28 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useTransition, useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { createUserAction } from '@/app/actions';
+import { createUserAction, updateUserAction } from '@/app/actions';
 import { userSchema } from '@/lib/schema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import type { User } from '@/lib/types';
 
-export function UserForm({ onFinished }: { onFinished: () => void }) {
+export function UserForm({ onFinished, initialData }: { onFinished: () => void, initialData?: Omit<User, 'password'> | null }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const [signatureFileName, setSignatureFileName] = useState('');
+  const [signatureFileName, setSignatureFileName] = useState(initialData?.signature ? 'Firma existente' : '');
+
+  const isEditMode = !!initialData;
 
   const form = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
     defaultValues: {
-      username: '',
-      fullName: '',
+      username: initialData?.username || '',
+      fullName: initialData?.fullName || '',
       password: '',
-      cargo: '',
-      role: 'user',
-      signature: '',
+      cargo: initialData?.cargo || '',
+      role: initialData?.role || 'user',
+      signature: initialData?.signature || '',
     },
   });
 
@@ -55,17 +59,22 @@ export function UserForm({ onFinished }: { onFinished: () => void }) {
 
   function onSubmit(values: z.infer<typeof userSchema>) {
     startTransition(async () => {
-      const result = await createUserAction(values);
+      const action = isEditMode
+        ? () => updateUserAction(initialData!.username, values)
+        : () => createUserAction(values);
+      
+      const result = await action();
+      
       if (result?.error) {
         toast({
           variant: 'destructive',
-          title: 'Error al crear usuario',
+          title: `Error al ${isEditMode ? 'actualizar' : 'crear'} usuario`,
           description: result.error,
         });
       } else {
         toast({
-          title: 'Usuario Creado',
-          description: 'El nuevo usuario ha sido registrado exitosamente.',
+          title: `Usuario ${isEditMode ? 'Actualizado' : 'Creado'}`,
+          description: `El usuario ha sido ${isEditMode ? 'actualizado' : 'registrado'} exitosamente.`,
         });
         onFinished();
       }
@@ -83,7 +92,7 @@ export function UserForm({ onFinished }: { onFinished: () => void }) {
               <FormItem>
                 <FormLabel>Usuario</FormLabel>
                 <FormControl>
-                  <Input placeholder="ej. nuevousuario" {...field} />
+                  <Input placeholder="ej. nuevousuario" {...field} disabled={isEditMode} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -110,6 +119,7 @@ export function UserForm({ onFinished }: { onFinished: () => void }) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Contraseña</FormLabel>
+                {isEditMode && <FormDescription>Dejar en blanco para no cambiar la contraseña.</FormDescription>}
                 <div className="relative">
                     <FormControl>
                     <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••" {...field} />
@@ -172,7 +182,7 @@ export function UserForm({ onFinished }: { onFinished: () => void }) {
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isPending}>
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Crear Usuario
+            {isEditMode ? 'Guardar Cambios' : 'Crear Usuario'}
           </Button>
         </div>
       </form>

@@ -10,8 +10,10 @@ import {
 } from '@/components/ui/table';
 import type { User } from '@/lib/types';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Edit } from 'lucide-react';
 
-export function UserTable({ users }: { users: Omit<User, 'password'>[] }) {
+export function UserTable({ users, onEdit }: { users: Omit<User, 'password'>[], onEdit: (user: Omit<User, 'password'>) => void }) {
   if (users.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
@@ -30,6 +32,7 @@ export function UserTable({ users }: { users: Omit<User, 'password'>[] }) {
             <TableHead>Nombre de Usuario</TableHead>
             <TableHead>Rol</TableHead>
             <TableHead>Cargo</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -43,6 +46,12 @@ export function UserTable({ users }: { users: Omit<User, 'password'>[] }) {
                 </Badge>
               </TableCell>
               <TableCell>{user.cargo}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Editar Usuario</span>
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

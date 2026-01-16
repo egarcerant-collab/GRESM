@@ -19,7 +19,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { UserForm } from '@/components/admin/user-form';
 
@@ -27,6 +26,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<Omit<User, 'password'> | null>(null);
 
   async function fetchUsers() {
     setLoading(true);
@@ -43,12 +43,23 @@ export default function AdminPage() {
     fetchUsers();
   }, []);
   
-  // Refetch users when form is closed to see the new user
+  // Refetch users when form is closed to see the new/updated user
   useEffect(() => {
       if(!isFormOpen) {
           fetchUsers();
+          setEditingUser(null);
       }
   }, [isFormOpen]);
+
+  const handleEditClick = (user: Omit<User, 'password'>) => {
+    setEditingUser(user);
+    setIsFormOpen(true);
+  };
+  
+  const handleCreateClick = () => {
+    setEditingUser(null);
+    setIsFormOpen(true);
+  };
 
   return (
     <>
@@ -60,31 +71,30 @@ export default function AdminPage() {
               Gestión de usuarios y configuración del sistema.
             </CardDescription>
           </div>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Crear Usuario
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-              <DialogHeader>
-                <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-                <DialogDescription>
-                  Complete el formulario para agregar un nuevo usuario al sistema.
-                </DialogDescription>
-              </DialogHeader>
-              <UserForm onFinished={() => setIsFormOpen(false)} />
-            </DialogContent>
-          </Dialog>
+          <Button onClick={handleCreateClick}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Crear Usuario
+          </Button>
         </CardHeader>
         <CardContent>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="sm:max-w-[625px]">
+              <DialogHeader>
+                <DialogTitle>{editingUser ? 'Editar Usuario' : 'Crear Nuevo Usuario'}</DialogTitle>
+                <DialogDescription>
+                  {editingUser ? 'Actualice los detalles del usuario a continuación.' : 'Complete el formulario para agregar un nuevo usuario al sistema.'}
+                </DialogDescription>
+              </DialogHeader>
+              <UserForm onFinished={() => setIsFormOpen(false)} initialData={editingUser} />
+            </DialogContent>
+          </Dialog>
+
           {loading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <UserTable users={users} />
+            <UserTable users={users} onEdit={handleEditClick} />
           )}
         </CardContent>
       </Card>

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAudit as dbCreateAudit, deleteAudit as dbDeleteAudit, getAuditById as dbGetAuditById, getAudits as dbGetAudits } from '@/lib/data/audits';
-import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser } from '@/lib/data/users';
+import { findUserByFullName as dbFindUserByFullName, getUsers as dbGetUsers, createUser as dbCreateUser, updateUser as dbUpdateUser } from '@/lib/data/users';
 import { auditSchema, userSchema } from '@/lib/schema';
 import type { Audit, User } from '@/lib/types';
 import { z } from 'zod';
@@ -165,6 +165,10 @@ export async function getUsersAction(): Promise<{ users: Omit<User, 'password'>[
 }
 
 export async function createUserAction(values: z.infer<typeof userSchema>) {
+  if (!values.password || values.password.length < 1) {
+    return { error: 'La contraseña es requerida para crear un usuario.' };
+  }
+  
   const validatedFields = userSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -180,5 +184,32 @@ export async function createUserAction(values: z.infer<typeof userSchema>) {
         return { error: error.message };
     }
     return { error: 'Ocurrió un error inesperado al crear el usuario.' };
+  }
+}
+
+export async function updateUserAction(username: string, values: z.infer<typeof userSchema>) {
+  const { username: formUsername, ...updateValues } = values;
+
+  const validatedFields = userSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return { error: 'Datos inválidos proporcionados.' };
+  }
+  
+  const dataToUpdate: Partial<User> = { ...updateValues };
+
+  if (!dataToUpdate.password) {
+    delete dataToUpdate.password;
+  }
+  
+  try {
+    await dbUpdateUser(username, dataToUpdate);
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+     if (error instanceof Error) {
+        return { error: error.message };
+    }
+    return { error: 'Ocurrió un error inesperado al actualizar el usuario.' };
   }
 }

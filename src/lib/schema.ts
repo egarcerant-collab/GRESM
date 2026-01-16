@@ -66,7 +66,7 @@ export const auditSchema = z.object({
 export const userSchema = z.object({
   username: z.string().min(3, { message: "El nombre de usuario debe tener al menos 3 caracteres." }),
   fullName: z.string().min(3, { message: "El nombre completo es requerido." }),
-  password: z.string().min(1, { message: "La contraseña es requerida." }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }).optional().or(z.literal('')),
   cargo: z.string().min(2, { message: "El cargo es requerido." }),
   role: z.enum(['admin', 'user']),
   signature: z.string().optional(),

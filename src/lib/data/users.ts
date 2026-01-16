@@ -59,3 +59,32 @@ export async function createUser(userData: User): Promise<User> {
   const { password, ...newUser } = userData;
   return newUser;
 }
+
+export async function updateUser(username: string, userData: Partial<Omit<User, 'username'>>): Promise<User> {
+    const users = await readUsers(true) as User[];
+    const userIndex = users.findIndex(u => u.username === username);
+
+    if (userIndex === -1) {
+        throw new Error('Usuario no encontrado.');
+    }
+
+    const existingUser = users[userIndex];
+    
+    const updatedData = { ...userData };
+
+    // Do not update password if a new one is not provided (is empty or undefined)
+    if (!updatedData.password) {
+        updatedData.password = existingUser.password;
+    }
+
+    users[userIndex] = {
+        ...existingUser,
+        ...updatedData,
+    };
+    
+    await writeUsers(users);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userToReturn } = users[userIndex];
+    return userToReturn;
+}
