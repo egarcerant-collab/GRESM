@@ -33,6 +33,7 @@ export async function loginAction(values: z.infer<typeof loginSchema>) {
     session.user = userWithoutPassword;
     await session.save();
     
+    revalidatePath('/', 'layout');
     return { success: true };
 }
 
