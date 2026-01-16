@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
 
+// This endpoint is no longer used.
 export async function POST() {
-  const session = await getSession();
-  session.destroy();
-  return NextResponse.json({ message: 'Cierre de sesión exitoso' });
+  return NextResponse.json({ message: 'Authentication is disabled.' }, { status: 404 });
 }

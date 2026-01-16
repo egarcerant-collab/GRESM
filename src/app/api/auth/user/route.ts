@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
 
+// This endpoint is no longer used.
 export async function GET() {
-  const session = await getSession();
-  const user = session.user;
-
-  if (user) {
-    return NextResponse.json({ user });
-  } else {
-    return NextResponse.json({ user: null }, { status: 404 });
-  }
+  return NextResponse.json({ user: null }, { status: 404 });
 }

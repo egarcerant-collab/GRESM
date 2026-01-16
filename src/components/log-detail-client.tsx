@@ -29,7 +29,6 @@ import { deleteAuditAction, getImageAsBase64Action, findUserByFullNameAction } f
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
-import { useAuth } from '@/hooks/use-auth';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -59,7 +58,6 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
   const [isMounted, setIsMounted] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -143,34 +141,32 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
             )}
             Descargar PDF
           </Button>
-          {user?.role === 'admin' && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isDeleting}>
-                  {isDeleting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="mr-2 h-4 w-4" />
-                  )}
-                  Eliminar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-                    {isDeleting ? 'Eliminando...' : 'Continuar'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={isDeleting}>
+                {isDeleting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Eliminar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Eliminando...' : 'Continuar'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
       </div>

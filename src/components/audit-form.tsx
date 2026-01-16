@@ -33,7 +33,6 @@ import { createAuditAction, checkExistingPatientAction } from '@/app/actions';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
-import { useAuth } from '@/hooks/use-auth';
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -101,7 +100,6 @@ const municipalitiesByDepartment: Record<string, string[]> = {
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const { user } = useAuth();
   const [departmentSelection, setDepartmentSelection] = useState<string>('');
   const [municipalitySelection, setMunicipalitySelection] = useState<string>('');
   const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
@@ -114,7 +112,7 @@ export function AuditForm() {
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
     defaultValues: {
-      auditorName: user?.fullName || user?.username || '',
+      auditorName: '',
       patientName: '',
       documentType: '',
       documentNumber: '',
@@ -141,12 +139,6 @@ export function AuditForm() {
       followUpInterventionType: '',
     },
   });
-
-  useEffect(() => {
-    if (user) {
-      form.setValue('auditorName', user.fullName || user.username || '');
-    }
-  }, [user, form]);
 
   const eventSelection = form.watch('event');
   const documentNumberValue = form.watch('documentNumber');
