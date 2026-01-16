@@ -772,7 +772,7 @@ export function AuditForm() {
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending || isCheckingPatient || !!patientWarning}>
             {(isPending || isCheckingPatient) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Enviar Auditoría
+            Guardar Auditoría
           </Button>
         </div>
       </form>
