@@ -18,6 +18,7 @@ import { loginSchema } from '@/lib/schema';
 import { useToast } from '@/hooks/use-toast';
 import { useTransition, useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { loginAction } from '@/app/actions';
 
 export function LoginForm() {
   const [isPending, startTransition] = useTransition();
@@ -34,33 +35,13 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     startTransition(async () => {
-      try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            toast({
-                title: 'Inicio de sesión exitoso',
-                description: 'Serás redirigido al panel de control.',
-            });
-            window.location.href = '/dashboard';
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Error de inicio de sesión',
-                description: data.error || 'Ocurrió un error inesperado.',
-            });
-        }
-      } catch (error) {
+      const result = await loginAction(values);
+      
+      if (result?.error) {
         toast({
             variant: 'destructive',
-            title: 'Error de red',
-            description: 'No se pudo conectar al servidor.',
+            title: 'Error de inicio de sesión',
+            description: result.error,
         });
       }
     });

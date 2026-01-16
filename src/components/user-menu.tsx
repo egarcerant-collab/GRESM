@@ -12,8 +12,9 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from './ui/button';
 import type { User } from '@/lib/types';
-import { LogOut } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { LogOut, Loader2 } from 'lucide-react';
+import { useTransition } from 'react';
+import { logoutAction } from '@/app/actions';
 
 function getInitials(name: string) {
     if (!name) return '';
@@ -27,24 +28,12 @@ function getInitials(name: string) {
 
 
 export function UserMenu({ user }: { user: Omit<User, 'password' | 'signature'> }) {
-    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
 
-    const handleLogout = async () => {
-        try {
-            const response = await fetch('/api/logout', { method: 'POST' });
-            if (response.ok) {
-                toast({ title: "Sesión cerrada", description: "Has cerrado sesión exitosamente." });
-                window.location.href = '/login';
-            } else {
-                throw new Error('Failed to log out');
-            }
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: "Error",
-                description: "No se pudo cerrar la sesión.",
-            });
-        }
+    const handleLogout = () => {
+        startTransition(() => {
+            logoutAction();
+        });
     };
 
     return (
@@ -66,9 +55,13 @@ export function UserMenu({ user }: { user: Omit<User, 'password' | 'signature'> 
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Cerrar sesión</span>
+                <DropdownMenuItem onClick={handleLogout} disabled={isPending}>
+                    {isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <LogOut className="mr-2 h-4 w-4" />
+                    )}
+                    <span>{isPending ? 'Cerrando sesión...' : 'Cerrar sesión'}</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
