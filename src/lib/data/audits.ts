@@ -11,6 +11,9 @@ const dataPath = path.join(process.cwd(), 'data', 'audits.json');
 async function readData(): Promise<Audit[]> {
   try {
     const data = await fs.readFile(dataPath, 'utf-8');
+    if (data.trim() === '') {
+      return []; // Return empty array if file is empty
+    }
     const audits = JSON.parse(data);
     // Dates are stored as strings in JSON, so we need to parse them back.
     return audits.map((audit: any) => ({

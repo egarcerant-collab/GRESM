@@ -6,11 +6,13 @@ const usersFilePath = path.join(process.cwd(), 'data', 'users.json');
 
 async function readUsers(): Promise<User[]> {
     try {
-        await fs.access(usersFilePath); // Check if file exists
         const data = await fs.readFile(usersFilePath, 'utf-8');
+        if (data.trim() === '') {
+            throw new Error('Empty users file'); // Trigger recreation
+        }
         return JSON.parse(data);
     } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT' || (error as Error).message === 'Empty users file') {
             const defaultUsers: User[] = [
                 { username: 'eg', fullName: 'EG', password: 'eg', role: 'admin', cargo: 'Mega Usuario' },
             ];
@@ -41,6 +43,7 @@ export async function getUsers(includePasswords = false): Promise<Omit<User, 'pa
     if (includePasswords) {
         return users;
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return users.map(({ password, ...user }) => user);
 }
 
@@ -51,7 +54,7 @@ export async function findUserByFullName(fullName: string): Promise<User | undef
 }
 
 export async function createUser(userData: User): Promise<User> {
-  const users = await readUsers(true) as User[];
+  const users = await readUsers() as User[];
   const userExists = users.some(u => u.username === userData.username);
   if (userExists) {
     throw new Error('El nombre de usuario ya existe.');
@@ -66,7 +69,7 @@ export async function createUser(userData: User): Promise<User> {
 }
 
 export async function updateUser(username: string, userData: Partial<Omit<User, 'username'>>): Promise<User> {
-    const users = await readUsers(true) as User[];
+    const users = await readUsers() as User[];
     const userIndex = users.findIndex(u => u.username === username);
 
     if (userIndex === -1) {
@@ -98,7 +101,7 @@ export async function deleteUser(username: string): Promise<void> {
   if (username === 'eg') {
     throw new Error('No se puede eliminar al mega usuario.');
   }
-  const users = await readUsers(true) as User[];
+  const users = await readUsers() as User[];
   const updatedUsers = users.filter(user => user.username !== username);
   if (users.length === updatedUsers.length) {
     throw new Error('Usuario no encontrado para eliminar.');
