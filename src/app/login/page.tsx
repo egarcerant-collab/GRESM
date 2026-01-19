@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTransition } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, FirebaseClientProvider } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import {
   Card,
@@ -31,7 +31,7 @@ import { useRouter } from 'next/navigation';
 
 const DUMMY_DOMAIN = 'dusakawi.audit.app';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const auth = useAuth();
@@ -132,3 +132,10 @@ export default function LoginPage() {
   );
 }
 
+export default function LoginPage() {
+  return (
+    <FirebaseClientProvider>
+      <LoginPageContent />
+    </FirebaseClientProvider>
+  );
+}
