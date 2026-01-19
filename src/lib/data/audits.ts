@@ -6,7 +6,7 @@ import type { Audit } from '../types';
 // It is not suitable for serverless environments like Vercel or Firebase App Hosting's default setup
 // due to the ephemeral and read-only nature of their filesystems. For production, use a proper database like Firestore.
 
-const dataPath = path.join(process.cwd(), 'src', 'lib', 'data', 'audits.json');
+const dataPath = path.join(process.cwd(), 'data', 'audits.json');
 
 async function readData(): Promise<Audit[]> {
   try {

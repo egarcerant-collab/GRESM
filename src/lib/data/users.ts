@@ -1,9 +1,8 @@
-
 import fs from 'fs/promises';
 import path from 'path';
 import type { User } from '../types';
 
-const usersFilePath = path.join(process.cwd(), 'src', 'lib', 'data', 'users.json');
+const usersFilePath = path.join(process.cwd(), 'data', 'users.json');
 
 async function readUsers(): Promise<User[]> {
     try {
