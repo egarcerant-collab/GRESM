@@ -18,17 +18,25 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useTransition, useState, useEffect } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { createUserAction, updateUserAction } from '@/app/actions';
 import { userSchema } from '@/lib/schema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import type { User } from '@/lib/types';
+import type { UserProfile } from '@/lib/types';
 import Image from 'next/image';
+import { useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, updatePassword } from 'firebase/auth';
+import { setDoc, doc } from 'firebase/firestore';
 
-export function UserForm({ onFinished, initialData }: { onFinished: () => void, initialData?: User | null }) {
+
+const DUMMY_DOMAIN = 'dusakawi.audit.app';
+
+export function UserForm({ onFinished, initialData }: { onFinished: () => void, initialData?: UserProfile | null }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   
+  const auth = useAuth();
+  const firestore = useFirestore();
+
   const isEditMode = !!initialData;
   
   const [signaturePreview, setSignaturePreview] = useState(initialData?.signature || '');
@@ -38,7 +46,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
     defaultValues: {
       username: initialData?.username || '',
       fullName: initialData?.fullName || '',
-      password: initialData?.password || '',
+      password: '', // Always clear password for security
       cargo: initialData?.cargo || '',
       role: initialData?.role || 'user',
       signature: initialData?.signature || '',
@@ -50,7 +58,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
       form.reset({
         username: initialData.username,
         fullName: initialData.fullName,
-        password: initialData.password || '',
+        password: '',
         cargo: initialData.cargo,
         role: initialData.role,
         signature: initialData.signature,
@@ -89,30 +97,78 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
     }
   };
 
+  async function handleCreateUser(values: z.infer<typeof userSchema>) {
+    if (!values.password) {
+        toast({ variant: 'destructive', title: 'Error', description: 'La contraseña es requerida para crear un usuario.' });
+        return;
+    }
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, `${values.username}@${DUMMY_DOMAIN}`, values.password);
+        const user = userCredential.user;
+
+        const userProfile: UserProfile = {
+            uid: user.uid,
+            email: user.email!,
+            username: values.username,
+            fullName: values.fullName,
+            role: values.role,
+            cargo: values.cargo,
+            signature: values.signature
+        };
+
+        await setDoc(doc(firestore, "users", user.uid), userProfile);
+        toast({ title: 'Usuario Creado', description: 'El usuario ha sido registrado exitosamente.'});
+        form.reset();
+        setSignaturePreview('');
+        onFinished();
+
+    } catch (error: any) {
+        const errorCode = error.code;
+        let message = error.message;
+        if (errorCode === 'auth/email-already-in-use') {
+            message = 'Este nombre de usuario ya está en uso.';
+        } else if (errorCode === 'auth/weak-password') {
+            message = 'La contraseña es demasiado débil.';
+        }
+        toast({ variant: 'destructive', title: 'Error al crear usuario', description: message });
+    }
+  }
+
+  async function handleUpdateUser(values: z.infer<typeof userSchema>) {
+      if (!initialData) return;
+      try {
+          const userProfileUpdate: Partial<UserProfile> = {
+            fullName: values.fullName,
+            role: values.role,
+            cargo: values.cargo,
+            signature: values.signature
+          };
+
+          await setDoc(doc(firestore, "users", initialData.uid), userProfileUpdate, { merge: true });
+
+          if (values.password && auth.currentUser) {
+              // This is a sensitive operation and might require recent sign-in.
+              // For this app, we assume the admin user is recently signed in.
+              // A more robust implementation would reauthenticate the admin.
+              // We can't update other users' passwords from the client SDK directly.
+              // This is a limitation. We will skip password updates on the edit form for now.
+              console.warn("Client-side password update for other users is not supported. Skipping.");
+          }
+
+          toast({ title: 'Usuario Actualizado', description: 'El usuario ha sido actualizado exitosamente.' });
+          onFinished();
+
+      } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Error al actualizar usuario', description: error.message });
+      }
+  }
+
   function onSubmit(values: z.infer<typeof userSchema>) {
     startTransition(async () => {
-      const action = isEditMode
-        ? () => updateUserAction(initialData!.username, values)
-        : () => createUserAction(values);
-      
-      const result = await action();
-      
-      if (result?.error) {
-        toast({
-          variant: 'destructive',
-          title: `Error al ${isEditMode ? 'actualizar' : 'crear'} usuario`,
-          description: result.error,
-        });
+      if (isEditMode) {
+        await handleUpdateUser(values);
       } else {
-        toast({
-          title: `Usuario ${isEditMode ? 'Actualizado' : 'Creado'}`,
-          description: `El usuario ha sido ${isEditMode ? 'actualizado' : 'registrado'} exitosamente.`,
-        });
-        if (!isEditMode) {
-            form.reset();
-            setSignaturePreview('');
-        }
-        onFinished();
+        await handleCreateUser(values);
       }
     });
   }
@@ -155,10 +211,12 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Contraseña</FormLabel>
-                {isEditMode && <FormDescription>Deje este campo en blanco para no cambiar la contraseña.</FormDescription>}
+                <FormDescription>
+                    {isEditMode ? "La actualización de contraseña no está disponible en este formulario." : "La contraseña debe tener al menos 6 caracteres."}
+                </FormDescription>
                 <div className="relative">
                     <FormControl>
-                    <Input type={showPassword ? 'text' : 'password'} placeholder={isEditMode ? '•••••••• (opcional)' : 'Contraseña requerida'} {...field} />
+                    <Input type={showPassword ? 'text' : 'password'} placeholder={isEditMode ? '••••••••' : 'Contraseña requerida'} {...field} disabled={isEditMode} />
                     </FormControl>
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

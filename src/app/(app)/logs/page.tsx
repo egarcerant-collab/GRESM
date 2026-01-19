@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getAuditsAction, findUserByFullNameAction, deleteAuditAction } from '@/app/actions';
-import { AuditLogTable } from '@/components/audit-log-table';
 import { DownloadAuditsButton } from '@/components/download-audits-button';
 import {
   Card,
@@ -14,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { FilePlus, Loader2, Download } from 'lucide-react';
-import type { Audit, User } from '@/lib/types';
+import type { Audit, UserProfile } from '@/lib/types';
 import {
   Select,
   SelectContent,
@@ -23,9 +21,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
-import { getImageAsBase64Action } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { AuditLogTable } from '@/components/audit-log-table';
 
 // We need to import JSZip like this for it to work with Next.js
 const JSZip = require('jszip');
@@ -48,11 +48,13 @@ const months = [
 ];
 
 export default function LogsPage() {
-  const [audits, setAudits] = useState<Audit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
+  const { user: authUser } = useUser();
+  const { data: audits, isLoading: loading, error } = useCollection<Audit>(collection(firestore, 'audits'));
+  
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
-  const [currentUser, setCurrentUser] = useState<Omit<User, 'password' | 'signature'> | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
   const [selectedYear, setSelectedYear] = useState<string>(
     new Date().getFullYear().toString()
@@ -60,38 +62,34 @@ export default function LogsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   useEffect(() => {
-    async function fetchAudits() {
-      setLoading(true);
-      const { audits } = await getAuditsAction();
-      setAudits(audits);
-      setLoading(false);
+    if (authUser) {
+      const userDocRef = doc(firestore, 'users', authUser.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setCurrentUserProfile(docSnap.data() as UserProfile);
+        }
+      });
     }
-    fetchAudits();
-
-    const storedUser = localStorage.getItem('loggedInUser');
-    if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
-    }
-  }, []);
+  }, [authUser, firestore]);
 
   const handleDeleteAudit = async (id: string) => {
-    const result = await deleteAuditAction(id);
-    if (result?.error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error al eliminar',
-        description: result.error,
-      });
-    } else {
-      setAudits((prevAudits) => prevAudits.filter((audit) => audit.id !== id));
+    try {
+      await deleteDoc(doc(firestore, 'audits', id));
       toast({
         title: 'Auditoría Eliminada',
         description: 'El registro ha sido eliminado exitosamente.',
+      });
+    } catch (e: any) {
+       toast({
+        variant: 'destructive',
+        title: 'Error al eliminar',
+        description: e.message || "No se pudo eliminar la auditoría",
       });
     }
   };
 
   const filteredAudits = useMemo(() => {
+    if (!audits) return [];
     return audits.filter((audit) => {
       const auditDate = new Date(audit.createdAt);
       const yearMatch = auditDate.getFullYear().toString() === selectedYear;
@@ -120,17 +118,19 @@ export default function LogsPage() {
   
     try {
       const zip = new JSZip();
-      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
-  
+      
       for (const audit of filteredAudits) {
-        const auditor = await findUserByFullNameAction(audit.auditorName);
+        // Fetch auditor profile for each audit
+        const auditorProfile = await getDoc(doc(firestore, 'users', audit.auditorId));
+        const auditorData = auditorProfile.exists() ? auditorProfile.data() as UserProfile : null;
+
         const { jsPDF } = await import('jspdf');
-        const doc = await generateAuditPdf(audit, backgroundImage, auditor, new jsPDF({
+        const docPDF = await generateAuditPdf(audit, null, auditorData, new jsPDF({
           orientation: "p",
           unit: "pt",
           format: "a4"
         }));
-        const pdfBlob = doc.output('blob');
+        const pdfBlob = docPDF.output('blob');
         const fileName = `Informe_Auditoria_${audit.id}_${(audit.patientName || 'SinNombre').replace(/ /g, '_')}.pdf`;
         zip.file(fileName, pdfBlob);
       }
@@ -225,7 +225,7 @@ export default function LogsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         ) : (
-          <AuditLogTable audits={filteredAudits} onDelete={currentUser?.role === 'admin' ? handleDeleteAudit : undefined} />
+          <AuditLogTable audits={filteredAudits} onDelete={currentUserProfile?.role === 'admin' ? handleDeleteAudit : undefined} />
         )}
       </CardContent>
     </Card>

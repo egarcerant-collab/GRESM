@@ -1,23 +1,34 @@
-'use server';
+
+'use client';
 
 import LogDetailClient from '@/components/log-detail-client';
-import { getAuditByIdAction } from '@/app/actions';
+import { useDoc, useFirestore } from '@/firebase';
+import type { Audit } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { format } from 'date-fns';
+import { doc } from 'firebase/firestore';
 
 type PageProps = {
   params: { id: string };
 };
 
-export default async function LogDetailPage({ params }: PageProps) {
+export default function LogDetailPage({ params }: PageProps) {
   const { id } = params;
-  const { audit } = await getAuditByIdAction(id);
+  const firestore = useFirestore();
+  const { data: audit, isLoading, error } = useDoc<Audit>(doc(firestore, 'audits', id));
+
+  if (isLoading) {
+    return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
+
+  if (error) {
+    console.error(error);
+    return <div className="text-destructive">Error al cargar la auditoría.</div>
+  }
 
   if (!audit) {
     notFound();
   }
 
-  const formattedCreatedAt = format(new Date(audit.createdAt), 'PPPp');
-
-  return <LogDetailClient audit={audit} formattedCreatedAt={formattedCreatedAt} />;
+  return <LogDetailClient audit={audit} />;
 }

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Card,
@@ -10,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getUsersAction, deleteUserAction, findUserByUsernameAction } from '@/app/actions';
-import type { User } from '@/lib/types';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import type { UserProfile } from '@/lib/types';
 import { Loader2, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,48 +37,42 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { collection, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
-  const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false); // for edit dialog
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const router = useRouter();
+
+  const { data: users, isLoading: loading, error } = useCollection<UserProfile>(collection(firestore, 'users'));
+  
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const { toast } = useToast();
 
   const [password, setPassword] = useState('');
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
-
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    const { users: fetchedUsers, error } = await getUsersAction();
-    if (error) {
-      console.error('Failed to fetch users:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error al cargar usuarios',
-        description: error,
-      });
-    } else {
-      setUsers(fetchedUsers);
-    }
-    setLoading(false);
-  }, [toast]);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-  
-  const handleEditClick = async (user: Omit<User, 'password'>) => {
-    const { user: fullUser, error } = await findUserByUsernameAction(user.username);
-    if (error || !fullUser) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: error || 'No se pudo cargar la información completa del usuario.',
+    if (user) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        getDoc(userDocRef).then(docSnap => {
+            if (docSnap.exists() && docSnap.data().role !== 'admin') {
+                router.push('/dashboard');
+            }
         });
-        return;
     }
-    setEditingUser(fullUser);
+  }, [user, firestore, router]);
+
+
+  if (error) {
+    return <div>Error: {error.message}</div>
+  }
+
+  const handleEditClick = (user: UserProfile) => {
+    setEditingUser(user);
     setIsFormOpen(true);
   };
   
@@ -95,7 +89,7 @@ export default function AdminPage() {
     
     if (!userToDelete) return;
 
-    if (userToDelete === 'eg') {
+    if (userToDelete.email.startsWith('eg@')) {
         toast({
             variant: 'destructive',
             title: 'Acción no permitida',
@@ -104,26 +98,31 @@ export default function AdminPage() {
         return;
     }
 
-    const result = await deleteUserAction(userToDelete);
-    if (result.error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error al eliminar',
-        description: result.error,
-      });
-    } else {
-      toast({
+    setIsDeleting(true);
+    try {
+      // NOTE: This only deletes the Firestore record, not the Firebase Auth user.
+      // A robust solution would use a Cloud Function to delete the Auth user too.
+      await deleteDoc(doc(firestore, 'users', userToDelete.uid));
+       toast({
         title: 'Usuario Eliminado',
         description: 'El usuario ha sido eliminado exitosamente.',
       });
-      fetchUsers();
+    } catch(e: any) {
+       toast({
+        variant: 'destructive',
+        title: 'Error al eliminar',
+        description: e.message || 'Ocurrió un error',
+      });
+    } finally {
+      setIsDeleting(false);
+      setUserToDelete(null);
+      setPassword('');
     }
   };
 
   const onFormFinished = () => {
       setIsFormOpen(false);
       setEditingUser(null);
-      fetchUsers();
   }
 
   const onOpenChange = (open: boolean) => {
@@ -148,7 +147,7 @@ export default function AdminPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UserForm onFinished={fetchUsers} />
+            <UserForm onFinished={onFormFinished} />
           </CardContent>
         </Card>
 
@@ -164,9 +163,9 @@ export default function AdminPage() {
                 </div>
             ) : (
               <ul className="space-y-4">
-                {users.map((user) => (
+                {users && users.map((user) => (
                   <li
-                    key={user.username}
+                    key={user.uid}
                     className="flex justify-between items-start p-4 border rounded-lg gap-4 flex-wrap hover:bg-muted/50"
                   >
                     <div className="flex-1 min-w-0">
@@ -177,7 +176,7 @@ export default function AdminPage() {
                             </Badge>
                         </div>
                       
-                      <p className="text-sm text-muted-foreground">@{user.username}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
                       {user.cargo && <p className="text-sm text-foreground mt-1">{user.cargo}</p>}
                       {user.signature && (
                         <div className="mt-2">
@@ -193,7 +192,7 @@ export default function AdminPage() {
                         </Button>
                          <AlertDialog onOpenChange={onOpenChange}>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={user.username === 'eg'} onClick={() => setUserToDelete(user.username)}>
+                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={user.email.startsWith('eg@')} onClick={() => setUserToDelete(user)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Eliminar Usuario</span>
                                 </Button>
@@ -217,7 +216,8 @@ export default function AdminPage() {
                                 </div>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteUser}>
+                                <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting}>
+                                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     Eliminar
                                 </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -228,7 +228,7 @@ export default function AdminPage() {
                 ))}
               </ul>
             )}
-            {users.length === 0 && !loading && (
+            {users?.length === 0 && !loading && (
                  <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
                     <h3 className="text-xl font-semibold text-foreground">No se encontraron usuarios.</h3>
                     <p className="mt-2">Comienza creando el primer usuario en el formulario de arriba.</p>

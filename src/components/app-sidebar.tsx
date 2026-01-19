@@ -10,13 +10,37 @@ import {
   SidebarContent,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { FilePlus, List, ShieldCheck, Users } from 'lucide-react';
+import { FilePlus, List, ShieldCheck, Users, LogOut, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { User } from '@/lib/types';
+import { useAuth, useUser } from '@/firebase';
+import { useMemo, useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import type { UserProfile } from '@/lib/types';
+import { Button } from './ui/button';
 
-export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'> }) {
+export function AppSidebar() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setProfile(docSnap.data() as UserProfile);
+        }
+      });
+    }
+  }, [user, firestore]);
+  
+  const handleLogout = async () => {
+    await auth.signOut();
+  };
 
   return (
     <Sidebar>
@@ -55,7 +79,7 @@ export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-           {user.role === 'admin' && (
+           {profile?.role === 'admin' && (
             <SidebarMenuItem>
                 <SidebarMenuButton
                 asChild
@@ -72,6 +96,19 @@ export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
+        <div className="p-2 group-data-[collapsible=icon]:hidden">
+           {profile && (
+             <div className="text-xs text-muted-foreground text-left mb-2 p-2 rounded-lg bg-muted">
+                <p className="font-bold text-foreground">{profile.fullName}</p>
+                <p>{profile.cargo}</p>
+             </div>
+           )}
+           <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+             <LogOut className="mr-2 h-4 w-4" />
+             Cerrar Sesión
+           </Button>
+         </div>
+
          <div className="text-xs text-muted-foreground p-2 text-center group-data-[collapsible=icon]:hidden">
             <p className='font-bold'>Eduardo Garcerant Gonzalez</p>
             <p>Auditor de la Dirección Nacional de Gestión del Riesgo en Salud Dusakawi EPSI</p>

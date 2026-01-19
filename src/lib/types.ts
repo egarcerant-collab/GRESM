@@ -1,13 +1,16 @@
 
+import type { User as FirebaseUser } from 'firebase/auth';
+
 export type Audit = {
   id: string;
   auditorName: string;
+  auditorId: string;
   patientName: string;
   documentType: string;
   documentNumber: string;
   event: string;
-  eventDetails: string;
-  followUpDate: Date;
+  eventDetails?: string;
+  followUpDate: string; // ISO string
   visitType: 'PRIMERA VEZ' | 'Seguimiento' | 'CIERRE DE CASO';
   department: string;
   municipality: string;
@@ -16,9 +19,10 @@ export type Audit = {
   phoneNumber: string;
   followUpNotes: string;
   nextSteps: string;
-  createdAt: Date;
+  createdAt: string; // ISO string
+  
   // Campos condicionales para eventos específicos
-  birthDate?: Date;
+  birthDate?: string; // ISO string
   age?: number;
   sex?: 'Masculino' | 'Femenino';
   affiliationStatus?: 'Activa' | 'Inactiva';
@@ -33,75 +37,18 @@ export type Audit = {
   genderViolenceTypeDetails?: string;
 };
 
-export type User = {
+export type UserProfile = {
+    uid: string;
+    email: string;
     username: string;
     fullName: string;
-    password?: string;
     role: 'admin' | 'user';
     cargo: string;
     signature?: string; // As base64 data URL
 };
 
-export type KpiResults = {
-  kpiResult: number | null;
-  gestantesControlResult: number | null;
-  controlPercentageResult: number | null;
-  examenesVihCompletosResult: number | null;
-  resultadoTamizajeVihResult: number | null;
-  examenesSifilisCompletosResult: number | null;
-  resultadoTamizajeSifilisResult: number | null;
-  toxoplasmaValidosResult: number | null;
-  resultadoToxoplasmaResult: number | null;
-  examenesHbCompletosResult: number | null;
-  resultadoTamizajeHbResult: number | null;
-  chagasResultadosValidosResult: number | null;
-  resultadoChagasResult: number | null;
-  ecografiasValidasResult: number | null;
-  resultadoEcografiasResult: number | null;
-  nutricionResult: number | null;
-  resultadoNutricionResult: number | null;
-  odontologiaResult: number | null;
-  resultadoOdontologiaResult: number | null;
-  ginecologiaResult: number | null;
-  denominadorGinecologiaResult: number | null;
-  porcentajeGinecologiaResult: number | null;
-  controlesEnMes?: number | null;
-  controlesFueraMes?: number | null;
-  resultadoSinControlMes?: number | null;
-  controlesPrenatalesAdecuados?: number | null;
-  totalGestantesEgMayor32?: number | null;
-  porcentajeControlesAdecuados?: number | null;
-};
-
-export type InformeDatos = {
-  encabezado: {
-    proceso: string;
-    formato: string;
-    entidad: string;
-    vigencia: string;
-    lugarFecha: string;
-  };
-  referencia: string;
-  analisisResumido: string[];
-  datosAExtraer: { label: string; valor: string }[];
-  analisisAnual?: string;
-  hallazgosCalidad: string[];
-  recomendaciones: string[];
-  observaciones: string[];
-  inasistentes?: any[];
-  firma?: {
-    nombre: string;
-    cargo: string;
-    imagen?: string;
-  };
-};
-
-export type DocImages = {
-  background?: ArrayBuffer;
-  charts?: { id: string; dataUrl: string }[];
-};
-
-export type MapData = {
-    department: string;
-    [key: string]: number | string;
-};
+// This type combines the Firebase user with our custom profile
+export type AppUser = {
+  firebaseUser: FirebaseUser;
+  profile: UserProfile | null;
+}

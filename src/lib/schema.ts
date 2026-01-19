@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  username: z.string().min(1, { message: "El nombre de usuario es requerido." }),
+  email: z.string().email({ message: "Por favor, introduce un correo electrónico válido." }),
   password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
@@ -13,7 +13,7 @@ export const auditSchema = z.object({
   documentNumber: z.string().min(5, { message: 'El número de documento es requerido.' }).regex(/^[0-9]+$/, "Solo se permiten números."),
   event: z.string({ required_error: 'Seleccione un evento.' }).min(1, { message: 'Seleccione un evento.' }),
   eventDetails: z.string().optional(),
-  followUpDate: z.date({ required_error: 'La fecha de seguimiento es requerida.' }),
+  followUpDate: z.string({ required_error: 'La fecha de seguimiento es requerida.' }),
   visitType: z.enum(['PRIMERA VEZ', 'Seguimiento', 'CIERRE DE CASO'], { required_error: 'Seleccione el tipo de visita.' }),
   department: z.string().min(2, { message: 'El departamento es requerido.' }),
   municipality: z.string().min(2, { message: 'El municipio es requerido.' }),
@@ -24,7 +24,7 @@ export const auditSchema = z.object({
   nextSteps: z.string().min(10, { message: 'La conducta a seguir es requerida.' }),
 
   // Campos condicionales
-  birthDate: z.date().optional(),
+  birthDate: z.string().optional(),
   age: z.coerce.number().optional(),
   sex: z.enum(['Masculino', 'Femenino']).optional(),
   affiliationStatus: z.enum(['Activa', 'Inactiva']).optional(),

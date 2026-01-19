@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { Audit, User } from '@/lib/types';
+import type { Audit, UserProfile } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trash2, FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,12 +26,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteAuditAction, getImageAsBase64Action, findUserByFullNameAction } from '@/app/actions';
+import { getImageAsBase64Action } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { useFirestore, useUser } from '@/firebase';
+import { deleteDoc, doc, getDoc } from 'firebase/firestore';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -55,22 +57,26 @@ function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
   }
 }
 
-export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: Audit, formattedCreatedAt: string }) {
+export default function LogDetailClient({ audit }: { audit: Audit }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
-  const [isMounted, setIsMounted] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user: authUser } = useUser();
   const [password, setPassword] = React.useState('');
-  const [currentUser, setCurrentUser] = React.useState<Omit<User, 'password' | 'signature'> | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = React.useState<UserProfile | null>(null);
 
   React.useEffect(() => {
-    setIsMounted(true);
-    const storedUser = localStorage.getItem('loggedInUser');
-    if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
+    if (authUser) {
+      const userDocRef = doc(firestore, 'users', authUser.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setCurrentUserProfile(docSnap.data() as UserProfile);
+        }
+      });
     }
-  }, []);
+  }, [authUser, firestore]);
 
   const handleDelete = async () => {
     if(password !== '123456'){
@@ -83,49 +89,47 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
       return;
     }
 
-    if (audit) {
-      setIsDeleting(true);
-      const result = await deleteAuditAction(audit.id);
-      if (result.success) {
+    setIsDeleting(true);
+    try {
+        await deleteDoc(doc(firestore, 'audits', audit.id));
         toast({
           title: 'Auditoría Eliminada',
           description: 'El registro de auditoría ha sido eliminado exitosamente.',
         });
         router.push('/logs');
-      } else {
+    } catch (e: any) {
         toast({
           variant: 'destructive',
           title: 'Error al Eliminar Auditoría',
-          description: result.error,
+          description: e.message || 'Ocurrió un error',
         });
         setIsDeleting(false);
-      }
     }
   };
 
   const handleDownloadPdf = async () => {
-    if (audit) {
-      setIsDownloading(true);
-      try {
-        const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
-        const auditor = await findUserByFullNameAction(audit.auditorName);
-        
-        await generateAuditPdf(audit, backgroundImage, auditor);
-        
-        toast({
-          title: 'PDF Generado',
-          description: 'El informe de auditoría se ha descargado.',
-        });
-      } catch (error) {
-        console.error('Error generando el PDF:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error al generar PDF',
-          description: 'No se pudo generar el informe en PDF.',
-        });
-      } finally {
-        setIsDownloading(false);
-      }
+    setIsDownloading(true);
+    try {
+      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
+      
+      const auditorProfile = await getDoc(doc(firestore, 'users', audit.auditorId));
+      const auditorData = auditorProfile.exists() ? auditorProfile.data() as UserProfile : null;
+      
+      await generateAuditPdf(audit, backgroundImage, auditorData);
+      
+      toast({
+        title: 'PDF Generado',
+        description: 'El informe de auditoría se ha descargado.',
+      });
+    } catch (error) {
+      console.error('Error generando el PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al generar PDF',
+        description: 'No se pudo generar el informe en PDF.',
+      });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -134,15 +138,9 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
       setPassword('');
     }
   };
-
-  const createdAt = new Date(audit.createdAt);
-  const birthDate = audit.birthDate ? new Date(audit.birthDate) : null;
   
+  const formattedCreatedAt = format(new Date(audit.createdAt), 'PPPp');
   const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
-
-  if (!isMounted) {
-    return null;
-  }
 
   return (
     <div className="space-y-6">
@@ -166,7 +164,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
             )}
             Descargar PDF
           </Button>
-          {currentUser?.role === 'admin' && (
+          {currentUserProfile?.role === 'admin' && (
             <AlertDialog onOpenChange={onOpenChange}>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" disabled={isDeleting}>
@@ -222,7 +220,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
                 <DetailItem label="Paciente" value={audit.patientName} />
                 <DetailItem label="Tipo de Documento" value={audit.documentType} />
                 <DetailItem label="Número de Documento" value={audit.documentNumber} />
-                 <DetailItem label="Fecha de Creación" value={format(createdAt, 'PPP')} />
+                 <DetailItem label="Fecha de Creación" value={format(new Date(audit.createdAt), 'PPP')} />
                 <DetailItem label="Tipo de Visita" value={<Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
               </div>
                <div className="divide-y divide-border">
@@ -248,7 +246,7 @@ export default function LogDetailClient({ audit, formattedCreatedAt }: { audit: 
                         <h3 className="text-md font-semibold mt-4 mb-2 text-foreground">Información Adicional de Evento</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                             <div className="divide-y divide-border">
-                                <DetailItem label="Fecha de Nacimiento" value={birthDate ? format(birthDate, 'PPP') : null} />
+                                <DetailItem label="Fecha de Nacimiento" value={audit.birthDate ? format(new Date(audit.birthDate), 'PPP') : null} />
                                 <DetailItem label="Edad" value={audit.age} />
                                 <DetailItem label="Sexo" value={audit.sex} />
                                 <DetailItem label="Estado de Afiliación" value={audit.affiliationStatus} />

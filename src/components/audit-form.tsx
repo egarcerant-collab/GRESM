@@ -23,18 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { cn } from '@/lib/utils';
-import { CalendarIcon, Loader2 } from 'lucide-react';
-import { Calendar } from './ui/calendar';
+import { Loader2 } from 'lucide-react';
 import { format, differenceInYears } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
-import { createAuditAction, checkExistingPatientAction, getUsersAction } from '@/app/actions';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
-import type { User } from '@/lib/types';
+import { addDocumentNonBlocking, useAuth, useFirestore, useUser } from '@/firebase';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -107,15 +105,30 @@ const municipalitiesByDepartment: Record<string, string[]> = {
 };
 
 
-export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
+export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const [auditorProfile, setAuditorProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      const profileRef = doc(firestore, 'users', user.uid);
+      getDoc(profileRef).then(docSnap => {
+        if (docSnap.exists()) {
+          setAuditorProfile(docSnap.data() as UserProfile);
+        }
+      });
+    }
+  }, [user, firestore]);
+
   const [departmentSelection, setDepartmentSelection] = useState<string>('');
   const [municipalitySelection, setMunicipalitySelection] = useState<string>('');
   const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
   const [ethnicitySelection, setEthnicitySelection] = useState<string>('');
   const [upgdProviderSelection, setUpgdProviderSelection] = useState<string>('');
-  const [users, setUsers] = useState<Omit<User, 'password'>[]>([]);
 
   const [isCheckingPatient, setIsCheckingPatient] = useState(false);
   const [patientWarning, setPatientWarning] = useState<string | null>(null);
@@ -124,7 +137,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
     defaultValues: {
-      auditorName: auditor ? auditor.fullName || auditor.username : '',
+      auditorName: '',
       patientName: '',
       documentType: '',
       documentNumber: '',
@@ -153,6 +166,12 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
       genderViolenceTypeDetails: '',
     },
   });
+  
+  useEffect(() => {
+    if (auditorProfile) {
+        form.setValue('auditorName', auditorProfile.fullName);
+    }
+  }, [auditorProfile, form]);
 
   const eventSelection = form.watch('event');
   const documentNumberValue = form.watch('documentNumber');
@@ -169,28 +188,12 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
 
 
   useEffect(() => {
-    async function fetchUsers() {
-      const { users: fetchedUsers, error } = await getUsersAction();
-      if (error) {
-        console.error('Failed to fetch users:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error al cargar usuarios',
-          description: 'No se pudieron obtener los usuarios para el selector.',
-        });
-      } else if (fetchedUsers) {
-        setUsers(fetchedUsers);
-      }
-    }
-    fetchUsers();
-  }, [toast]);
-
-  useEffect(() => {
     const checkPatient = async () => {
       if (visitTypeValue === 'PRIMERA VEZ' && documentNumberValue && documentNumberValue.length > 5) {
         setIsCheckingPatient(true);
-        const { exists } = await checkExistingPatientAction(documentNumberValue);
-        if (exists) {
+        const q = query(collection(firestore, 'audits'), where('documentNumber', '==', documentNumberValue), where('visitType', '==', 'PRIMERA VEZ'));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
           setPatientWarning('Advertencia: ya existe un registro de primera vez para este documento.');
         } else {
           setPatientWarning(null);
@@ -208,7 +211,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
     return () => {
         clearTimeout(handler);
     };
-}, [documentNumberValue, visitTypeValue]);
+}, [documentNumberValue, visitTypeValue, firestore]);
 
   useEffect(() => {
     if (departmentSelection && departmentSelection !== 'Otro') {
@@ -257,28 +260,38 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
 
   useEffect(() => {
     if (birthDateValue) {
-      const age = differenceInYears(new Date(), birthDateValue);
+      const age = differenceInYears(new Date(), new Date(birthDateValue));
       form.setValue('age', age >= 0 ? age : 0);
     }
   }, [birthDateValue, form]);
 
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
+    if (!user || !auditorProfile) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Debe iniciar sesión para crear una auditoría.' });
+        return;
+    }
     startTransition(async () => {
-      const result = await createAuditAction(values);
-      if (result?.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error al crear la auditoría',
-          description: result.error,
-        });
-      } else if (result?.success) {
-        toast({
-          title: 'Auditoría Creada',
-          description: 'La auditoría ha sido registrada exitosamente. Redirigiendo...',
-        });
-        window.location.assign('/logs');
-      }
+        try {
+            const auditsCol = collection(firestore, 'audits');
+            await addDocumentNonBlocking(auditsCol, {
+                ...values,
+                auditorId: user.uid,
+                auditorName: auditorProfile.fullName,
+                createdAt: new Date().toISOString(),
+            });
+            toast({
+                title: 'Auditoría Creada',
+                description: 'La auditoría ha sido registrada exitosamente.',
+            });
+            form.reset();
+        } catch (error: any) {
+             toast({
+              variant: 'destructive',
+              title: 'Error al crear la auditoría',
+              description: error.message || 'Ocurrió un error desconocido.',
+            });
+        }
     });
   }
 
@@ -292,20 +305,9 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Auditor</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={!!auditor}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un auditor" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.username} value={user.fullName || user.username}>
-                        {user.fullName || user.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                    <Input {...field} disabled />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -444,15 +446,8 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
                 <FormControl>
                   <Input
                     type="date"
-                    value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
-                    onChange={(e) => {
-                      const date = e.target.valueAsDate;
-                      if (date) {
-                        field.onChange(new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-                      } else {
-                        field.onChange(undefined);
-                      }
-                    }}
+                    value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                    onChange={(e) => field.onChange(e.target.value)}
                     min="1900-01-01"
                   />
                 </FormControl>
@@ -638,15 +633,8 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
                       <FormControl>
                         <Input
                           type="date"
-                          value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
-                          onChange={(e) => {
-                            const date = e.target.valueAsDate;
-                            if (date) {
-                                field.onChange(new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-                            } else {
-                                field.onChange(undefined);
-                            }
-                          }}
+                          value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                          onChange={(e) => field.onChange(e.target.value)}
                           max={format(new Date(), 'yyyy-MM-dd')}
                           min="1900-01-01"
                         />
@@ -658,7 +646,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
                 <FormField control={form.control} name="age" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Edad</FormLabel>
-                      <FormControl><Input type="number" placeholder="e.g., 25" {...field} value={field.value ?? ''} /></FormControl>
+                      <FormControl><Input type="number" placeholder="e.g., 25" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -666,7 +654,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
                 <FormField control={form.control} name="sex" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Sexo</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Seleccione el sexo" /></SelectTrigger>
                         </FormControl>
@@ -700,7 +688,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
                 <FormField control={form.control} name="area" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Área</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Seleccione el área" /></SelectTrigger>
                         </FormControl>

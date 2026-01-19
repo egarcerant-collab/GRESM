@@ -1,11 +1,11 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from 'date-fns';
-import type { Audit, User } from "./types";
+import type { Audit, UserProfile } from "./types";
 
 const FONT = "helvetica";
 
-async function buildPdf(data: Audit, backgroundImage: string | null, auditor: User | null, doc: jsPDF): Promise<jsPDF> {
+async function buildPdf(data: Audit, backgroundImage: string | null, auditor: UserProfile | null, doc: jsPDF): Promise<jsPDF> {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const topMargin = 115;
@@ -202,7 +202,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
   return doc;
 }
 
-export async function generateAuditPdf(audit: Audit, backgroundImage: string | null, auditor: User | null, docInstance?: jsPDF): Promise<jsPDF> {
+export async function generateAuditPdf(audit: Audit, backgroundImage: string | null, auditor: UserProfile | null, docInstance?: jsPDF): Promise<jsPDF> {
   const doc = docInstance || new jsPDF({
     orientation: "p",
     unit: "pt",
