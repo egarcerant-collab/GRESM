@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useTransition } from 'react';
+import React, { useTransition } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
 import { useFirebase, useUser, FirebaseClientProvider } from '@/firebase';
@@ -47,12 +47,13 @@ function LoginPageContent() {
     },
   });
 
-  if (isUserLoading) {
-    return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
-  }
+  React.useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
   
-  if(user) {
-    router.push('/dashboard');
+  if (isUserLoading || user) {
     return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
   }
 
