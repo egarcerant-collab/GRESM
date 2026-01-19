@@ -27,7 +27,7 @@ export const auditSchema = z.object({
   birthDate: z.date().optional(),
   age: z.coerce.number().optional(),
   sex: z.enum(['Masculino', 'Femenino']).optional(),
-  affiliationStatus: z.string().optional(),
+  affiliationStatus: z.enum(['Activa', 'Inactiva']).optional(),
   area: z.enum(['Rural', 'Urbano']).optional(),
   settlement: z.string().optional(),
   nationality: z.string().optional(),

@@ -1,3 +1,4 @@
+
 export type Audit = {
   id: string;
   auditorName: string;
@@ -20,7 +21,7 @@ export type Audit = {
   birthDate?: Date;
   age?: number;
   sex?: 'Masculino' | 'Femenino';
-  affiliationStatus?: string;
+  affiliationStatus?: 'Activa' | 'Inactiva';
   area?: 'Rural' | 'Urbano';
   settlement?: string;
   nationality?: string;

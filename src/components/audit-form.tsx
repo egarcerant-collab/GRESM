@@ -141,7 +141,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
       birthDate: undefined,
       age: undefined,
       sex: undefined,
-      affiliationStatus: '',
+      affiliationStatus: undefined,
       area: undefined,
       settlement: '',
       nationality: '',
@@ -671,14 +671,24 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="affiliationStatus" render={({ field }) => (
+                <FormField
+                  control={form.control}
+                  name="affiliationStatus"
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Estado de Afiliación</FormLabel>
-                      <FormControl><Input placeholder="e.g., Activo" {...field} value={field.value ?? ''} /></FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Activa">Activa</SelectItem>
+                          <SelectItem value="Inactiva">Inactiva</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
-                  )}
-                />
+                  )} />
                 <FormField control={form.control} name="area" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Área</FormLabel>
