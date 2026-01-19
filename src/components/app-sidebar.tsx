@@ -73,11 +73,11 @@ export function AppSidebar({ user }: { user: Omit<User, 'password' | 'signature'
       </SidebarContent>
       <SidebarFooter>
          <div className="text-xs text-muted-foreground p-2 text-center group-data-[collapsible=icon]:hidden">
-            <b>Eduardo Garcerant Gonzalez</b><br />
-            Auditor de la Dirección Nacional de Gestión del Riesgo en Salud Dusakawi EPSI<br />
-            Odontólogo General.<br />
-            Especialista en Sistemas de Calidad y Auditoría en Salud.<br />
-            Magiste en Epidemiologia.
+            <p className='font-bold'>Eduardo Garcerant Gonzalez</p>
+            <p>Auditor de la Dirección Nacional de Gestión del Riesgo en Salud Dusakawi EPSI</p>
+            <p>Odontólogo General.</p>
+            <p>Especialista en Sistemas de Calidad y Auditoría en Salud.</p>
+            <p>Magiste en Epidemiologia.</p>
         </div>
       </SidebarFooter>
     </Sidebar>
