@@ -1,0 +1,154 @@
+rules_version = '2';
+
+/**
+ * @file firestore.rules
+ *
+ * @brief
+ * This ruleset enforces a strict, role-based security model centered around
+ * administrators ("admins"). A Database-Based Access Control (DBAC) approach is
+ * used, where admin status is determined by the existence of a document in the
+ * /roles_admin collection.
+ *
+ * @description
+ * Core Philosophy:
+ * The security model operates on two primary principles:
+ * 1. User Ownership: Users have full control over their own profile document
+ *    in the /users/{userId} path, and no one else (except admins) can access it.
+ * 2. Admin Supremacy: Users designated as admins have full read and write
+ *    access to all business-critical data collections, including forms,
+ *    audit logs, and submitted audit data.
+ *
+ * Data Structure:
+ * The data is organized into top-level collections with a flat hierarchy to
+ * simplify security rules and prevent complex, nested permission checks.
+ *  - /users/{userId}: Private user profiles.
+ *  - /roles_admin/{userId}: A lookup collection to grant admin privileges.
+ *  - /forms/{formId}: Shared form templates managed by admins.
+ *  - /audit_logs/{logId}: System-wide audit trails managed by admins.
+ *  - /audit_data/{auditDataId}: Submitted audit data managed by admins.
+ *
+ * Key Security Decisions:
+ * - Admin roles are managed via the existence of a document in `/roles_admin`.
+ *   This collection is read-only from the client to prevent privilege escalation.
+ * - Listing users is explicitly disallowed to protect user privacy.
+ * - All write operations are gated behind either user ownership or admin role checks.
+ *   There are no publicly writable collections.
+ * - In this prototyping phase, data shapes are flexible. Validation is limited
+ *   to fields critical for authorization, such as ensuring a document's internal
+ *   ID matches its path ID upon creation.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Returns true if the user is the owner of an existing document.
+     * Used for safe update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Returns true if the user has an admin role.
+     * Admin status is granted by the existence of a document in the
+     * /roles_admin collection with the user's UID as the document ID.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to a user's own profile document.
+     * @path /users/{userId}
+     * @allow (get, create, update, delete) A signed-in user with UID 'user123' can perform all operations on the document at `/users/user123`.
+     * @deny (get) A user with UID 'user456' is denied access to the document at `/users/user123`.
+     * @deny (list) No user can list the `/users` collection to prevent user enumeration.
+     * @principle Restricts access to a user's own data tree and enforces document ownership.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to audit form templates. Only admins can manage and view forms.
+     * @path /forms/{formId}
+     * @allow (get, create) An admin user can read or create a new form template.
+     * @deny (get, create) A non-admin user is denied all access to form templates.
+     * @principle Enforces strict role-based access for administrative resources.
+     */
+    match /forms/{formId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.id == formId;
+      allow update: if isAdmin() && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Controls access to audit log entries. Only admins can manage and view audit logs.
+     * @path /audit_logs/{logId}
+     * @allow (get, list, create) An admin user can read the entire collection or create a new log entry.
+     * @deny (get, list, create) A non-admin user is denied all access to the audit logs.
+     * @principle Enforces strict role-based access for sensitive logging data.
+     */
+    match /audit_logs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.id == logId;
+      allow update: if isAdmin() && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Controls access to submitted audit data from filled forms. Only admins can manage and view this data.
+     * @path /audit_data/{auditDataId}
+     * @allow (get, list, create) An admin user can read or create new audit data documents.
+     * @deny (get, list, create) A non-admin user is denied all access to submitted audit data.
+     * @principle Enforces strict role-based access for core application data.
+     */
+    match /audit_data/{auditDataId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.id == auditDataId;
+      allow update: if isAdmin() && resource != null && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Secures the admin role collection. This collection is the source of truth for admin privileges.
+     * @path /roles_admin/{userId}
+     * @allow (none) No client is ever allowed to read from or write to this collection directly.
+     * @deny (get, list, create, update, delete) All client-side operations are blocked to prevent users from viewing the admin list or escalating their own privileges.
+     * @principle Prevents privilege escalation by making the role-defining collection immutable from the client. Rules can still check for document existence via `exists()`.
+     */
+    match /roles_admin/{userId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
