@@ -27,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from './ui/calendar';
-import { format } from 'date-fns';
+import { format, differenceInYears } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { createAuditAction, checkExistingPatientAction, getUsersAction } from '@/app/actions';
@@ -157,6 +157,7 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
   const eventSelection = form.watch('event');
   const documentNumberValue = form.watch('documentNumber');
   const visitTypeValue = form.watch('visitType');
+  const birthDateValue = form.watch('birthDate');
   const isOtherEvent = eventSelection === 'Otro';
   const isOtherDepartment = departmentSelection === 'Otro';
   const isOtherMunicipality = municipalitySelection === 'Otro';
@@ -253,6 +254,13 @@ export function AuditForm({ auditor }: { auditor?: Omit<User, 'password'> }) {
         form.setValue('genderViolenceType', '');
     }
   }, [genderViolenceTypeSelection, form]);
+
+  useEffect(() => {
+    if (birthDateValue) {
+      const age = differenceInYears(new Date(), birthDateValue);
+      form.setValue('age', age >= 0 ? age : 0);
+    }
+  }, [birthDateValue, form]);
 
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
