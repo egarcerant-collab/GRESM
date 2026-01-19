@@ -23,7 +23,7 @@ import {
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { AuditLogTable } from '@/components/audit-log-table';
 
@@ -50,7 +50,8 @@ const months = [
 export default function LogsPage() {
   const firestore = useFirestore();
   const { user: authUser } = useUser();
-  const { data: audits, isLoading: loading, error } = useCollection<Audit>(collection(firestore, 'audits'));
+  const auditsCollection = useMemoFirebase(() => collection(firestore, 'audits'), [firestore]);
+  const { data: audits, isLoading: loading, error } = useCollection<Audit>(auditsCollection);
   
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { Loader2, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,8 @@ export default function AdminPage() {
   const { user } = useUser();
   const router = useRouter();
 
-  const { data: users, isLoading: loading, error } = useCollection<UserProfile>(collection(firestore, 'users'));
+  const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+  const { data: users, isLoading: loading, error } = useCollection<UserProfile>(usersCollection);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
