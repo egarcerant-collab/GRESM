@@ -30,7 +30,7 @@ import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
-import { addDocumentNonBlocking, useAuth, useFirestore, useUser } from '@/firebase';
+import { addDocumentNonBlocking, useFirestore, useUser } from '@/firebase';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 
@@ -260,8 +260,14 @@ export function AuditForm() {
 
   useEffect(() => {
     if (birthDateValue) {
-      const age = differenceInYears(new Date(), new Date(birthDateValue));
-      form.setValue('age', age >= 0 ? age : 0);
+      try {
+        // Adding time to avoid timezone issues where the date might be off by one day
+        const age = differenceInYears(new Date(), new Date(`${birthDateValue}T00:00:00`));
+        form.setValue('age', age >= 0 ? age : 0);
+      } catch (e) {
+        // Invalid date string
+        form.setValue('age', undefined);
+      }
     }
   }, [birthDateValue, form]);
 
@@ -447,7 +453,10 @@ export function AuditForm() {
                   <Input
                     type="date"
                     value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
-                    onChange={(e) => field.onChange(e.target.value)}
+                    onChange={(e) => {
+                       // To avoid timezone issues, we'll store the date as is, and format on display
+                       field.onChange(e.target.value);
+                    }}
                     min="1900-01-01"
                   />
                 </FormControl>
@@ -633,7 +642,7 @@ export function AuditForm() {
                       <FormControl>
                         <Input
                           type="date"
-                          value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                          value={field.value || ''}
                           onChange={(e) => field.onChange(e.target.value)}
                           max={format(new Date(), 'yyyy-MM-dd')}
                           min="1900-01-01"
@@ -646,7 +655,8 @@ export function AuditForm() {
                 <FormField control={form.control} name="age" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Edad</FormLabel>
-                      <FormControl><Input type="number" placeholder="e.g., 25" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} /></FormControl>
+                      <FormControl><Input type="number" placeholder="Calculada automáticamente" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} /></FormControl>
+                       <FormDescription>Se calcula a partir de la fecha de nacimiento.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -829,3 +839,5 @@ export function AuditForm() {
     </Form>
   );
 }
+
+    

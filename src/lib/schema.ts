@@ -55,12 +55,12 @@ export const auditSchema = z.object({
             data.sex &&
             data.affiliationStatus &&
             data.area &&
-            data.settlement &&
-            data.nationality &&
-            data.primaryHealthProvider &&
+            data.settlement && data.settlement.length > 0 &&
+            data.nationality && data.nationality.length > 0 &&
+            data.primaryHealthProvider && data.primaryHealthProvider.length > 0 &&
             data.regime &&
             data.upgdProvider && data.upgdProvider.length > 0 &&
-            data.followUpInterventionType
+            data.followUpInterventionType && data.followUpInterventionType.length > 0
         );
     }
     return true;
@@ -95,3 +95,5 @@ export const userSchema = z.object({
   role: z.enum(['admin', 'user']),
   signature: z.string().optional(),
 });
+
+    
