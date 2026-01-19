@@ -18,8 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useTransition } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { useAuth, useUser, FirebaseClientProvider } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useFirebase, useUser, FirebaseClientProvider } from '@/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import {
   Card,
   CardContent,
@@ -28,13 +28,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
+import { doc, setDoc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
 
-const DUMMY_DOMAIN = 'dusakawi.audit.app';
 
 function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const auth = useAuth();
+  const { auth, firestore } = useFirebase();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -62,15 +63,56 @@ function LoginPageContent() {
             toast({ title: 'Inicio de Sesión Exitoso', description: 'Bienvenido de nuevo.' });
             router.push('/dashboard');
         } catch (error: any) {
-            let message = "Ocurrió un error al iniciar sesión.";
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                message = 'El correo o la contraseña son incorrectos.';
+            // In modern Firebase SDKs, 'auth/invalid-credential' is used for both not-found and wrong-password.
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+                try {
+                    // Attempt to create a new user.
+                    const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+                    const newUser = userCredential.user;
+
+                    // Create their profile in Firestore, making them an admin.
+                    const username = values.email.split('@')[0];
+                    const userProfile: UserProfile = {
+                        uid: newUser.uid,
+                        email: newUser.email!,
+                        username: username,
+                        fullName: username, // A sensible default.
+                        role: 'admin',     // The first user is an admin.
+                        cargo: 'Administrador', // A sensible default.
+                    };
+
+                    await setDoc(doc(firestore, "users", newUser.uid), userProfile);
+                    
+                    toast({ title: 'Cuenta Creada', description: '¡Bienvenido! Se ha creado tu cuenta con rol de administrador.' });
+                    router.push('/dashboard');
+
+                } catch (creationError: any) {
+                    let message = "Ocurrió un error al registrar la cuenta.";
+                    if (creationError.code === 'auth/weak-password') {
+                        message = 'La contraseña es muy débil (mínimo 6 caracteres).';
+                    } else if (creationError.code === 'auth/email-already-in-use') {
+                        // This means the email exists but the initial signIn failed, so the password must be wrong.
+                        message = 'La contraseña es incorrecta.';
+                    }
+                    toast({
+                        variant: 'destructive',
+                        title: 'Error',
+                        description: message,
+                    });
+                }
+            } else if (error.code === 'auth/wrong-password') {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'La contraseña es incorrecta.',
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error de Inicio de Sesión',
+                    description: error.message || "Ocurrió un error desconocido.",
+                });
             }
-            toast({
-                variant: 'destructive',
-                title: 'Error de Inicio de Sesión',
-                description: message,
-            });
         }
     });
   }
@@ -85,10 +127,10 @@ function LoginPageContent() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <KeyRound />
-            Iniciar Sesión
+            Acceder al Sistema
           </CardTitle>
           <CardDescription>
-            Introduce tu correo y contraseña para acceder al sistema.
+            Introduce tu correo y contraseña. Si no tienes una cuenta, se creará una automáticamente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -122,7 +164,7 @@ function LoginPageContent() {
               />
               <Button type="submit" className="w-full" disabled={isPending}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Ingresar
+                Ingresar o Registrarse
               </Button>
             </form>
           </Form>
