@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,25 +41,26 @@ function LoginPageContent() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
   });
 
   React.useEffect(() => {
-    if (user) {
+    if (!isUserLoading && user) {
       router.push('/dashboard');
     }
-  }, [user, router]);
+  }, [user, isUserLoading, router]);
   
   if (isUserLoading || user) {
     return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
   }
 
   function onSubmit(values: z.infer<typeof loginSchema>) {
+    const email = `${values.username}@dusakawi.audit.app`;
     startTransition(async () => {
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
+            await signInWithEmailAndPassword(auth, email, values.password);
             toast({ title: 'Inicio de Sesión Exitoso', description: 'Bienvenido de nuevo.' });
             router.push('/dashboard');
         } catch (error: any) {
@@ -68,11 +68,11 @@ function LoginPageContent() {
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
                 try {
                     // Attempt to create a new user.
-                    const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, values.password);
                     const newUser = userCredential.user;
 
                     // Create their profile in Firestore, making them an admin.
-                    const username = values.email.split('@')[0];
+                    const username = values.username;
                     const userProfile: UserProfile = {
                         uid: newUser.uid,
                         email: newUser.email!,
@@ -131,7 +131,7 @@ function LoginPageContent() {
             Acceder al Sistema
           </CardTitle>
           <CardDescription>
-            Introduce tu correo y contraseña. Si no tienes una cuenta, se creará una automáticamente.
+            Introduce tu usuario y contraseña. Si no tienes una cuenta, se creará una automáticamente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -139,12 +139,12 @@ function LoginPageContent() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="email"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Correo Electrónico</FormLabel>
+                    <FormLabel>Usuario</FormLabel>
                     <FormControl>
-                      <Input placeholder="usuario@dusakawi.audit.app" {...field} />
+                      <Input placeholder="ej. juanperez" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
