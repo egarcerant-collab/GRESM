@@ -57,10 +57,13 @@ export default function LogsPage() {
   const { toast } = useToast();
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
-  const [selectedYear, setSelectedYear] = useState<string>(
-    new Date().getFullYear().toString()
-  );
+  const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+  useEffect(() => {
+    // Set year on client to avoid hydration mismatch
+    setSelectedYear(new Date().getFullYear().toString());
+  }, []);
 
   useEffect(() => {
     if (authUser) {
@@ -85,6 +88,7 @@ export default function LogsPage() {
     if (!audits) return [];
     return audits.filter((audit) => {
       const auditDate = new Date(audit.createdAt);
+      if (!isValid(auditDate)) return false;
       const yearMatch = auditDate.getFullYear().toString() === selectedYear;
       const monthMatch =
         selectedMonth === 'all' ||

@@ -112,6 +112,12 @@ export function AuditForm() {
   const firestore = useFirestore();
 
   const [auditorProfile, setAuditorProfile] = useState<UserProfile | null>(null);
+  const [maxBirthDate, setMaxBirthDate] = useState('');
+
+  useEffect(() => {
+    // This will only run on the client, after initial hydration
+    setMaxBirthDate(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -644,7 +650,7 @@ export function AuditForm() {
                           type="date"
                           value={field.value || ''}
                           onChange={(e) => field.onChange(e.target.value)}
-                          max={format(new Date(), 'yyyy-MM-dd')}
+                          max={maxBirthDate}
                           min="1900-01-01"
                         />
                       </FormControl>
