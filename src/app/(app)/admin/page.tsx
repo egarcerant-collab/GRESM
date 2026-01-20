@@ -77,7 +77,7 @@ export default function AdminPage() {
     
     if (!userToDelete) return;
 
-    if (userToDelete.email.startsWith('eg@')) {
+    if (userToDelete.email && userToDelete.email.startsWith('eg@')) {
         toast({
             variant: 'destructive',
             title: 'Acción no permitida',
@@ -156,7 +156,7 @@ export default function AdminPage() {
                             </Badge>
                         </div>
                       
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-sm text-muted-foreground">{user.email || 'Email no disponible'}</p>
                       {user.cargo && <p className="text-sm text-foreground mt-1">{user.cargo}</p>}
                       {user.signature && (
                         <div className="mt-2">
@@ -172,7 +172,7 @@ export default function AdminPage() {
                         </Button>
                          <AlertDialog onOpenChange={onOpenChange}>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={user.email.startsWith('eg@') || (authUser && user.uid === authUser.uid)} onClick={() => setUserToDelete(user)}>
+                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={(user.email && user.email.startsWith('eg@')) || (authUser && user.uid === authUser.uid)} onClick={() => setUserToDelete(user)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Eliminar Usuario</span>
                                 </Button>
