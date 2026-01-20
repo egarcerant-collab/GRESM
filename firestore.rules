@@ -11,16 +11,23 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-
     function isAdmin() {
-      return isSignedIn() && getUserData(request.auth.uid).role == 'admin';
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn();
+      // This allows the login page to show a dropdown of users.
+      // WARNING: This makes all user data in this collection public to anyone who can query it.
+      // For better security, user roles, signatures, and other sensitive data should be in a separate,
+      // more restricted collection.
+      allow list: if true;
+
+      // Only the user themselves or an admin can read the full user profile.
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Only the user themselves or an admin can update the user profile.
       allow write: if isOwner(userId) || isAdmin();
     }
     
