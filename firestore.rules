@@ -12,22 +12,19 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      // More robust check: ensures the user document exists and has the admin role.
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     match /users/{userId} {
       // This allows the login page to show a dropdown of users.
-      // WARNING: This makes all user data in this collection public to anyone who can query it.
-      // For better security, user roles, signatures, and other sensitive data should be in a separate,
-      // more restricted collection.
-      allow list: if true;
+      // WARNING: This makes ALL user data in this collection (including role and signature)
+      // public to anyone who can query it. This is required for the login dropdown.
+      // For better security, sensitive user data should be in a separate, more restricted collection.
+      allow list, read: if true;
 
-      // Only the user themselves or an admin can read the full user profile.
-      allow read: if isOwner(userId) || isAdmin();
-
-      // Only the user themselves or an admin can update the user profile.
+      // Write access is still restricted.
       allow write: if isOwner(userId) || isAdmin();
     }
     

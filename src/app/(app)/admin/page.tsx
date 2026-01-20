@@ -55,18 +55,6 @@ export default function AdminPage() {
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-        const userDocRef = doc(firestore, 'users', user.uid);
-        getDoc(userDocRef).then(docSnap => {
-            if (docSnap.exists() && docSnap.data().role !== 'admin') {
-                router.push('/dashboard');
-            }
-        });
-    }
-  }, [user, firestore, router]);
-
-
   if (error) {
     return <div>Error: {error.message}</div>
   }

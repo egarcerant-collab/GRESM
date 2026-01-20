@@ -79,20 +79,18 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-           {profile?.role === 'admin' && (
-            <SidebarMenuItem>
-                <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith('/admin')}
-                tooltip="Administración"
-                >
-                <Link href="/admin">
-                    <Users />
-                    <span>Administración</span>
-                </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-           )}
+          <SidebarMenuItem>
+              <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/admin')}
+              tooltip="Administración"
+              >
+              <Link href="/admin">
+                  <Users />
+                  <span>Administración</span>
+              </Link>
+              </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
