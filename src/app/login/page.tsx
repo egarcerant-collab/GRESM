@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import React, { useTransition, useState } from 'react';
+import React, { useTransition, useState, useEffect } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
 import { useFirebase, useUser, FirebaseClientProvider, setDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
@@ -53,7 +53,7 @@ function LoginPageContent() {
     },
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
     }
@@ -178,8 +178,10 @@ function LoginPageContent() {
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {users.map(user => (
-                                    <SelectItem key={user.uid} value={user.username}>{user.fullName}</SelectItem>
+                                {users && users.filter(u => u && u.username).map(user => (
+                                    <SelectItem key={user.uid} value={user.username}>
+                                        {user.fullName || user.username}
+                                    </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
