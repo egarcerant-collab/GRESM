@@ -41,7 +41,7 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user: authUser } = useUser();
   const router = useRouter();
 
   const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
@@ -172,7 +172,7 @@ export default function AdminPage() {
                         </Button>
                          <AlertDialog onOpenChange={onOpenChange}>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={user.email.startsWith('eg@')} onClick={() => setUserToDelete(user)}>
+                                <Button variant="ghost" size="icon" className='text-destructive hover:text-destructive' disabled={user.email.startsWith('eg@') || (authUser && user.uid === authUser.uid)} onClick={() => setUserToDelete(user)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Eliminar Usuario</span>
                                 </Button>
