@@ -32,8 +32,8 @@ import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { useFirestore, useUser } from '@/firebase';
-import { deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { useFirestore, useUser, deleteDocumentNonBlocking } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -78,7 +78,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
     }
   }, [authUser, firestore]);
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if(password !== '123456'){
       toast({
         variant: 'destructive',
@@ -90,21 +90,15 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
     }
 
     setIsDeleting(true);
-    try {
-        await deleteDoc(doc(firestore, 'audits', audit.id));
-        toast({
-          title: 'Auditoría Eliminada',
-          description: 'El registro de auditoría ha sido eliminado exitosamente.',
-        });
-        router.push('/logs');
-    } catch (e: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Error al Eliminar Auditoría',
-          description: e.message || 'Ocurrió un error',
-        });
-        setIsDeleting(false);
-    }
+    
+    deleteDocumentNonBlocking(doc(firestore, 'audits', audit.id));
+    
+    toast({
+      title: 'Auditoría Eliminada',
+      description: 'El registro de auditoría ha sido eliminado exitosamente.',
+    });
+
+    router.push('/logs');
   };
 
   const handleDownloadPdf = async () => {

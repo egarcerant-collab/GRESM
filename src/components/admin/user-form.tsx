@@ -22,9 +22,9 @@ import { userSchema } from '@/lib/schema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { UserProfile } from '@/lib/types';
 import Image from 'next/image';
-import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, updatePassword } from 'firebase/auth';
-import { setDoc, doc } from 'firebase/firestore';
+import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 
 
 const DUMMY_DOMAIN = 'dusakawi.audit.app';
@@ -116,7 +116,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
             signature: values.signature
         };
 
-        await setDoc(doc(firestore, "users", user.uid), userProfile);
+        setDocumentNonBlocking(doc(firestore, "users", user.uid), userProfile, {});
         toast({ title: 'Usuario Creado', description: 'El usuario ha sido registrado exitosamente.'});
         form.reset();
         setSignaturePreview('');
@@ -134,39 +134,35 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
     }
   }
 
-  async function handleUpdateUser(values: z.infer<typeof userSchema>) {
+  function handleUpdateUser(values: z.infer<typeof userSchema>) {
       if (!initialData) return;
-      try {
-          const userProfileUpdate: Partial<UserProfile> = {
-            fullName: values.fullName,
-            role: values.role,
-            cargo: values.cargo,
-            signature: values.signature
-          };
+      
+      const userProfileUpdate: Partial<UserProfile> = {
+        fullName: values.fullName,
+        role: values.role,
+        cargo: values.cargo,
+        signature: values.signature
+      };
 
-          await setDoc(doc(firestore, "users", initialData.uid), userProfileUpdate, { merge: true });
+      setDocumentNonBlocking(doc(firestore, "users", initialData.uid), userProfileUpdate, { merge: true });
 
-          if (values.password && auth.currentUser) {
-              // This is a sensitive operation and might require recent sign-in.
-              // For this app, we assume the admin user is recently signed in.
-              // A more robust implementation would reauthenticate the admin.
-              // We can't update other users' passwords from the client SDK directly.
-              // This is a limitation. We will skip password updates on the edit form for now.
-              console.warn("Client-side password update for other users is not supported. Skipping.");
-          }
-
-          toast({ title: 'Usuario Actualizado', description: 'El usuario ha sido actualizado exitosamente.' });
-          onFinished();
-
-      } catch (error: any) {
-          toast({ variant: 'destructive', title: 'Error al actualizar usuario', description: error.message });
+      if (values.password && auth.currentUser) {
+          // This is a sensitive operation and might require recent sign-in.
+          // For this app, we assume the admin user is recently signed in.
+          // A more robust implementation would reauthenticate the admin.
+          // We can't update other users' passwords from the client SDK directly.
+          // This is a limitation. We will skip password updates on the edit form for now.
+          console.warn("Client-side password update for other users is not supported. Skipping.");
       }
+
+      toast({ title: 'Usuario Actualizado', description: 'El usuario ha sido actualizado exitosamente.' });
+      onFinished();
   }
 
   function onSubmit(values: z.infer<typeof userSchema>) {
     startTransition(async () => {
       if (isEditMode) {
-        await handleUpdateUser(values);
+        handleUpdateUser(values);
       } else {
         await handleCreateUser(values);
       }

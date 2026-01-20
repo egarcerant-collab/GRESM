@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { Loader2, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { collection, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
@@ -76,7 +76,7 @@ export default function AdminPage() {
     setIsFormOpen(true);
   };
   
-  const handleDeleteUser = async () => {
+  const handleDeleteUser = () => {
     if (password !== '123456') {
       toast({
         variant: 'destructive',
@@ -99,25 +99,17 @@ export default function AdminPage() {
     }
 
     setIsDeleting(true);
-    try {
-      // NOTE: This only deletes the Firestore record, not the Firebase Auth user.
-      // A robust solution would use a Cloud Function to delete the Auth user too.
-      await deleteDoc(doc(firestore, 'users', userToDelete.uid));
-       toast({
-        title: 'Usuario Eliminado',
-        description: 'El usuario ha sido eliminado exitosamente.',
-      });
-    } catch(e: any) {
-       toast({
-        variant: 'destructive',
-        title: 'Error al eliminar',
-        description: e.message || 'Ocurrió un error',
-      });
-    } finally {
-      setIsDeleting(false);
-      setUserToDelete(null);
-      setPassword('');
-    }
+    
+    deleteDocumentNonBlocking(doc(firestore, 'users', userToDelete.uid));
+    
+    toast({
+      title: 'Usuario Eliminado',
+      description: 'El usuario ha sido eliminado exitosamente.',
+    });
+    
+    setIsDeleting(false);
+    setUserToDelete(null);
+    setPassword('');
   };
 
   const onFormFinished = () => {

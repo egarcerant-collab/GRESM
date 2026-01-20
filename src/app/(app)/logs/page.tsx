@@ -23,8 +23,8 @@ import {
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, doc, getDoc } from 'firebase/firestore';
 import { AuditLogTable } from '@/components/audit-log-table';
 
 // We need to import JSZip like this for it to work with Next.js
@@ -73,20 +73,12 @@ export default function LogsPage() {
     }
   }, [authUser, firestore]);
 
-  const handleDeleteAudit = async (id: string) => {
-    try {
-      await deleteDoc(doc(firestore, 'audits', id));
-      toast({
-        title: 'Auditoría Eliminada',
-        description: 'El registro ha sido eliminado exitosamente.',
-      });
-    } catch (e: any) {
-       toast({
-        variant: 'destructive',
-        title: 'Error al eliminar',
-        description: e.message || "No se pudo eliminar la auditoría",
-      });
-    }
+  const handleDeleteAudit = (id: string) => {
+    deleteDocumentNonBlocking(doc(firestore, 'audits', id));
+    toast({
+      title: 'Auditoría Eliminada',
+      description: 'El registro ha sido eliminado exitosamente.',
+    });
   };
 
   const filteredAudits = useMemo(() => {

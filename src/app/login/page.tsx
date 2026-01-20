@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import React, { useTransition } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { useFirebase, useUser, FirebaseClientProvider } from '@/firebase';
+import { useFirebase, useUser, FirebaseClientProvider, setDocumentNonBlocking } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import {
   Card,
@@ -27,7 +27,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 
 
@@ -82,7 +82,7 @@ function LoginPageContent() {
                         cargo: 'Administrador', // A sensible default.
                     };
 
-                    await setDoc(doc(firestore, "users", newUser.uid), userProfile);
+                    setDocumentNonBlocking(doc(firestore, "users", newUser.uid), userProfile, {});
                     
                     toast({ title: 'Cuenta Creada', description: '¡Bienvenido! Se ha creado tu cuenta con rol de administrador.' });
                     router.push('/dashboard');
