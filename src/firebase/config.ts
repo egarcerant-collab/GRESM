@@ -1,8 +1,11 @@
+// IMPORTANT: These values are populated by Firebase App Hosting.
+// When running locally, you must create a `.env.local` file with these values.
 export const firebaseConfig = {
-  "projectId": "studio-9747359097-37055",
-  "appId": "1:40247950279:web:546d498aa0c94b17f2b7e2",
-  "apiKey": "AIzaSyBQbRf0K1rJcc3tydNQce1IX7LVFEJCPac",
-  "authDomain": "studio-9747359097-37055.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "40247950279"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
