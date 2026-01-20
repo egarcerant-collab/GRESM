@@ -2,8 +2,10 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  username: z.string().min(1, { message: "El nombre de usuario es requerido." }),
-  password: z.string().min(1, { message: "La contraseña es requerida." }),
+  username: z.string()
+    .min(3, { message: "El nombre de usuario debe tener al menos 3 caracteres." })
+    .regex(/^[a-zA-Z0-9_.-]+$/, { message: "Nombre de usuario inválido. Use solo letras, números, puntos, guiones y guiones bajos." }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
 });
 
 export const auditSchema = z.object({

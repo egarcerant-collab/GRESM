@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -44,6 +45,15 @@ function LoginPageContent() {
 
   const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
+
+  const noUsersExist = !usersLoading && (!users || users.length === 0);
+
+  useEffect(() => {
+    if (noUsersExist) {
+      setIsSignUp(true);
+    }
+  }, [noUsersExist]);
+
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -99,6 +109,8 @@ function LoginPageContent() {
                 message = 'Ese nombre de usuario ya existe. Intenta con otro.';
             } else if (creationError.code === 'auth/weak-password') {
                 message = 'La contraseña es muy débil (mínimo 6 caracteres).';
+            } else if (creationError.code === 'auth/invalid-email') {
+                message = 'El nombre de usuario no es válido (evite espacios o caracteres especiales).';
             }
             toast({
                 variant: 'destructive',
@@ -156,9 +168,15 @@ function LoginPageContent() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="flex items-center space-x-2 mb-4">
-                  <Switch id="signup-mode" checked={isSignUp} onCheckedChange={(checked) => { setIsSignUp(checked); form.reset(); }} />
+                  <Switch id="signup-mode" checked={isSignUp} onCheckedChange={(checked) => { setIsSignUp(checked); form.reset(); }} disabled={noUsersExist} />
                   <Label htmlFor="signup-mode">Crear nuevo usuario</Label>
               </div>
+
+              {noUsersExist && (
+                <p className="text-sm text-muted-foreground -mt-2">
+                  No hay usuarios. Debes crear el primer usuario administrador.
+                </p>
+              )}
 
               <FormField
                 control={form.control}
@@ -166,7 +184,7 @@ function LoginPageContent() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Usuario</FormLabel>
-                    {isSignUp || !users || users.length === 0 ? (
+                    {isSignUp ? (
                         <FormControl>
                           <Input placeholder="ej. juanperez" {...field} />
                         </FormControl>
@@ -209,7 +227,7 @@ function LoginPageContent() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isPending || usersLoading}>
+              <Button type="submit" className="w-full" disabled={isPending || (usersLoading && !isSignUp)}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSignUp ? 'Crear Cuenta' : 'Ingresar'}
               </Button>
