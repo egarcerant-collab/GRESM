@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -13,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import type { Audit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Eye, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -31,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
+function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
     switch (visitType) {
         case 'PRIMERA VEZ':
             return 'secondary';
@@ -102,16 +101,22 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
         </TableRow>
       </TableHeader>
       <TableBody>
-        {audits.map((audit) => (
+        {audits.map((audit) => {
+          const followUpDate = new Date(audit.followUpDate);
+          const isFollowUpDateValid = isValid(followUpDate);
+
+          return (
           <TableRow key={audit.id} className="hover:bg-muted/50">
             <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.id}</TableCell>
-            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.patientName}</TableCell>
-            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.auditorName}</TableCell>
-            <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.event}</TableCell>
-            <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{format(new Date(audit.followUpDate), 'PP')}</TableCell>
+            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.patientName || 'N/A'}</TableCell>
+            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.auditorName || 'N/A'}</TableCell>
+            <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.event || 'N/A'}</TableCell>
+            <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
+              {isFollowUpDateValid ? format(followUpDate, 'PP') : 'Fecha no válida'}
+            </TableCell>
             <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
               <Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">
-                {audit.visitType.toLowerCase().replace('_', ' ')}
+                {audit.visitType?.toLowerCase().replace('_', ' ') || 'N/A'}
               </Badge>
             </TableCell>
             <TableCell className="text-right">
@@ -153,7 +158,7 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
               )}
             </TableCell>
           </TableRow>
-        ))}
+        )})}
       </TableBody>
     </Table>
     </div>

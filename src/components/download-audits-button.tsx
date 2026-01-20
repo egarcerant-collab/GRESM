@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import type { Audit } from '@/lib/types';
 import { Download } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
 export function DownloadAuditsButton({ audits }: { audits: Audit[] }) {
   const handleDownload = () => {
@@ -13,9 +13,12 @@ export function DownloadAuditsButton({ audits }: { audits: Audit[] }) {
       // Create a new object to avoid mutating the original audit object
       const sanitizedAudit: any = { ...audit };
       
+      const followUpDate = new Date(audit.followUpDate);
+      const createdAtDate = new Date(audit.createdAt);
+
       // Convert Date objects to formatted strings
-      sanitizedAudit.followUpDate = format(new Date(audit.followUpDate), 'yyyy-MM-dd');
-      sanitizedAudit.createdAt = format(new Date(audit.createdAt), 'yyyy-MM-dd HH:mm:ss');
+      sanitizedAudit.followUpDate = isValid(followUpDate) ? format(followUpDate, 'yyyy-MM-dd') : 'Fecha no válida';
+      sanitizedAudit.createdAt = isValid(createdAtDate) ? format(createdAtDate, 'yyyy-MM-dd HH:mm:ss') : 'Fecha no válida';
       
       return sanitizedAudit;
     });

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -29,14 +28,14 @@ import {
 import { getImageAsBase64Action } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useFirestore, useUser, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
-  if (!value) return null;
+  if (value === null || value === undefined || value === '') return null;
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 py-3">
       <dt className="font-medium text-muted-foreground">{label}</dt>
@@ -45,7 +44,7 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
   );
 }
 
-function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
+function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
   switch (visitType) {
     case 'PRIMERA VEZ':
       return 'secondary';
@@ -56,6 +55,14 @@ function getVisitTypeBadgeVariant(visitType: Audit['visitType']) {
       return 'outline';
   }
 }
+
+function formatDateSafe(dateString: string | undefined, formatString: string) {
+    if (!dateString) return 'Fecha no disponible';
+    const date = new Date(dateString);
+    if (!isValid(date)) return 'Fecha no válida';
+    return format(date, formatString);
+}
+
 
 export default function LogDetailClient({ audit }: { audit: Audit }) {
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -133,7 +140,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
     }
   };
   
-  const formattedCreatedAt = format(new Date(audit.createdAt), 'PPPp');
+  const formattedCreatedAt = formatDateSafe(audit.createdAt, 'PPPp');
   const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
 
   return (
@@ -214,8 +221,8 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
                 <DetailItem label="Paciente" value={audit.patientName} />
                 <DetailItem label="Tipo de Documento" value={audit.documentType} />
                 <DetailItem label="Número de Documento" value={audit.documentNumber} />
-                 <DetailItem label="Fecha de Creación" value={format(new Date(audit.createdAt), 'PPP')} />
-                <DetailItem label="Tipo de Visita" value={<Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">{audit.visitType.toLowerCase().replace('_', ' ')}</Badge>} />
+                 <DetailItem label="Fecha de Creación" value={formatDateSafe(audit.createdAt, 'PPP')} />
+                <DetailItem label="Tipo de Visita" value={<Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">{audit.visitType?.toLowerCase().replace('_', ' ') || 'N/A'}</Badge>} />
               </div>
                <div className="divide-y divide-border">
                 <DetailItem label="Evento" value={audit.event} />
@@ -240,7 +247,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
                         <h3 className="text-md font-semibold mt-4 mb-2 text-foreground">Información Adicional de Evento</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                             <div className="divide-y divide-border">
-                                <DetailItem label="Fecha de Nacimiento" value={audit.birthDate ? format(new Date(audit.birthDate), 'PPP') : null} />
+                                <DetailItem label="Fecha de Nacimiento" value={formatDateSafe(audit.birthDate, 'PPP')} />
                                 <DetailItem label="Edad" value={audit.age} />
                                 <DetailItem label="Sexo" value={audit.sex} />
                                 <DetailItem label="Estado de Afiliación" value={audit.affiliationStatus} />

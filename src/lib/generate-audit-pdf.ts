@@ -1,9 +1,17 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import type { Audit, UserProfile } from "./types";
 
 const FONT = "helvetica";
+
+function formatDateSafe(dateString: string | undefined, formatString: string) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    if (!isValid(date)) return 'Fecha no válida';
+    return format(date, formatString);
+}
+
 
 async function buildPdf(data: Audit, backgroundImage: string | null, auditor: UserProfile | null, doc: jsPDF): Promise<jsPDF> {
   const pageW = doc.internal.pageSize.getWidth();
@@ -42,7 +50,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
     startY: finalY,
     body: [
         [{ content: 'ID de Auditoría:', styles: { fontStyle: 'bold' } }, data.id || 'N/A'],
-        [{ content: 'Fecha de Creación:', styles: { fontStyle: 'bold' } }, data.createdAt ? format(new Date(data.createdAt), 'yyyy-MM-dd HH:mm') : 'N/A'],
+        [{ content: 'Fecha de Creación:', styles: { fontStyle: 'bold' } }, formatDateSafe(data.createdAt, 'yyyy-MM-dd HH:mm')],
         [{ content: 'Nombre del Auditor:', styles: { fontStyle: 'bold' } }, data.auditorName || 'N/A'],
     ],
     theme: "plain",
@@ -89,7 +97,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
     startY: finalY,
     body: [
         [{ content: 'Tipo de Visita:', styles: { fontStyle: "bold" } }, data.visitType || 'N/A'],
-        [{ content: 'Fecha de Seguimiento:', styles: { fontStyle: "bold" } }, data.followUpDate ? format(new Date(data.followUpDate), 'yyyy-MM-dd') : 'N/A'],
+        [{ content: 'Fecha de Seguimiento:', styles: { fontStyle: "bold" } }, formatDateSafe(data.followUpDate, 'yyyy-MM-dd')],
         [{ content: 'Evento:', styles: { fontStyle: "bold" } }, data.event || 'N/A'],
         ...(data.eventDetails ? [[{ content: 'Detalles del Evento:', styles: { fontStyle: "bold" } }, data.eventDetails]] : []),
         ...(data.event === 'Violencia de Género' ? [
@@ -110,7 +118,7 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
     autoTable(doc, {
       startY: finalY,
       body: [
-        ...(data.birthDate ? [[{ content: 'Fecha de Nacimiento:', styles: { fontStyle: "bold" } }, format(new Date(data.birthDate), 'yyyy-MM-dd')]] : []),
+        [{ content: 'Fecha de Nacimiento:', styles: { fontStyle: "bold" } }, formatDateSafe(data.birthDate, 'yyyy-MM-dd')],
         ...(data.age !== undefined ? [[{ content: 'Edad:', styles: { fontStyle: "bold" } }, String(data.age)]] : []),
         ...(data.sex ? [[{ content: 'Sexo:', styles: { fontStyle: "bold" } }, data.sex]] : []),
         ...(data.affiliationStatus ? [[{ content: 'Estado Afiliación:', styles: { fontStyle: "bold" } }, data.affiliationStatus]] : []),
