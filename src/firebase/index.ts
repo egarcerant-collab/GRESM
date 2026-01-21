@@ -13,26 +13,23 @@ let firestore: Firestore;
 if (getApps().length === 0) {
   // Check for the essential config values to prevent client-side errors from missing env vars.
   if (
-    firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId
+    !firebaseConfig.apiKey ||
+    !firebaseConfig.authDomain ||
+    !firebaseConfig.projectId
   ) {
-    app = initializeApp(firebaseConfig);
-  } else {
     // This log is crucial for debugging missing environment variables.
     console.error(
-      'Firebase configuration is incomplete. Please check your .env.local file or App Hosting environment variables (NEXT_PUBLIC_FIREBASE_*).'
+      'Firebase configuration is incomplete. Please check your .env.local file or App Hosting environment variables (NEXT_PUBLIC_FIREBASE_*). The application cannot connect to Firebase.'
     );
-    // Assign a dummy object to prevent the server from crashing.
-    // Client-side errors will be caught by the `error.tsx` boundary.
-    app = {} as FirebaseApp;
+    // Throw an error that will be caught by the error boundary
+    throw new Error('Firebase configuration is incomplete. Check environment variables.');
   }
+  app = initializeApp(firebaseConfig);
 } else {
   app = getApp();
 }
 
-// Initialize services. If the app is a dummy object, these will also be dummy objects,
-// preventing server-side crashes and letting the client-side error boundary handle the issue.
+// Initialize services.
 auth = getAuth(app);
 firestore = getFirestore(app);
 
