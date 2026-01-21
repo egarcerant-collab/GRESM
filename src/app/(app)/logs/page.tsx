@@ -50,15 +50,13 @@ const months = [
 
 export default function LogsPage() {
   const firestore = useFirestore();
-  const { user: authUser } = useUser();
+  const { profile: currentUserProfile, isUserLoading: isProfileLoading } = useUser();
   const auditsCollection = useMemoFirebase(() => collection(firestore, 'audits'), [firestore]);
   const { data: audits, isLoading: loading, error } = useCollection<Audit>(auditsCollection);
   
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
-  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-
+  
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
@@ -66,21 +64,6 @@ export default function LogsPage() {
     // Set year on client to avoid hydration mismatch
     setSelectedYear(new Date().getFullYear().toString());
   }, []);
-
-  useEffect(() => {
-    if (authUser) {
-      setIsProfileLoading(true);
-      const userDocRef = doc(firestore, 'users', authUser.uid);
-      getDoc(userDocRef).then(docSnap => {
-        if (docSnap.exists()) {
-          setCurrentUserProfile(docSnap.data() as UserProfile);
-        }
-        setIsProfileLoading(false);
-      });
-    } else if (!authUser) {
-      setIsProfileLoading(false);
-    }
-  }, [authUser, firestore]);
 
   const handleDeleteAudit = (id: string) => {
     deleteDocumentNonBlocking(doc(firestore, 'audits', id));
@@ -225,7 +208,7 @@ export default function LogsPage() {
             </Select>
         </div>
 
-        {loading ? (
+        {loading || isProfileLoading ? (
             <div className='flex justify-center items-center h-64'>
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>

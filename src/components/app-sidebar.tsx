@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -14,34 +13,12 @@ import { FilePlus, List, ShieldCheck, Users, LogOut, Loader2 } from 'lucide-reac
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
-import { useMemo, useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
-import type { UserProfile } from '@/lib/types';
 import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
   const auth = useAuth();
-  const { user } = useUser();
-  const firestore = useFirestore();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      setIsProfileLoading(true);
-      const userDocRef = doc(firestore, 'users', user.uid);
-      getDoc(userDocRef).then(docSnap => {
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
-        }
-        setIsProfileLoading(false);
-      });
-    } else {
-      setIsProfileLoading(false);
-    }
-  }, [user, firestore]);
+  const { profile, isUserLoading } = useUser();
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -100,7 +77,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <div className="p-2 group-data-[collapsible=icon]:hidden">
-           {!isProfileLoading && profile && (
+           {!isUserLoading && profile && (
              <div className="text-xs text-muted-foreground text-left mb-2 p-2 rounded-lg bg-muted">
                 <p className="font-bold text-foreground">{profile.fullName}</p>
                 <p>{profile.cargo}</p>
