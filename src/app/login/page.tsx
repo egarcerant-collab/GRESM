@@ -42,6 +42,7 @@ function LoginPageContent() {
   const router = useRouter();
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
@@ -75,6 +76,7 @@ function LoginPageContent() {
 
   function onSubmit(values: z.infer<typeof loginSchema>) {
     const email = `${values.username}@dusakawi.audit.app`;
+    setRegistrationError(null);
     startTransition(async () => {
       if (isSignUp) {
         // SIGN UP LOGIC
@@ -106,7 +108,8 @@ function LoginPageContent() {
         } catch (creationError: any) {
             let message = "Ocurrió un error al registrar la cuenta.";
             if (creationError.code === 'auth/email-already-in-use') {
-                message = 'Ese nombre de usuario ya existe. Intenta con otro.';
+                setRegistrationError('Este usuario ya existe. Desactiva la opción "Crear nuevo usuario" para iniciar sesión.');
+                return; // Stop here, show inline error instead of toast
             } else if (creationError.code === 'auth/weak-password') {
                 message = 'La contraseña es muy débil (mínimo 6 caracteres).';
             } else if (creationError.code === 'auth/invalid-email') {
@@ -166,9 +169,9 @@ function LoginPageContent() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="flex items-center space-x-2 mb-4">
-                  <Switch id="signup-mode" checked={isSignUp} onCheckedChange={(checked) => { setIsSignUp(checked); form.reset(); }} disabled={noUsersExist} />
+                  <Switch id="signup-mode" checked={isSignUp} onCheckedChange={(checked) => { setIsSignUp(checked); form.reset(); setRegistrationError(null); }} disabled={noUsersExist} />
                   <Label htmlFor="signup-mode">Crear nuevo usuario</Label>
               </div>
 
@@ -227,7 +230,8 @@ function LoginPageContent() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isPending || (usersLoading && !isSignUp)}>
+              {registrationError && <p className="text-sm font-medium text-destructive">{registrationError}</p>}
+              <Button type="submit" className="w-full !mt-6" disabled={isPending || (usersLoading && !isSignUp)}>
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSignUp ? 'Crear Cuenta' : 'Ingresar'}
               </Button>
