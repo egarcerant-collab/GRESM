@@ -38,8 +38,8 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
   if (value === null || value === undefined || value === '') return null;
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 py-3">
-      <dt className="font-medium text-muted-foreground">{label}</dt>
-      <dd className="md:col-span-2 text-foreground">{value}</dd>
+      <div className="font-medium text-muted-foreground">{label}</div>
+      <div className="md:col-span-2 text-foreground">{value}</div>
     </div>
   );
 }
@@ -203,7 +203,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <dl className="divide-y divide-border">
+          <div className="divide-y divide-border">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
               <div className="divide-y divide-border">
                 <DetailItem label="Auditor" value={audit.auditorName} />
@@ -261,7 +261,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
             <div className="pt-4">
               <DetailItem label="Conducta a Seguir" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
             </div>
-          </dl>
+          </div>
         </CardContent>
       </Card>
     </div>
