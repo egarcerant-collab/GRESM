@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import React, { useTransition, useState, useEffect } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { useFirebase, useUser, FirebaseClientProvider, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useUser, FirebaseClientProvider, useCollection, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import {
   Card,
@@ -28,7 +28,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -64,15 +64,20 @@ function LoginPageContent() {
     startTransition(async () => {
         const email = `${values.username}@dusakawi.audit.app`;
 
-        // Special case for the admin user as requested.
-        if (values.username === 'admin' && values.password === '123456') {
+        if (values.username === 'admin') {
+             if (values.password !== '123456') {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error de Inicio de Sesión',
+                    description: 'La contraseña del administrador es incorrecta.',
+                });
+                return;
+            }
             try {
-                // Try to sign in first.
                 await signInWithEmailAndPassword(auth, email, values.password);
                 toast({ title: 'Inicio de Sesión Exitoso', description: 'Bienvenido de nuevo, Admin.' });
             } catch (error: any) {
-                // If the user does not exist, create it.
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
                     try {
                         const userCredential = await createUserWithEmailAndPassword(auth, email, values.password);
                         const newUser = userCredential.user;
@@ -86,28 +91,29 @@ function LoginPageContent() {
                             cargo: 'Administrador del Sistema',
                         };
 
-                        await setDoc(doc(firestore, "users", newUser.uid), userProfile);
+                        setDocumentNonBlocking(doc(firestore, "users", newUser.uid), userProfile, {});
                         
                         toast({ title: 'Cuenta de Admin Creada', description: 'Se ha creado la cuenta de administrador. ¡Bienvenido!' });
-                        // The onAuthStateChanged listener will handle the redirect.
                     } catch (creationError: any) {
+                        let description = 'No se pudo iniciar sesión ni crear la cuenta de admin. Es posible que la cuenta ya exista con una contraseña diferente.';
+                        if(creationError.code === 'auth/email-already-in-use'){
+                            description = 'La contraseña del administrador es incorrecta. No se pudo restablecer.';
+                        }
                         toast({
                             variant: 'destructive',
-                            title: 'Error Crítico',
-                            description: `No se pudo crear la cuenta de admin: ${creationError.message}`,
+                            title: 'Error de Inicio de Sesión',
+                            description: description,
                         });
                     }
                 } else {
-                    // For other errors like wrong password
                     toast({
                         variant: 'destructive',
                         title: 'Error de Inicio de Sesión',
-                        description: 'La contraseña del administrador es incorrecta.',
+                        description: error.message || 'Ocurrió un error inesperado.',
                     });
                 }
             }
         } else {
-            // Standard login for all other users.
             if (!values.username) {
                 toast({
                     variant: 'destructive',
