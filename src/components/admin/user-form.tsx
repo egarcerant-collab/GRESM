@@ -61,7 +61,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
         password: '',
         cargo: initialData.cargo,
         role: initialData.role,
-        signature: initialData.signature,
+        signature: initialData.signature || '',
       });
       setSignaturePreview(initialData.signature || '');
     } else {
@@ -89,7 +89,7 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
       };
       reader.readAsDataURL(file);
     } else {
-        form.setValue('signature', undefined);
+        form.setValue('signature', '');
         setSignaturePreview('');
         if (currentInput) {
             currentInput.value = "";
