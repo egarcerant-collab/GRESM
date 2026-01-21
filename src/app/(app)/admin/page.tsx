@@ -36,16 +36,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const firestore = useFirestore();
-  const { user: authUser } = useUser();
+  const { user: authUser, isUserLoading } = useUser();
   const router = useRouter();
 
   const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
-  const { data: users, isLoading: loading, error } = useCollection<UserProfile>(usersCollection);
+  const { data: users, isLoading: usersAreLoading, error } = useCollection<UserProfile>(usersCollection);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -54,6 +54,8 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const isLoading = usersAreLoading || isUserLoading;
 
   if (error) {
     return <div>Error: {error.message}</div>
@@ -137,7 +139,7 @@ export default function AdminPage() {
             <CardDescription>Gestiona los usuarios registrados en el sistema.</CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
                 <div className="flex justify-center items-center h-40">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
@@ -208,7 +210,7 @@ export default function AdminPage() {
                 ))}
               </ul>
             )}
-            {users?.length === 0 && !loading && (
+            {users?.length === 0 && !isLoading && (
                  <div className="text-center text-muted-foreground py-16 border-2 border-dashed rounded-lg">
                     <h3 className="text-xl font-semibold text-foreground">No se encontraron usuarios.</h3>
                     <p className="mt-2">Comienza creando el primer usuario en el formulario de arriba.</p>
