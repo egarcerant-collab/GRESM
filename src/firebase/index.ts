@@ -10,20 +10,8 @@ let auth: Auth;
 let firestore: Firestore;
 
 // This singleton pattern ensures Firebase is initialized only once.
+// The firebaseConfig object is validated in `config.ts` and will throw an error if essential variables are missing.
 if (getApps().length === 0) {
-  // Check for the essential config values to prevent client-side errors from missing env vars.
-  if (
-    !firebaseConfig.apiKey ||
-    !firebaseConfig.authDomain ||
-    !firebaseConfig.projectId
-  ) {
-    // This log is crucial for debugging missing environment variables.
-    console.error(
-      'Firebase configuration is incomplete. Please check your .env.local file or App Hosting environment variables (NEXT_PUBLIC_FIREBASE_*). The application cannot connect to Firebase.'
-    );
-    // Throw an error that will be caught by the error boundary
-    throw new Error('Firebase configuration is incomplete. Check environment variables.');
-  }
   app = initializeApp(firebaseConfig);
 } else {
   app = getApp();

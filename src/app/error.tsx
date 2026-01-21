@@ -12,10 +12,11 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to the console for debugging
-    console.error("Caught by error boundary:", error);
+    // Log the error to the console for debugging, as recommended.
+    console.error("Caught by application error boundary:", error);
   }, [error]);
 
+  // Check for the specific Firebase configuration error.
   const isConfigError = error.message.includes('Firebase configuration is incomplete');
 
   return (
@@ -27,7 +28,7 @@ export default function Error({
           </CardTitle>
           <CardDescription>
             {isConfigError
-              ? "La aplicación no puede conectarse a Firebase porque la configuración es incorrecta."
+              ? "La aplicación no puede conectarse a Firebase porque una o más variables de configuración no están definidas en el entorno de producción."
               : "Lo sentimos, algo salió mal al intentar cargar la página."}
           </CardDescription>
         </CardHeader>
@@ -35,14 +36,14 @@ export default function Error({
           <div className="bg-destructive/10 p-4 rounded-md text-left text-sm text-destructive overflow-x-auto">
             <p className="font-bold">Detalles del error:</p>
             <pre className="whitespace-pre-wrap font-mono mt-2">
-              {isConfigError
-                ? "Las variables de entorno (NEXT_PUBLIC_FIREBASE_*) no están definidas en el servidor de App Hosting. Por favor, configúralas en los ajustes de tu backend de Firebase."
-                : error.message || 'No se proporcionó un mensaje de error.'
-              }
+              {error.message || 'No se proporcionó un mensaje de error.'}
             </pre>
           </div>
           <p className="text-muted-foreground">
-            Puedes intentar recargar la página. Si el problema persiste, configura las variables de entorno en App Hosting.
+            {isConfigError
+              ? "Por favor, ve a la configuración de tu backend en Firebase App Hosting y asegúrate de que todas las variables de entorno NEXT_PUBLIC_FIREBASE_* estén definidas correctamente."
+              : "Puedes intentar recargar la página."
+            }
           </p>
           <Button onClick={() => reset()}>
             Reintentar
