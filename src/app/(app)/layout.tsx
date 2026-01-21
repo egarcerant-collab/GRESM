@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AppSidebar } from '@/components/app-sidebar';
@@ -7,34 +6,16 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { ShieldCheck, Loader2 } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import React from 'react';
-import { useUser } from '@/firebase';
-import { useRouter } from 'next/navigation';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AuthGuard } from '@/components/auth-guard';
 
-function AppLayoutContent({
+function AuthenticatedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isUserLoading } = useUser();
-  const router = useRouter();
-
-  React.useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -56,6 +37,7 @@ function AppLayoutContent({
   );
 }
 
+
 export default function AppLayout({
   children,
 }: {
@@ -63,7 +45,9 @@ export default function AppLayout({
 }) {
   return (
     <FirebaseClientProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
+      <AuthGuard>
+        <AuthenticatedLayout>{children}</AuthenticatedLayout>
+      </AuthGuard>
     </FirebaseClientProvider>
   )
 }
