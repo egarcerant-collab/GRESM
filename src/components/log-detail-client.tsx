@@ -73,15 +73,20 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
   const { user: authUser } = useUser();
   const [password, setPassword] = React.useState('');
   const [currentUserProfile, setCurrentUserProfile] = React.useState<UserProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (authUser) {
+      setIsProfileLoading(true);
       const userDocRef = doc(firestore, 'users', authUser.uid);
       getDoc(userDocRef).then(docSnap => {
         if (docSnap.exists()) {
           setCurrentUserProfile(docSnap.data() as UserProfile);
         }
+        setIsProfileLoading(false);
       });
+    } else {
+        setIsProfileLoading(false);
     }
   }, [authUser, firestore]);
 
@@ -142,6 +147,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
   
   const formattedCreatedAt = formatDateSafe(audit.createdAt, 'PPPp');
   const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
+  const canDelete = !isProfileLoading && currentUserProfile?.role === 'admin';
 
   return (
     <div className="space-y-6">
@@ -165,7 +171,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
             )}
             Descargar PDF
           </Button>
-          {currentUserProfile?.role === 'admin' && (
+          {canDelete && (
             <AlertDialog onOpenChange={onOpenChange}>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" disabled={isDeleting}>

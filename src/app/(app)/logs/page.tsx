@@ -26,6 +26,7 @@ import { saveAs } from 'file-saver';
 import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import { collection, doc, getDoc } from 'firebase/firestore';
 import { AuditLogTable } from '@/components/audit-log-table';
+import { isValid } from 'date-fns';
 
 // We need to import JSZip like this for it to work with Next.js
 const JSZip = require('jszip');
@@ -56,6 +57,7 @@ export default function LogsPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
@@ -67,12 +69,16 @@ export default function LogsPage() {
 
   useEffect(() => {
     if (authUser) {
+      setIsProfileLoading(true);
       const userDocRef = doc(firestore, 'users', authUser.uid);
       getDoc(userDocRef).then(docSnap => {
         if (docSnap.exists()) {
           setCurrentUserProfile(docSnap.data() as UserProfile);
         }
+        setIsProfileLoading(false);
       });
+    } else if (!authUser) {
+      setIsProfileLoading(false);
     }
   }, [authUser, firestore]);
 
@@ -153,6 +159,8 @@ export default function LogsPage() {
     }
   };
 
+  const canDelete = !isProfileLoading && currentUserProfile?.role === 'admin';
+
   return (
     <Card className="shadow-lg">
       <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -222,7 +230,7 @@ export default function LogsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         ) : (
-          <AuditLogTable audits={filteredAudits} onDelete={currentUserProfile?.role === 'admin' ? handleDeleteAudit : undefined} />
+          <AuditLogTable audits={filteredAudits} onDelete={canDelete ? handleDeleteAudit : undefined} />
         )}
       </CardContent>
     </Card>
