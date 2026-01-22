@@ -48,29 +48,43 @@ export const auditSchema = z.object({
 }, {
     message: 'Especifique el evento.',
     path: ['eventDetails'],
-}).refine(data => {
+}).superRefine((data, ctx) => {
     const specialEvent = data.event === 'Intento de Suicidio' || data.event === 'Consumo de Sustancia Psicoactivas';
     if (specialEvent) {
-        return (
-            data.birthDate &&
-            data.age !== undefined &&
-            data.sex &&
-            data.affiliationStatus &&
-            data.area &&
-            data.settlement && data.settlement.length > 0 &&
-            data.nationality && data.nationality.length > 0 &&
-            data.primaryHealthProvider && data.primaryHealthProvider.length > 0 &&
-            data.regime &&
-            data.upgdProvider && data.upgdProvider.length > 0 &&
-            data.followUpInterventionType && data.followUpInterventionType.length > 0
-        );
+        if (!data.birthDate) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La fecha de nacimiento es requerida.', path: ['birthDate'] });
+        }
+        if (data.age === undefined) {
+             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La edad es requerida y se calcula de la fecha de nacimiento.', path: ['age'] });
+        }
+        if (!data.sex) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El sexo es requerido.', path: ['sex'] });
+        }
+        if (!data.affiliationStatus) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El estado de afiliación es requerido.', path: ['affiliationStatus'] });
+        }
+        if (!data.area) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El área es requerida.', path: ['area'] });
+        }
+        if (!data.settlement || data.settlement.length === 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El asentamiento es requerido.', path: ['settlement'] });
+        }
+        if (!data.nationality || data.nationality.length === 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La nacionalidad es requerida.', path: ['nationality'] });
+        }
+        if (!data.primaryHealthProvider || data.primaryHealthProvider.length === 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La IPS Atención Primaria es requerida.', path: ['primaryHealthProvider'] });
+        }
+        if (!data.regime) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El régimen es requerido.', path: ['regime'] });
+        }
+        if (!data.upgdProvider || data.upgdProvider.length === 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre UPGD o Prestador es requerido.', path: ['upgdProvider'] });
+        }
+        if (!data.followUpInterventionType || data.followUpInterventionType.length === 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El tipo de intervención es requerido.', path: ['followUpInterventionType'] });
+        }
     }
-    return true;
-}, {
-    message: 'Este campo es requerido para el evento seleccionado.',
-    // This is a generic message, we'll handle specific messages in the form.
-    // We set a path, but it won't be used directly. The check is what matters.
-    path: ['birthDate'], 
 }).refine(data => {
     if (data.event === 'Violencia de Género') {
         return !!data.genderViolenceType && data.genderViolenceType.length > 0;

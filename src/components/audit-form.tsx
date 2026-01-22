@@ -458,9 +458,8 @@ export function AuditForm() {
                 <FormControl>
                   <Input
                     type="date"
-                    value={field.value ? format(new Date(field.value), 'yyyy-MM-dd') : ''}
+                    value={field.value || ''}
                     onChange={(e) => {
-                       // To avoid timezone issues, we'll store the date as is, and format on display
                        field.onChange(e.target.value);
                     }}
                     min="1900-01-01"
