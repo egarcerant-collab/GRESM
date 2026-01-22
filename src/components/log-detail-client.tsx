@@ -35,11 +35,20 @@ import { useFirestore, useUser, deleteDocumentNonBlocking } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
-  if (value === null || value === undefined || value === '') return null;
+  // A value is considered missing if it's null, undefined, or an empty string.
+  // We explicitly allow 0 as a valid value for fields like age.
+  const isValueMissing = value === null || value === undefined || value === '';
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 py-3">
       <div className="font-medium text-muted-foreground">{label}</div>
-      <div className="md:col-span-2 text-foreground">{value}</div>
+      <div className="md:col-span-2 text-foreground">
+        {isValueMissing ? (
+          <span className="text-sm font-medium text-destructive">No se proporcionó información</span>
+        ) : (
+          value
+        )}
+      </div>
     </div>
   );
 }
@@ -56,8 +65,8 @@ function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
   }
 }
 
-function formatDateSafe(dateString: string | undefined, formatString: string) {
-    if (!dateString) return 'Fecha no disponible';
+function formatDateSafe(dateString: string | undefined, formatString: string): string | undefined {
+    if (!dateString) return undefined;
     const date = new Date(dateString);
     if (!isValid(date)) return 'Fecha no válida';
     return format(date, formatString);
