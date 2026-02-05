@@ -181,6 +181,16 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const [isMounted, setIsMounted] = React.useState(false)
+
+    React.useEffect(() => {
+      setIsMounted(true)
+    }, [])
+
+    if (!isMounted) {
+      // On the server and during initial client render, return null to prevent hydration mismatch.
+      return null
+    }
 
     if (collapsible === "none") {
       return (
