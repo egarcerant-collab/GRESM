@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
@@ -42,12 +42,104 @@ function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
     }
 }
 
-
-export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?: (id: string) => void }) {
+function AuditTableRow({ audit, onDelete }: { audit: Audit, onDelete?: (id: string) => void }) {
   const router = useRouter();
   const { toast } = useToast();
   const [password, setPassword] = useState('');
-  const [auditToDelete, setAuditToDelete] = useState<string | null>(null);
+  const [formattedFollowUpDate, setFormattedFollowUpDate] = useState('');
+
+  useEffect(() => {
+    // Date formatting now happens on the client after hydration to prevent timezone mismatch
+    const date = new Date(audit.followUpDate);
+    if (isValid(date)) {
+        setFormattedFollowUpDate(format(date, 'PP'));
+    } else {
+        setFormattedFollowUpDate('Fecha no válida');
+    }
+  }, [audit.followUpDate]);
+  
+  const handleConfirmDelete = () => {
+    if (password !== '123456') {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Contraseña incorrecta.',
+      });
+      setPassword('');
+      return;
+    }
+
+    if (onDelete) {
+      onDelete(audit.id);
+    }
+    setPassword('');
+  };
+
+  const onOpenChange = (open: boolean) => {
+    if (!open) {
+      setPassword('');
+    }
+  };
+
+  return (
+      <TableRow className="hover:bg-muted/50">
+        <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.id}</TableCell>
+        <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.patientName || 'N/A'}</TableCell>
+        <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.auditorName || 'N/A'}</TableCell>
+        <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.event || 'N/A'}</TableCell>
+        <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
+            {formattedFollowUpDate ? formattedFollowUpDate : <span className="text-transparent">Cargando...</span>}
+        </TableCell>
+        <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
+          <Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">
+            {audit.visitType?.toLowerCase().replace('_', ' ') || 'N/A'}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-right">
+          <Button variant="ghost" size="icon" aria-label="Ver Detalles" onClick={() => router.push(`/logs/${audit.id}`)}>
+            <Eye className="h-4 w-4" />
+          </Button>
+          {onDelete && (
+            <AlertDialog onOpenChange={onOpenChange}>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Eliminar Auditoría">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción no se puede deshacer. Para confirmar la eliminación, por favor introduce la contraseña.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2 py-2">
+                    <Label htmlFor={`delete-password-${audit.id}`}>Contraseña</Label>
+                    <Input
+                        id={`delete-password-${audit.id}`}
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Introduce la contraseña"
+                    />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmDelete}>
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </TableCell>
+      </TableRow>
+  );
+}
+
+
+export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?: (id: string) => void }) {
+  const router = useRouter();
 
   if (audits.length === 0) {
     return (
@@ -60,32 +152,7 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
       </div>
     );
   }
-
-  const handleConfirmDelete = () => {
-    if (password !== '123456') {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Contraseña incorrecta.',
-      });
-      setPassword('');
-      return;
-    }
-
-    if (onDelete && auditToDelete) {
-      onDelete(auditToDelete);
-    }
-    setPassword('');
-    setAuditToDelete(null);
-  };
   
-  const onOpenChange = (open: boolean) => {
-    if (!open) {
-      setPassword('');
-      setAuditToDelete(null);
-    }
-  }
-
   return (
     <div className="border rounded-lg">
     <Table>
@@ -101,64 +168,13 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
         </TableRow>
       </TableHeader>
       <TableBody>
-        {audits.map((audit) => {
-          const followUpDate = new Date(audit.followUpDate);
-          const isFollowUpDateValid = isValid(followUpDate);
-
-          return (
-          <TableRow key={audit.id} className="hover:bg-muted/50">
-            <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.id}</TableCell>
-            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.patientName || 'N/A'}</TableCell>
-            <TableCell className="cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.auditorName || 'N/A'}</TableCell>
-            <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>{audit.event || 'N/A'}</TableCell>
-            <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
-              {isFollowUpDateValid ? format(followUpDate, 'PP') : 'Fecha no válida'}
-            </TableCell>
-            <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/logs/${audit.id}`)}>
-              <Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">
-                {audit.visitType?.toLowerCase().replace('_', ' ') || 'N/A'}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              <Button variant="ghost" size="icon" aria-label="Ver Detalles" onClick={() => router.push(`/logs/${audit.id}`)}>
-                <Eye className="h-4 w-4" />
-              </Button>
-              {onDelete && (
-                <AlertDialog onOpenChange={onOpenChange}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Eliminar Auditoría" onClick={() => setAuditToDelete(audit.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Para confirmar la eliminación, por favor introduce la contraseña.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="space-y-2 py-2">
-                        <Label htmlFor="delete-password">Contraseña</Label>
-                        <Input
-                            id="delete-password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Introduce la contraseña"
-                        />
-                    </div>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleConfirmDelete}>
-                        Eliminar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </TableCell>
-          </TableRow>
-        )})}
+        {audits.map((audit) => (
+            <AuditTableRow 
+                key={audit.id}
+                audit={audit} 
+                onDelete={onDelete} 
+            />
+        ))}
       </TableBody>
     </Table>
     </div>

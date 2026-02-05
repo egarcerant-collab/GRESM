@@ -65,6 +65,7 @@ function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
   }
 }
 
+// This function is now safe because we call it inside useEffect on the client
 function formatDateSafe(dateString: string | undefined, formatString: string): string | undefined {
     if (!dateString) return undefined;
     const date = new Date(dateString);
@@ -82,6 +83,22 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
   const { profile: currentUserProfile, isUserLoading: isProfileLoading } = useUser();
   const [password, setPassword] = React.useState('');
   
+  const [formattedDates, setFormattedDates] = React.useState({
+    createdAtForHeader: '',
+    createdAt: '',
+    birthDate: '',
+  });
+
+  React.useEffect(() => {
+    // All date formatting happens here, on the client, after hydration.
+    // This prevents server/client mismatch due to timezones.
+    setFormattedDates({
+      createdAtForHeader: formatDateSafe(audit.createdAt, 'PPPp') || '',
+      createdAt: formatDateSafe(audit.createdAt, 'PPP') || '',
+      birthDate: formatDateSafe(audit.birthDate, 'PPP') || '',
+    });
+  }, [audit.createdAt, audit.birthDate]);
+
   const handleDelete = () => {
     if(password !== '123456'){
       toast({
@@ -137,7 +154,6 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
     }
   };
   
-  const formattedCreatedAt = formatDateSafe(audit.createdAt, 'PPPp');
   const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
   const canDelete = !isProfileLoading && currentUserProfile?.role === 'admin';
 
@@ -208,7 +224,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
         <CardHeader>
           <CardTitle className="font-headline text-xl">Auditoría ID: {audit.id}</CardTitle>
           <CardDescription>
-            Registrado el {formattedCreatedAt}
+            {formattedDates.createdAtForHeader ? `Registrado el ${formattedDates.createdAtForHeader}` : <span className="text-transparent">Cargando...</span>}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -219,7 +235,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
                 <DetailItem label="Paciente" value={audit.patientName} />
                 <DetailItem label="Tipo de Documento" value={audit.documentType} />
                 <DetailItem label="Número de Documento" value={audit.documentNumber} />
-                 <DetailItem label="Fecha de Creación" value={formatDateSafe(audit.createdAt, 'PPP')} />
+                 <DetailItem label="Fecha de Creación" value={formattedDates.createdAt || <span className="text-transparent">Cargando...</span>} />
                 <DetailItem label="Tipo de Visita" value={<Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">{audit.visitType?.toLowerCase().replace('_', ' ') || 'N/A'}</Badge>} />
               </div>
                <div className="divide-y divide-border">
@@ -245,7 +261,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
                         <h3 className="text-md font-semibold mt-4 mb-2 text-foreground">Información Adicional de Evento</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                             <div className="divide-y divide-border">
-                                <DetailItem label="Fecha de Nacimiento" value={formatDateSafe(audit.birthDate, 'PPP')} />
+                                <DetailItem label="Fecha de Nacimiento" value={formattedDates.birthDate || <span className="text-transparent">Cargando...</span>} />
                                 <DetailItem label="Edad" value={audit.age} />
                                 <DetailItem label="Sexo" value={audit.sex} />
                                 <DetailItem label="Estado de Afiliación" value={audit.affiliationStatus} />
