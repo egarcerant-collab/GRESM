@@ -67,33 +67,48 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
+    let active = true;
+
     if (!auth) {
-      setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
+      if (active) {
+        setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
+      }
       return;
     }
 
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => {
+        if (!active) return;
+
         if (firebaseUser) {
           const profileRef = doc(firestore, 'users', firebaseUser.uid);
           getDoc(profileRef).then(docSnap => {
+            if (!active) return;
             const userProfile = docSnap.exists() ? docSnap.data() as UserProfile : null;
             setUserAuthState({ user: firebaseUser, profile: userProfile, isUserLoading: false, userError: null });
           }).catch(error => {
+            if (!active) return;
             console.error("FirebaseProvider: Error fetching user profile:", error);
             setUserAuthState({ user: firebaseUser, profile: null, isUserLoading: false, userError: error });
           });
         } else {
-          setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: null });
+          if (active) {
+            setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: null });
+          }
         }
       },
       (error) => {
+        if (!active) return;
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
         setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: error });
       }
     );
-    return () => unsubscribe();
+    
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [auth, firestore]);
 
   const contextValue = useMemo((): FirebaseContextState => {
