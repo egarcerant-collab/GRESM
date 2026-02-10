@@ -3,11 +3,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Simple redirect from root to login
-  if (request.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
+  // The application is currently unpublished.
+  // All routes will show the maintenance page from the root layout.
   return NextResponse.next();
 }
 
