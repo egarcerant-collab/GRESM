@@ -5,24 +5,21 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
-let app: FirebaseApp;
-let auth: Auth;
-let firestore: Firestore;
-
-// This singleton pattern ensures Firebase is initialized only once.
-// The firebaseConfig object is validated in `config.ts` and will throw an error if essential variables are missing.
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
-}
-
-// Initialize services.
-auth = getAuth(app);
-firestore = getFirestore(app);
-
-// This function is now a simple getter for the singleton instances.
+// This function is now responsible for initialization and is idempotent.
 function initializeFirebase() {
+  let app: FirebaseApp;
+  
+  // This singleton pattern ensures Firebase is initialized only once.
+  if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApp();
+  }
+  
+  // getAuth and getFirestore are idempotent, they return the same instance for the same app.
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
+
   return { firebaseApp: app, auth, firestore };
 }
 
