@@ -8,7 +8,6 @@ import {
   FirestoreError,
   DocumentSnapshot,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 type WithId<T> = T & { id: string };
@@ -63,11 +62,6 @@ export function useDoc<T = any>(
         setError(contextualError);
         setData(null);
         setIsLoading(false);
-
-        // Evita emitir si ya se desmontó
-        queueMicrotask(() => {
-          if (active) errorEmitter.emit('permission-error', contextualError);
-        });
       }
     );
 

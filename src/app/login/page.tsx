@@ -40,7 +40,7 @@ function LoginPageContent() {
   const router = useRouter();
 
   const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
-  const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersCollection);
+  const { data: users, isLoading: usersLoading, error: usersError } = useCollection<UserProfile>(usersCollection);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -165,7 +165,7 @@ function LoginPageContent() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Usuario</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={usersLoading || !!usersError}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Seleccione un usuario" />
@@ -185,6 +185,11 @@ function LoginPageContent() {
                             <Loader2 className="h-4 w-4 animate-spin" />
                             <span>Cargando usuarios...</span>
                         </div>
+                    )}
+                    {usersError && (
+                        <p className="text-sm font-medium text-destructive pt-2">
+                            Error al cargar usuarios. Intente recargar.
+                        </p>
                     )}
                     <FormMessage />
                   </FormItem>

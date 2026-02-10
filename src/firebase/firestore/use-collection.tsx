@@ -9,7 +9,6 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 export type WithId<T> = T & { id: string };
@@ -30,10 +29,9 @@ export function useCollection<T = any>(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
-  // OJO: este throw puede tumbarte la app en producción si por cualquier razón no se marca __memo.
-  // Mejor que sea un console.error, o al menos un error “limpio”.
   if (memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error('Firestore query/ref no memoizada: usa useMemoFirebase(...) para estabilizar referencias.');
+    // Using console.error instead of throwing, as it's safer in production.
+    console.error('Firestore query/ref no memoizada: usa useMemoFirebase(...) para estabilizar referencias.');
   }
 
   useEffect(() => {
@@ -66,15 +64,13 @@ export function useCollection<T = any>(
       (_fbError: FirestoreError) => {
         if (!active) return;
 
-        // Saca path SOLO si se puede; si no, no te caigas.
         let path = 'unknown';
         try {
-          // CollectionReference sí tiene .path público
           if ((memoizedTargetRefOrQuery as any).path) {
             path = (memoizedTargetRefOrQuery as CollectionReference).path;
           }
         } catch {
-          path = 'unknown';
+          // If we can't get the path, we just use 'unknown'.
         }
 
         const contextualError = new FirestorePermissionError({
@@ -85,10 +81,6 @@ export function useCollection<T = any>(
         setError(contextualError);
         setData(null);
         setIsLoading(false);
-
-        queueMicrotask(() => {
-          if (active) errorEmitter.emit('permission-error', contextualError);
-        });
       }
     );
 

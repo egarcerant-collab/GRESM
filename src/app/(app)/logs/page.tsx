@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { FilePlus, Loader2, Download } from 'lucide-react';
+import { FilePlus, Loader2, Download, AlertTriangle } from 'lucide-react';
 import type { Audit, UserProfile } from '@/lib/types';
 import {
   Select,
@@ -223,6 +223,12 @@ export default function LogsPage() {
         {loading || isProfileLoading ? (
             <div className='flex justify-center items-center h-64'>
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        ) : error ? (
+            <div className="text-center text-destructive py-16 border-2 border-dashed rounded-lg border-destructive/50">
+              <AlertTriangle className="mx-auto h-12 w-12" />
+              <h3 className="mt-4 text-xl font-semibold">Error al Cargar los Registros</h3>
+              <p className="mt-2 text-sm max-w-md mx-auto">{error.message}</p>
             </div>
         ) : (
           <AuditLogTable audits={filteredAudits} onDelete={canDelete ? handleDeleteAudit : undefined} />
