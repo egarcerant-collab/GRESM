@@ -26,7 +26,7 @@ service cloud.firestore {
 
       // Users can create their own document on signup. Admins can create users.
       // Users can update their own profile. Admins can update any profile.
-      allow create, update: if isSignedIn();
+      allow create, update: if isOwner(userId) || isAdmin();
 
       // Only admins can delete users. Users cannot delete themselves.
       allow delete: if isAdmin();
