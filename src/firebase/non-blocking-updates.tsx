@@ -10,6 +10,7 @@ import {
   SetOptions,
 } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 /**
  * Initiates a setDoc operation for a document reference.
@@ -22,7 +23,7 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
         operation: 'write',
         requestResourceData: data,
     });
-    console.error("Firestore Permission Error (non-blocking):", permissionError.message);
+    errorEmitter.emit('permission-error', permissionError);
   });
 }
 
@@ -40,7 +41,7 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
           operation: 'create',
           requestResourceData: data,
       });
-      console.error("Firestore Permission Error (non-blocking):", permissionError.message);
+      errorEmitter.emit('permission-error', permissionError);
     });
   return promise;
 }
@@ -58,7 +59,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
             operation: 'update',
             requestResourceData: data,
         });
-        console.error("Firestore Permission Error (non-blocking):", permissionError.message);
+        errorEmitter.emit('permission-error', permissionError);
     });
 }
 
@@ -74,6 +75,6 @@ export function deleteDocumentNonBlocking(docRef: DocumentReference) {
             path: docRef.path,
             operation: 'delete',
         });
-        console.error("Firestore Permission Error (non-blocking):", permissionError.message);
+        errorEmitter.emit('permission-error', permissionError);
     });
 }

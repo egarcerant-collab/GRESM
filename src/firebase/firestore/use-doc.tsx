@@ -9,6 +9,7 @@ import {
   DocumentSnapshot,
 } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 type WithId<T> = T & { id: string };
 
@@ -58,7 +59,11 @@ export function useDoc<T = any>(
           operation: 'get',
           path: memoizedDocRef.path,
         });
-
+        
+        // Emit the error globally for the listener to catch
+        errorEmitter.emit('permission-error', contextualError);
+        
+        // Also set local error for graceful degradation in the component
         setError(contextualError);
         setData(null);
         setIsLoading(false);
