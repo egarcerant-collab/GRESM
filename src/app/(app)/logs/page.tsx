@@ -27,6 +27,7 @@ import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNo
 import { collection, doc, getDoc } from 'firebase/firestore';
 import { AuditLogTable } from '@/components/audit-log-table';
 import { isValid } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // We need to import JSZip like this for it to work with Next.js
 const JSZip = require('jszip');
@@ -57,11 +58,13 @@ export default function LogsPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   
+  const [isClient, setIsClient] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   useEffect(() => {
     // Set year on client to avoid hydration mismatch
+    setIsClient(true);
     setSelectedYear(new Date().getFullYear().toString());
   }, []);
 
@@ -180,32 +183,41 @@ export default function LogsPage() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-4 mb-6 p-4 bg-muted/50 rounded-lg min-h-[72px]">
             <p className="text-sm font-medium">Filtrar por fecha de creación:</p>
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Año" />
-                </SelectTrigger>
-                <SelectContent>
-                {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                    {year}
-                    </SelectItem>
-                ))}
-                </SelectContent>
-            </Select>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Mes" />
-                </SelectTrigger>
-                <SelectContent>
-                {months.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                    </SelectItem>
-                ))}
-                </SelectContent>
-            </Select>
+            {isClient ? (
+              <>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                    <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Año" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                        {year}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Mes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {months.map((month) => (
+                        <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+              </>
+            ) : (
+              <>
+                <Skeleton className="h-10 w-[120px]" />
+                <Skeleton className="h-10 w-[180px]" />
+              </>
+            )}
         </div>
 
         {loading || isProfileLoading ? (
