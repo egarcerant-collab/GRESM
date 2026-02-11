@@ -9,16 +9,15 @@ import {
   SidebarContent,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { FilePlus, List, ShieldCheck, Users, LogOut, Loader2 } from 'lucide-react';
+import { FilePlus, List, ShieldCheck, Users, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
   const auth = useAuth();
-  const { profile, isUserLoading } = useUser();
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -77,25 +76,11 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <div className="p-2 group-data-[collapsible=icon]:hidden">
-           {!isUserLoading && profile && (
-             <div className="text-xs text-muted-foreground text-left mb-2 p-2 rounded-lg bg-muted">
-                <p className="font-bold text-foreground">{profile.fullName}</p>
-                <p>{profile.cargo}</p>
-             </div>
-           )}
            <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
              <LogOut className="mr-2 h-4 w-4" />
              Cerrar Sesión
            </Button>
          </div>
-
-         <div className="text-xs text-muted-foreground p-2 text-center group-data-[collapsible=icon]:hidden">
-            <p className='font-bold'>Eduardo Garcerant Gonzalez</p>
-            <p>Auditor de la Dirección Nacional de Gestión del Riesgo en Salud Dusakawi EPSI</p>
-            <p>Odontólogo General.</p>
-            <p>Especialista en Sistemas de Calidad y Auditoría en Salud.</p>
-            <p>Magiste en Epidemiologia.</p>
-        </div>
       </SidebarFooter>
     </Sidebar>
   );
