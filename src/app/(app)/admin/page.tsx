@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import {
   Card,
@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { Loader2, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,16 +36,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { collection, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import mockUsers from '@/lib/data/users.json';
+
 
 export default function AdminPage() {
-  const firestore = useFirestore();
   const { user: authUser, isUserLoading } = useUser();
   const router = useRouter();
 
-  const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
-  const { data: users, isLoading: usersAreLoading, error } = useCollection<UserProfile>(usersCollection);
+  const [users, setUsers] = useState<UserProfile[]>(mockUsers as UserProfile[]);
+  const usersAreLoading = false;
+  const error = null;
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
@@ -90,11 +91,11 @@ export default function AdminPage() {
 
     setIsDeleting(true);
     
-    deleteDocumentNonBlocking(doc(firestore, 'users', userToDelete.uid));
+    setUsers(prev => prev.filter(u => u.uid !== userToDelete.uid));
     
     toast({
-      title: 'Usuario Eliminado',
-      description: 'El usuario ha sido eliminado exitosamente.',
+      title: 'Usuario Eliminado (Simulado)',
+      description: 'El usuario ha sido eliminado de la vista actual.',
     });
     
     setIsDeleting(false);
@@ -102,9 +103,16 @@ export default function AdminPage() {
     setPassword('');
   };
 
-  const onFormFinished = () => {
-      setIsFormOpen(false);
-      setEditingUser(null);
+  const onFormFinished = (newUser?: UserProfile, isEdit?: boolean) => {
+    if (newUser) {
+      if (isEdit) {
+        setUsers(prev => prev.map(u => u.uid === newUser.uid ? newUser : u));
+      } else {
+        setUsers(prev => [...prev, newUser]);
+      }
+    }
+    setIsFormOpen(false);
+    setEditingUser(null);
   }
 
   const onOpenChange = (open: boolean) => {

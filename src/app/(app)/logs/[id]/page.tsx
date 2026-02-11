@@ -1,12 +1,11 @@
-
 'use client';
 
 import LogDetailClient from '@/components/log-detail-client';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import type { Audit } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { doc } from 'firebase/firestore';
+import mockAuditsData from '../../../../../data/audits.json';
+
 
 type PageProps = {
   params: { id: string };
@@ -14,9 +13,11 @@ type PageProps = {
 
 export default function LogDetailPage({ params }: PageProps) {
   const { id } = params;
-  const firestore = useFirestore();
-  const auditDocRef = useMemoFirebase(() => doc(firestore, 'audits', id), [firestore, id]);
-  const { data: audit, isLoading, error } = useDoc<Audit>(auditDocRef);
+  
+  const audits = mockAuditsData as Audit[];
+  const audit = audits.find(a => a.id === id);
+  const isLoading = false;
+  const error = null;
 
   if (isLoading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;

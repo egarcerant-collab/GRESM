@@ -23,11 +23,13 @@ import {
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
-import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
 import { AuditLogTable } from '@/components/audit-log-table';
 import { isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import mockAuditsData from '../../../../data/audits.json';
+import mockUsersData from '@/lib/data/users.json';
+
 
 // We need to import JSZip like this for it to work with Next.js
 const JSZip = require('jszip');
@@ -50,10 +52,11 @@ const months = [
 ];
 
 export default function LogsPage() {
-  const firestore = useFirestore();
   const { profile: currentUserProfile, isUserLoading: isProfileLoading } = useUser();
-  const auditsCollection = useMemoFirebase(() => collection(firestore, 'audits'), [firestore]);
-  const { data: audits, isLoading: loading, error } = useCollection<Audit>(auditsCollection);
+  
+  const [audits, setAudits] = useState<Audit[]>(mockAuditsData as Audit[]);
+  const loading = false;
+  const error = null;
   
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
@@ -69,10 +72,10 @@ export default function LogsPage() {
   }, []);
 
   const handleDeleteAudit = (id: string) => {
-    deleteDocumentNonBlocking(doc(firestore, 'audits', id));
+    setAudits(prev => prev.filter(a => a.id !== id));
     toast({
-      title: 'Auditoría Eliminada',
-      description: 'El registro ha sido eliminado exitosamente.',
+      title: 'Auditoría Eliminada (Simulado)',
+      description: 'El registro ha sido eliminado de la vista actual.',
     });
   };
 
@@ -109,12 +112,10 @@ export default function LogsPage() {
       const zip = new JSZip();
       
       for (const audit of filteredAudits) {
-        // Fetch auditor profile for each audit
-        const auditorProfile = await getDoc(doc(firestore, 'users', audit.auditorId));
-        const auditorData = auditorProfile.exists() ? auditorProfile.data() as UserProfile : null;
+        const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;
 
         const { jsPDF } = await import('jspdf');
-        const docPDF = await generateAuditPdf(audit, null, auditorData, new jsPDF({
+        const docPDF = await generateAuditPdf(audit, null, auditorData as UserProfile | null, new jsPDF({
           orientation: "p",
           unit: "pt",
           format: "a4"

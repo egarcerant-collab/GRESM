@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,20 +21,13 @@ import { userSchema } from '@/lib/schema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { UserProfile } from '@/lib/types';
 import Image from 'next/image';
-import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
-
 
 const DUMMY_DOMAIN = 'dusakawi.audit.app';
 
-export function UserForm({ onFinished, initialData }: { onFinished: () => void, initialData?: UserProfile | null }) {
+export function UserForm({ onFinished, initialData }: { onFinished: (user?: UserProfile, isEdit?: boolean) => void, initialData?: UserProfile | null }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  
-  const auth = useAuth();
-  const firestore = useFirestore();
 
   const isEditMode = !!initialData;
   
@@ -102,61 +94,36 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
         toast({ variant: 'destructive', title: 'Error', description: 'La contraseña es requerida para crear un usuario.' });
         return;
     }
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, `${values.username}@${DUMMY_DOMAIN}`, values.password);
-        const user = userCredential.user;
-
-        const userProfile: UserProfile = {
-            uid: user.uid,
-            email: user.email!,
-            username: values.username,
-            fullName: values.fullName,
-            role: values.role,
-            cargo: values.cargo,
-            signature: values.signature
-        };
-
-        setDocumentNonBlocking(doc(firestore, "users", user.uid), userProfile, {});
-        toast({ title: 'Usuario Creado', description: 'El usuario ha sido registrado exitosamente.'});
-        form.reset();
-        setSignaturePreview('');
-        onFinished();
-
-    } catch (error: any) {
-        const errorCode = error.code;
-        let message = error.message;
-        if (errorCode === 'auth/email-already-in-use') {
-            message = 'Este nombre de usuario ya está en uso.';
-        } else if (errorCode === 'auth/weak-password') {
-            message = 'La contraseña es demasiado débil.';
-        }
-        toast({ variant: 'destructive', title: 'Error al crear usuario', description: message });
-    }
+    
+    const newUserProfile: UserProfile = {
+        uid: `mock-user-${Date.now()}`,
+        email: `${values.username}@${DUMMY_DOMAIN}`,
+        username: values.username,
+        fullName: values.fullName,
+        role: values.role,
+        cargo: values.cargo,
+        signature: values.signature
+    };
+    
+    toast({ title: 'Usuario Creado (Simulado)', description: 'El usuario ha sido registrado localmente.'});
+    form.reset();
+    setSignaturePreview('');
+    onFinished(newUserProfile, false);
   }
 
   function handleUpdateUser(values: z.infer<typeof userSchema>) {
       if (!initialData) return;
       
-      const userProfileUpdate: Partial<UserProfile> = {
+      const userProfileUpdate: UserProfile = {
+        ...initialData,
         fullName: values.fullName,
         role: values.role,
         cargo: values.cargo,
         signature: values.signature
       };
 
-      setDocumentNonBlocking(doc(firestore, "users", initialData.uid), userProfileUpdate, { merge: true });
-
-      if (values.password && auth.currentUser) {
-          // This is a sensitive operation and might require recent sign-in.
-          // For this app, we assume the admin user is recently signed in.
-          // A more robust implementation would reauthenticate the admin.
-          // We can't update other users' passwords from the client SDK directly.
-          // This is a limitation. We will skip password updates on the edit form for now.
-          console.warn("Client-side password update for other users is not supported. Skipping.");
-      }
-
-      toast({ title: 'Usuario Actualizado', description: 'El usuario ha sido actualizado exitosamente.' });
-      onFinished();
+      toast({ title: 'Usuario Actualizado (Simulado)', description: 'El usuario ha sido actualizado localmente.' });
+      onFinished(userProfileUpdate, true);
   }
 
   function onSubmit(values: z.infer<typeof userSchema>) {
@@ -208,11 +175,11 @@ export function UserForm({ onFinished, initialData }: { onFinished: () => void, 
               <FormItem>
                 <FormLabel>Contraseña</FormLabel>
                 <FormDescription>
-                    {isEditMode ? "La actualización de contraseña no está disponible en este formulario." : "La contraseña debe tener al menos 6 caracteres."}
+                    {isEditMode ? "No es necesario cambiar la contraseña para editar." : "La contraseña debe tener al menos 6 caracteres."}
                 </FormDescription>
                 <div className="relative">
                     <FormControl>
-                    <Input type={showPassword ? 'text' : 'password'} placeholder={isEditMode ? '••••••••' : 'Contraseña requerida'} {...field} disabled={isEditMode} />
+                    <Input type={showPassword ? 'text' : 'password'} placeholder={isEditMode ? 'Dejar en blanco para no cambiar' : 'Contraseña requerida'} {...field} />
                     </FormControl>
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

@@ -31,8 +31,8 @@ import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format, isValid } from 'date-fns';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { useFirestore, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useUser } from '@/firebase';
+import mockUsersData from '@/lib/data/users.json';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   // A value is considered missing if it's null, undefined, or an empty string.
@@ -79,7 +79,6 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
   const [isDownloading, setIsDownloading] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const firestore = useFirestore();
   const { profile: currentUserProfile, isUserLoading: isProfileLoading } = useUser();
   const [password, setPassword] = React.useState('');
   
@@ -100,25 +99,12 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
   }, [audit.createdAt, audit.birthDate]);
 
   const handleDelete = () => {
-    if(password !== '123456'){
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Contraseña incorrecta.',
-      });
-      setPassword('');
-      return;
-    }
-
-    setIsDeleting(true);
-    
-    deleteDocumentNonBlocking(doc(firestore, 'audits', audit.id));
-    
+    // Deletion is handled on the main logs page now to simplify state management.
     toast({
-      title: 'Auditoría Eliminada',
-      description: 'El registro de auditoría ha sido eliminado exitosamente.',
+      variant: 'destructive',
+      title: 'Función no disponible',
+      description: 'La eliminación se realiza desde la lista principal de registros.',
     });
-
     router.push('/logs');
   };
 
@@ -127,10 +113,9 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
     try {
       const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
       
-      const auditorProfile = await getDoc(doc(firestore, 'users', audit.auditorId));
-      const auditorData = auditorProfile.exists() ? auditorProfile.data() as UserProfile : null;
+      const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;
       
-      await generateAuditPdf(audit, backgroundImage, auditorData);
+      await generateAuditPdf(audit, backgroundImage, auditorData as UserProfile | null);
       
       toast({
         title: 'PDF Generado',
@@ -179,44 +164,6 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
             )}
             Descargar PDF
           </Button>
-          {isProfileLoading ? <div/> : canDelete && (
-            <AlertDialog onOpenChange={onOpenChange}>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isDeleting}>
-                  {isDeleting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="mr-2 h-4 w-4" />
-                  )}
-                  Eliminar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Esto eliminará permanentemente el registro de auditoría. Para confirmar, introduce la contraseña.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-2 py-2">
-                  <Label htmlFor="delete-password-detail">Contraseña</Label>
-                  <Input
-                      id="delete-password-detail"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Introduce la contraseña"
-                  />
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
-                    {isDeleting ? 'Eliminando...' : 'Continuar'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
         </div>
 
       </div>

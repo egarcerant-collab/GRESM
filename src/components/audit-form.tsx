@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,9 +29,11 @@ import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
-import { addDocumentNonBlocking, useFirestore, useUser } from '@/firebase';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { useUser } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore'; // These are not used for db access
 import type { UserProfile } from '@/lib/types';
+import mockUsersData from '@/lib/data/users.json';
+
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -108,11 +109,10 @@ const municipalitiesByDepartment: Record<string, string[]> = {
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user, profile } = useUser();
 
   const [isClient, setIsClient] = useState(false);
-  const [auditorProfile, setAuditorProfile] = useState<UserProfile | null>(null);
+  const [auditorProfile, setAuditorProfile] = useState<UserProfile | null>(profile);
   const [maxBirthDate, setMaxBirthDate] = useState('');
 
   useEffect(() => {
@@ -120,17 +120,13 @@ export function AuditForm() {
     setIsClient(true);
     setMaxBirthDate(format(new Date(), 'yyyy-MM-dd'));
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      const profileRef = doc(firestore, 'users', user.uid);
-      getDoc(profileRef).then(docSnap => {
-        if (docSnap.exists()) {
-          setAuditorProfile(docSnap.data() as UserProfile);
-        }
-      });
+  
+   useEffect(() => {
+    if (profile) {
+      setAuditorProfile(profile);
     }
-  }, [user, firestore]);
+  }, [profile]);
+
 
   const [departmentSelection, setDepartmentSelection] = useState<string>('');
   const [municipalitySelection, setMunicipalitySelection] = useState<string>('');
@@ -196,30 +192,9 @@ export function AuditForm() {
 
 
   useEffect(() => {
-    const checkPatient = async () => {
-      if (visitTypeValue === 'PRIMERA VEZ' && documentNumberValue && documentNumberValue.length > 5) {
-        setIsCheckingPatient(true);
-        const q = query(collection(firestore, 'audits'), where('documentNumber', '==', documentNumberValue), where('visitType', '==', 'PRIMERA VEZ'));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          setPatientWarning('Advertencia: ya existe un registro de primera vez para este documento.');
-        } else {
-          setPatientWarning(null);
-        }
-        setIsCheckingPatient(false);
-      } else {
-        setPatientWarning(null);
-      }
-    };
-
-    const handler = setTimeout(() => {
-        checkPatient();
-    }, 500); // Debounce check
-
-    return () => {
-        clearTimeout(handler);
-    };
-}, [documentNumberValue, visitTypeValue, firestore]);
+    // Patient check is disabled in mock mode
+    setPatientWarning(null);
+  }, [documentNumberValue, visitTypeValue]);
 
   useEffect(() => {
     if (departmentSelection && departmentSelection !== 'Otro') {
@@ -287,22 +262,21 @@ export function AuditForm() {
     }
     startTransition(async () => {
         try {
-            const auditsCol = collection(firestore, 'audits');
-            await addDocumentNonBlocking(auditsCol, {
+            console.log("Simulating save for audit:", {
                 ...values,
                 auditorId: user.uid,
                 auditorName: auditorProfile.fullName,
                 createdAt: new Date().toISOString(),
-            });
+            })
             toast({
-                title: 'Auditoría Creada',
-                description: 'La auditoría ha sido registrada exitosamente.',
+                title: 'Auditoría Guardada (Simulado)',
+                description: 'La auditoría NO se ha guardado permanentemente. Esto es solo una demostración.',
             });
             form.reset();
         } catch (error: any) {
              toast({
               variant: 'destructive',
-              title: 'Error al crear la auditoría',
+              title: 'Error al simular el guardado',
               description: error.message || 'Ocurrió un error desconocido.',
             });
         }
@@ -846,5 +820,3 @@ export function AuditForm() {
     </Form>
   );
 }
-
-    
