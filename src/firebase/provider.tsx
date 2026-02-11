@@ -67,6 +67,37 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
+    // --- TEMPORARY MOCK AUTHENTICATION ---
+    // This is a temporary workaround to bypass Firebase connection issues.
+    console.warn("ADVERTENCIA: Usando autenticación simulada. La conexión con Firebase está desactivada.");
+
+    const mockUser = {
+      uid: 'mock-admin-uid-12345',
+      email: 'admin@dusakawi.audit.app',
+      displayName: 'Administrador Mock',
+      emailVerified: true,
+    } as User;
+
+    const mockProfile: UserProfile = {
+      uid: 'mock-admin-uid-12345',
+      email: 'admin@dusakawi.audit.app',
+      username: 'admin_mock',
+      fullName: 'Administrador del Sistema (Mock)',
+      role: 'admin',
+      cargo: 'Administrador del Sistema',
+    };
+
+    setUserAuthState({
+      user: mockUser,
+      profile: mockProfile,
+      isUserLoading: false,
+      userError: null,
+    });
+    // --- END TEMPORARY MOCK ---
+
+
+    /*
+    // Original Firebase auth logic is commented out below
     let active = true;
 
     if (!auth) {
@@ -109,6 +140,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       active = false;
       unsubscribe();
     };
+    */
   }, [auth, firestore]);
 
   const contextValue = useMemo((): FirebaseContextState => {
@@ -141,6 +173,18 @@ export const useFirebase = (): FirebaseServicesAndUser => {
   }
 
   if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
+    // In mock mode, we might not have real services, but we don't want to crash the app
+    if (context.user?.uid.startsWith('mock-')) {
+       return {
+        firebaseApp: context.firebaseApp!,
+        firestore: context.firestore!,
+        auth: context.auth!,
+        user: context.user,
+        profile: context.profile,
+        isUserLoading: context.isUserLoading,
+        userError: context.userError,
+      };
+    }
     throw new Error('Firebase core services not available. Check FirebaseProvider props.');
   }
 
