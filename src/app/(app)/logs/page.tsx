@@ -72,7 +72,7 @@ export default function LogsPage() {
 
     // Load data from public/data/audits.json
     setLoading(true);
-    fetch('/data/audits.json', { cache: 'no-store' }) // Disable caching
+    fetch(`/data/audits.json?cache-bust=${Date.now()}`, { cache: 'no-store' }) // Disable caching
       .then(res => {
         if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
         return res.json();

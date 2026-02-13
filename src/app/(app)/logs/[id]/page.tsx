@@ -19,7 +19,7 @@ export default function LogDetailPage({ params }: PageProps) {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('/data/audits.json', { cache: 'no-store' }) // Disable cache to get fresh data
+    fetch(`/data/audits.json?cache-bust=${Date.now()}`, { cache: 'no-store' }) // Disable cache to get fresh data
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch data');
         return res.json();
