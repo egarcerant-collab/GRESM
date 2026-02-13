@@ -11,16 +11,15 @@ import {
 } from '@/components/ui/sidebar';
 import { FilePlus, List, ShieldCheck, Users, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from './ui/button';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const auth = useAuth();
+  const router = useRouter();
   
-  const handleLogout = async () => {
-    await auth.signOut();
+  const handleLogout = () => {
+    router.push('/login');
   };
 
   return (

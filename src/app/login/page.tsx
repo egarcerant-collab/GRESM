@@ -13,12 +13,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import React, { useTransition, useState, useEffect } from 'react';
+import React, { useTransition } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { useFirebase, useUser, FirebaseClientProvider } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { FirebaseClientProvider } from '@/firebase';
 import {
   Card,
   CardContent,
@@ -34,9 +32,6 @@ import mockUsers from '@/lib/data/users.json';
 
 function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
-  const { auth } = useFirebase();
-  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   // Use local mock data instead of Firestore
@@ -54,28 +49,10 @@ function LoginPageContent() {
     },
   });
 
-  useEffect(() => {
-    // With mock auth, user is immediately available, so this will redirect.
-    if (!isUserLoading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, isUserLoading, router]);
-  
-  // Since we are using mock auth, this component might not even be visible for long.
-  if (isUserLoading || user) {
-    return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
-  }
-
-  // The onSubmit logic is now moot because we are using a hardcoded mock user in the provider.
-  // However, leaving it here doesn't hurt, as the component will redirect away anyway.
   function onSubmit(values: z.infer<typeof loginSchema>) {
-    startTransition(async () => {
-      // This logic will likely not run due to mock auth redirect.
-      toast({
-          variant: 'destructive',
-          title: 'Error de Inicio de Sesión',
-          description: 'El inicio de sesión está deshabilitado en modo de demostración. Redirigiendo...',
-      });
+    startTransition(() => {
+      // Simulate login by redirecting to the dashboard
+      router.push('/dashboard');
     });
   }
 
@@ -152,8 +129,9 @@ function LoginPageContent() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full !mt-6" disabled={true}>
-                Ingresar (Deshabilitado)
+              <Button type="submit" className="w-full !mt-6" disabled={isPending}>
+                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Ingresar
               </Button>
             </form>
           </Form>
