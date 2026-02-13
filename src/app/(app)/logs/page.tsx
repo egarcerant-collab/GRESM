@@ -27,7 +27,7 @@ import { useUser } from '@/firebase';
 import { AuditLogTable } from '@/components/audit-log-table';
 import { isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import mockAuditsData from '@/lib/data/audits.json';
+import { deleteAuditAction } from '@/app/actions';
 import mockUsersData from '@/lib/data/users.json';
 
 
@@ -56,7 +56,7 @@ export default function LogsPage() {
   
   const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState(true);
-  const error = null;
+  const [error, setError] = useState<Error | null>(null);
   
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
@@ -70,33 +70,48 @@ export default function LogsPage() {
     setIsClient(true);
     setSelectedYear(new Date().getFullYear().toString());
 
-    // Load data from localStorage
-    try {
-      const storedAudits = localStorage.getItem('mockAudits');
-      if (storedAudits) {
-        setAudits(JSON.parse(storedAudits));
-      } else {
-        // If nothing in localStorage, use the initial mock data and store it
-        const initialAudits = mockAuditsData as Audit[];
-        setAudits(initialAudits);
-        localStorage.setItem('mockAudits', JSON.stringify(initialAudits));
-      }
-    } catch (e) {
-      console.error("Failed to load audits from localStorage", e);
-      setAudits(mockAuditsData as Audit[]); // Fallback
-    } finally {
-      setLoading(false); // We are done loading
-    }
+    // Load data from public/data/audits.json
+    setLoading(true);
+    fetch('/data/audits.json', { cache: 'no-store' }) // Disable caching
+      .then(res => {
+        if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+        return res.json();
+      })
+      .then(data => {
+        setAudits(data);
+        setError(null);
+      })
+      .catch(e => {
+        console.error("Failed to load audits from file", e);
+        setError(e);
+        setAudits([]); // Fallback to empty array
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  const handleDeleteAudit = (id: string) => {
-    const updatedAudits = audits.filter(a => a.id !== id);
-    setAudits(updatedAudits);
-    localStorage.setItem('mockAudits', JSON.stringify(updatedAudits));
-    toast({
-      title: 'Auditoría Eliminada',
-      description: 'El registro ha sido eliminado.',
-    });
+  const handleDeleteAudit = async (id: string) => {
+    const originalAudits = audits;
+    // Optimistic UI update
+    setAudits(currentAudits => currentAudits.filter(a => a.id !== id));
+
+    const result = await deleteAuditAction(id);
+
+    if (!result.success) {
+      // Revert on failure
+      setAudits(originalAudits);
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: result.message || "No se pudo eliminar la auditoría.",
+      });
+    } else {
+      toast({
+        title: "Auditoría Eliminada",
+        description: "El registro ha sido eliminado del servidor.",
+      });
+    }
   };
 
   const filteredAudits = useMemo(() => {

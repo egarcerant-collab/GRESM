@@ -5,7 +5,6 @@ import LogDetailClient from '@/components/log-detail-client';
 import type { Audit } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import mockAuditsData from '@/lib/data/audits.json';
 
 
 type PageProps = {
@@ -19,18 +18,23 @@ export default function LogDetailPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-        const storedAudits = localStorage.getItem('mockAudits');
-        // Fallback to mockAuditsData if localStorage is empty
-        const allAudits = storedAudits ? JSON.parse(storedAudits) : mockAuditsData;
-        const foundAudit = (allAudits as Audit[]).find(a => a.id === id);
+    setIsLoading(true);
+    fetch('/data/audits.json', { cache: 'no-store' }) // Disable cache to get fresh data
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch data');
+        return res.json();
+      })
+      .then((allAudits: Audit[]) => {
+        const foundAudit = allAudits.find(a => a.id === id);
         setAudit(foundAudit || null);
-    } catch (e) {
-        console.error("Failed to load audit from localStorage", e);
+      })
+      .catch(e => {
+        console.error("Failed to load audit from file", e);
         setAudit(null);
-    } finally {
+      })
+      .finally(() => {
         setIsLoading(false);
-    }
+      });
   }, [id]);
 
   if (isLoading) {

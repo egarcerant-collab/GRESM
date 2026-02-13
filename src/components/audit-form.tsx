@@ -30,10 +30,9 @@ import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
 import { useUser } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore'; // These are not used for db access
 import type { UserProfile, Audit } from '@/lib/types';
-import mockUsersData from '@/lib/data/users.json';
 import { useRouter } from 'next/navigation';
+import { saveAuditAction } from '@/app/actions';
 
 
 const documentTypes = [
@@ -262,7 +261,7 @@ export function AuditForm() {
         toast({ variant: 'destructive', title: 'Error', description: 'Debe iniciar sesión para crear una auditoría.' });
         return;
     }
-    startTransition(() => {
+    startTransition(async () => {
         try {
             const newAudit: Audit = {
                 ...values,
@@ -273,14 +272,14 @@ export function AuditForm() {
                 followUpDate: values.followUpDate || new Date().toISOString(),
             };
 
-            const storedAudits = localStorage.getItem('mockAudits');
-            const currentAudits = storedAudits ? JSON.parse(storedAudits) : [];
-            const updatedAudits = [newAudit, ...currentAudits];
-            localStorage.setItem('mockAudits', JSON.stringify(updatedAudits));
+            const result = await saveAuditAction(newAudit);
+            if (!result.success) {
+              throw new Error(result.message || "An unknown error occurred on the server.");
+            }
 
             toast({
                 title: 'Auditoría Guardada',
-                description: 'El nuevo registro ha sido guardado localmente.',
+                description: 'El nuevo registro ha sido guardado en el servidor.',
             });
             form.reset();
             router.push('/logs');
@@ -288,7 +287,7 @@ export function AuditForm() {
              toast({
               variant: 'destructive',
               title: 'Error al Guardar',
-              description: error.message || 'No se pudo guardar la auditoría en el almacenamiento local.',
+              description: error.message || 'No se pudo guardar la auditoría en el servidor.',
             });
         }
     });
