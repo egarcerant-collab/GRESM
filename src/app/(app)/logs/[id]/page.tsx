@@ -5,7 +5,7 @@ import LogDetailClient from '@/components/log-detail-client';
 import type { Audit } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import mockAuditsData from '../../../../../data/audits.json';
+import mockAuditsData from '@/lib/data/audits.json';
 
 
 type PageProps = {

@@ -27,7 +27,7 @@ import { useUser } from '@/firebase';
 import { AuditLogTable } from '@/components/audit-log-table';
 import { isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import mockAuditsData from '../../../../data/audits.json';
+import mockAuditsData from '@/lib/data/audits.json';
 import mockUsersData from '@/lib/data/users.json';
 
 
