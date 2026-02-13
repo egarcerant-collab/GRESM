@@ -54,8 +54,8 @@ const months = [
 export default function LogsPage() {
   const { profile: currentUserProfile, isUserLoading: isProfileLoading } = useUser();
   
-  const [audits, setAudits] = useState<Audit[]>(mockAuditsData as Audit[]);
-  const loading = false;
+  const [audits, setAudits] = useState<Audit[]>([]);
+  const [loading, setLoading] = useState(true);
   const error = null;
   
   const [isDownloading, setIsDownloading] = useState(false);
@@ -69,13 +69,33 @@ export default function LogsPage() {
     // Set year on client to avoid hydration mismatch
     setIsClient(true);
     setSelectedYear(new Date().getFullYear().toString());
+
+    // Load data from localStorage
+    try {
+      const storedAudits = localStorage.getItem('mockAudits');
+      if (storedAudits) {
+        setAudits(JSON.parse(storedAudits));
+      } else {
+        // If nothing in localStorage, use the initial mock data and store it
+        const initialAudits = mockAuditsData as Audit[];
+        setAudits(initialAudits);
+        localStorage.setItem('mockAudits', JSON.stringify(initialAudits));
+      }
+    } catch (e) {
+      console.error("Failed to load audits from localStorage", e);
+      setAudits(mockAuditsData as Audit[]); // Fallback
+    } finally {
+      setLoading(false); // We are done loading
+    }
   }, []);
 
   const handleDeleteAudit = (id: string) => {
-    setAudits(prev => prev.filter(a => a.id !== id));
+    const updatedAudits = audits.filter(a => a.id !== id);
+    setAudits(updatedAudits);
+    localStorage.setItem('mockAudits', JSON.stringify(updatedAudits));
     toast({
-      title: 'Auditoría Eliminada (Simulado)',
-      description: 'El registro ha sido eliminado de la vista actual.',
+      title: 'Auditoría Eliminada',
+      description: 'El registro ha sido eliminado.',
     });
   };
 

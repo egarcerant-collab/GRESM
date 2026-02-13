@@ -31,8 +31,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
 import { useUser } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore'; // These are not used for db access
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, Audit } from '@/lib/types';
 import mockUsersData from '@/lib/data/users.json';
+import { useRouter } from 'next/navigation';
 
 
 const documentTypes = [
@@ -110,6 +111,7 @@ export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { user, profile } = useUser();
+  const router = useRouter();
 
   const [isClient, setIsClient] = useState(false);
   const [auditorProfile, setAuditorProfile] = useState<UserProfile | null>(profile);
@@ -260,24 +262,33 @@ export function AuditForm() {
         toast({ variant: 'destructive', title: 'Error', description: 'Debe iniciar sesión para crear una auditoría.' });
         return;
     }
-    startTransition(async () => {
+    startTransition(() => {
         try {
-            console.log("Simulating save for audit:", {
+            const newAudit: Audit = {
                 ...values,
+                id: `mockaudit${Date.now()}`, // Generate a unique-ish ID
                 auditorId: user.uid,
                 auditorName: auditorProfile.fullName,
                 createdAt: new Date().toISOString(),
-            })
+                followUpDate: values.followUpDate || new Date().toISOString(),
+            };
+
+            const storedAudits = localStorage.getItem('mockAudits');
+            const currentAudits = storedAudits ? JSON.parse(storedAudits) : [];
+            const updatedAudits = [newAudit, ...currentAudits];
+            localStorage.setItem('mockAudits', JSON.stringify(updatedAudits));
+
             toast({
-                title: 'Auditoría Guardada (Simulado)',
-                description: 'La auditoría NO se ha guardado permanentemente. Esto es solo una demostración.',
+                title: 'Auditoría Guardada',
+                description: 'El nuevo registro ha sido guardado localmente.',
             });
             form.reset();
+            router.push('/logs');
         } catch (error: any) {
              toast({
               variant: 'destructive',
-              title: 'Error al simular el guardado',
-              description: error.message || 'Ocurrió un error desconocido.',
+              title: 'Error al Guardar',
+              description: error.message || 'No se pudo guardar la auditoría en el almacenamiento local.',
             });
         }
     });
