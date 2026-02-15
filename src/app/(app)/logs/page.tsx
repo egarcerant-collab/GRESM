@@ -27,8 +27,8 @@ import { useUser } from '@/firebase';
 import { AuditLogTable } from '@/components/audit-log-table';
 import { isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteAuditAction } from '@/app/actions';
 import mockUsersData from '@/lib/data/users.json';
+import { getAudits, deleteAudit } from '@/lib/audit-data-manager';
 
 
 // We need to import JSZip like this for it to work with Next.js
@@ -66,50 +66,38 @@ export default function LogsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   useEffect(() => {
-    // Set year on client to avoid hydration mismatch
+    // Set year on client to avoid hydration mismatch and load data
     setIsClient(true);
     setSelectedYear(new Date().getFullYear().toString());
 
-    // Load data from public/data/audits.json
     setLoading(true);
-    fetch(`/data/audits.json?cache-bust=${Date.now()}`, { cache: 'no-store' }) // Disable caching
-      .then(res => {
-        if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
-        return res.json();
-      })
-      .then(data => {
-        setAudits(data);
+    try {
+        const localAudits = getAudits();
+        setAudits(localAudits);
         setError(null);
-      })
-      .catch(e => {
-        console.error("Failed to load audits from file", e);
+    } catch (e: any) {
+        console.error("Failed to load audits from localStorage", e);
         setError(e);
-        setAudits([]); // Fallback to empty array
-      })
-      .finally(() => {
+        setAudits([]);
+    } finally {
         setLoading(false);
-      });
+    }
   }, []);
 
-  const handleDeleteAudit = async (id: string) => {
-    const originalAudits = audits;
-    // Optimistic UI update
-    setAudits(currentAudits => currentAudits.filter(a => a.id !== id));
-
-    const result = await deleteAuditAction(id);
-
-    if (!result.success) {
-      // Revert on failure
-      setAudits(originalAudits);
+  const handleDeleteAudit = (id: string) => {
+    try {
+      deleteAudit(id);
+      const updatedAudits = getAudits();
+      setAudits(updatedAudits);
+      toast({
+        title: "Auditoría Eliminada",
+        description: "El registro ha sido eliminado.",
+      });
+    } catch (e: any) {
       toast({
         variant: "destructive",
         title: "Error al eliminar",
-        description: result.message || "No se pudo eliminar la auditoría.",
-      });
-    } else {
-      toast({
-        title: "Auditoría Eliminada",
-        description: "El registro ha sido eliminado del servidor.",
+        description: e.message || "No se pudo eliminar la auditoría.",
       });
     }
   };

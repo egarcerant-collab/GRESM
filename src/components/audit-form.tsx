@@ -32,7 +32,7 @@ import { Separator } from './ui/separator';
 import { useUser } from '@/firebase';
 import type { UserProfile, Audit } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { saveAuditAction } from '@/app/actions';
+import { saveAudit } from '@/lib/audit-data-manager';
 
 
 const documentTypes = [
@@ -261,7 +261,7 @@ export function AuditForm() {
         toast({ variant: 'destructive', title: 'Error', description: 'Debe iniciar sesión para crear una auditoría.' });
         return;
     }
-    startTransition(async () => {
+    startTransition(() => {
         try {
             const newAudit: Audit = {
                 ...values,
@@ -272,14 +272,11 @@ export function AuditForm() {
                 followUpDate: values.followUpDate || new Date().toISOString(),
             };
 
-            const result = await saveAuditAction(newAudit);
-            if (!result.success) {
-              throw new Error(result.message || "An unknown error occurred on the server.");
-            }
+            saveAudit(newAudit);
 
             toast({
                 title: 'Auditoría Guardada',
-                description: 'El nuevo registro ha sido guardado en el servidor.',
+                description: 'El nuevo registro ha sido guardado localmente.',
             });
             form.reset();
             router.push('/logs');
@@ -287,7 +284,7 @@ export function AuditForm() {
              toast({
               variant: 'destructive',
               title: 'Error al Guardar',
-              description: error.message || 'No se pudo guardar la auditoría en el servidor.',
+              description: error.message || 'No se pudo guardar la auditoría localmente.',
             });
         }
     });

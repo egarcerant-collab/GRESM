@@ -5,6 +5,7 @@ import LogDetailClient from '@/components/log-detail-client';
 import type { Audit } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import { getAuditById } from '@/lib/audit-data-manager';
 
 
 type PageProps = {
@@ -16,28 +17,29 @@ export default function LogDetailPage({ params }: PageProps) {
   
   const [audit, setAudit] = useState<Audit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsLoading(true);
-    fetch(`/data/audits.json?cache-bust=${Date.now()}`, { cache: 'no-store' }) // Disable cache to get fresh data
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch data');
-        return res.json();
-      })
-      .then((allAudits: Audit[]) => {
-        const foundAudit = allAudits.find(a => a.id === id);
-        setAudit(foundAudit || null);
-      })
-      .catch(e => {
-        console.error("Failed to load audit from file", e);
+    // Ensure this runs only on the client
+    setIsClient(true);
+  }, []);
+  
+  useEffect(() => {
+    if (isClient) {
+      setIsLoading(true);
+      try {
+        const foundAudit = getAuditById(id);
+        setAudit(foundAudit);
+      } catch (e) {
+        console.error("Failed to load audit from local storage", e);
         setAudit(null);
-      })
-      .finally(() => {
+      } finally {
         setIsLoading(false);
-      });
-  }, [id]);
+      }
+    }
+  }, [id, isClient]);
 
-  if (isLoading) {
+  if (isLoading || !isClient) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
