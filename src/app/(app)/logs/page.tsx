@@ -29,6 +29,12 @@ import { AuditLogTable } from '@/components/audit-log-table';
 import { isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import mockUsersData from '@/lib/data/users.json';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 
 // We need to import JSZip like this for it to work with Next.js
@@ -212,6 +218,17 @@ export default function LogsPage() {
         </div>
       </CardHeader>
       <CardContent>
+        <Accordion type="single" collapsible className="w-full mb-4 border rounded-lg px-4">
+          <AccordionItem value="item-1">
+            <AccordionTrigger>Ver JSON de Auditorías</AccordionTrigger>
+            <AccordionContent>
+              <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto">
+                {JSON.stringify(audits, null, 2)}
+              </pre>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
         <div className="flex items-center gap-4 mb-6 p-4 bg-muted/50 rounded-lg min-h-[72px]">
             <p className="text-sm font-medium">Filtrar por fecha de creación:</p>
             {isClient ? (
