@@ -134,7 +134,7 @@ export default function LogsPage() {
   
     try {
       const zip = new JSZip();
-      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
+      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGEN UNIFICADA.jpg');
       
       for (const audit of filteredAudits) {
         const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;

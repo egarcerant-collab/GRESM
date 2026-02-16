@@ -111,7 +111,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
-      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
+      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGEN UNIFICADA.jpg');
       
       const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;
       

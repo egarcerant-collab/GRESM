@@ -9,7 +9,6 @@ export async function getImageAsBase64Action(imagePath: string): Promise<string 
   const fullPath = path.join(publicDir, imagePath);
   
   try {
-    await fs.access(fullPath);
     const file = await fs.readFile(fullPath);
     const base64 = file.toString('base64');
     const extension = path.extname(imagePath).substring(1).toLowerCase();
@@ -18,18 +17,16 @@ export async function getImageAsBase64Action(imagePath: string): Promise<string 
       case 'jpg': case 'jpeg': mimeType = 'image/jpeg'; break;
       case 'png': mimeType = 'image/png'; break;
       case 'gif': mimeType = 'image/gif'; break;
-      default: console.error(`Unsupported image extension: ${extension}`); return null;
+      default: 
+        console.error(`Unsupported image extension: ${extension}`);
+        return null;
     }
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.error(`Error reading image from ${fullPath}:`, error);
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      try {
-        await fs.mkdir(path.dirname(fullPath), { recursive: true });
-        console.log(`Created directory ${path.dirname(fullPath)} as it did not exist.`);
-      } catch (mkdirError) {
-        console.error(`Failed to create directory for image at ${path.dirname(fullPath)}:`, mkdirError);
-      }
+        console.error(`Image file not found at ${fullPath}. Make sure the image exists in the 'public' directory and the path is correct.`);
+    } else {
+        console.error(`Error reading image from ${fullPath}:`, error);
     }
     return null;
   }
