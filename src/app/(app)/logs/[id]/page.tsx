@@ -5,7 +5,7 @@ import LogDetailClient from '@/components/log-detail-client';
 import type { Audit } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { getAuditById } from '@/lib/audit-data-manager';
+import { getAuditByIdAction } from '@/app/actions';
 
 
 type PageProps = {
@@ -17,29 +17,25 @@ export default function LogDetailPage({ params }: PageProps) {
   
   const [audit, setAudit] = useState<Audit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Ensure this runs only on the client
-    setIsClient(true);
-  }, []);
-  
-  useEffect(() => {
-    if (isClient) {
+    async function fetchAudit() {
       setIsLoading(true);
       try {
-        const foundAudit = getAuditById(id);
+        const foundAudit = await getAuditByIdAction(id);
         setAudit(foundAudit);
       } catch (e) {
-        console.error("Failed to load audit from local storage", e);
+        console.error("Failed to load audit", e);
         setAudit(null);
       } finally {
         setIsLoading(false);
       }
     }
-  }, [id, isClient]);
 
-  if (isLoading || !isClient) {
+    fetchAudit();
+  }, [id]);
+
+  if (isLoading) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 

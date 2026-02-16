@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useTransition } from 'react';
 import { DownloadAuditsButton } from '@/components/download-audits-button';
 import {
   Card,
@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
-import { getImageAsBase64Action } from '@/app/actions';
+import { getImageAsBase64Action, getAuditsAction, deleteAuditAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
 import { useUser } from '@/firebase';
@@ -29,7 +29,6 @@ import { AuditLogTable } from '@/components/audit-log-table';
 import { isValid } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import mockUsersData from '@/lib/data/users.json';
-import { getAudits, deleteAudit } from '@/lib/audit-data-manager';
 
 
 // We need to import JSZip like this for it to work with Next.js
@@ -60,6 +59,7 @@ export default function LogsPage() {
   const [error, setError] = useState<Error | null>(null);
   
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDeleting, startDeleteTransition] = useTransition();
   const { toast } = useToast();
   
   const [isClient, setIsClient] = useState(false);
@@ -67,40 +67,43 @@ export default function LogsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   useEffect(() => {
-    // Set year on client to avoid hydration mismatch and load data
     setIsClient(true);
     setSelectedYear(new Date().getFullYear().toString());
 
-    setLoading(true);
-    try {
-        const localAudits = getAudits();
-        setAudits(localAudits);
-        setError(null);
-    } catch (e: any) {
-        console.error("Failed to load audits from localStorage", e);
-        setError(e);
-        setAudits([]);
-    } finally {
-        setLoading(false);
+    async function fetchAudits() {
+        setLoading(true);
+        try {
+            const serverAudits = await getAuditsAction();
+            setAudits(serverAudits);
+            setError(null);
+        } catch (e: any) {
+            console.error("Failed to load audits", e);
+            setError(e);
+            setAudits([]);
+        } finally {
+            setLoading(false);
+        }
     }
+    fetchAudits();
   }, []);
 
   const handleDeleteAudit = (id: string) => {
-    try {
-      deleteAudit(id);
-      const updatedAudits = getAudits();
-      setAudits(updatedAudits);
-      toast({
-        title: "Auditoría Eliminada",
-        description: "El registro ha sido eliminado.",
-      });
-    } catch (e: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar",
-        description: e.message || "No se pudo eliminar la auditoría.",
-      });
-    }
+    startDeleteTransition(async () => {
+        try {
+            await deleteAuditAction(id);
+            setAudits(prev => prev.filter(a => a.id !== id));
+            toast({
+                title: "Auditoría Eliminada",
+                description: "El registro ha sido eliminado del archivo.",
+            });
+        } catch (e: any) {
+            toast({
+                variant: "destructive",
+                title: "Error al eliminar",
+                description: e.message || "No se pudo eliminar la auditoría.",
+            });
+        }
+    });
   };
 
   const filteredAudits = useMemo(() => {
@@ -257,7 +260,7 @@ export default function LogsPage() {
               <p className="mt-2 text-sm max-w-md mx-auto">{error.message}</p>
             </div>
         ) : (
-          <AuditLogTable audits={filteredAudits} onDelete={canDelete ? handleDeleteAudit : undefined} />
+          <AuditLogTable audits={filteredAudits} onDelete={canDelete ? handleDeleteAudit : undefined} isDeleting={isDeleting} />
         )}
       </CardContent>
     </Card>

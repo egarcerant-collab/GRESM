@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import type { Audit } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { format, isValid } from 'date-fns';
-import { Eye, Trash2 } from 'lucide-react';
+import { Eye, Loader2, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +42,7 @@ function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
     }
 }
 
-function AuditTableRow({ audit, onDelete }: { audit: Audit, onDelete?: (id: string) => void }) {
+function AuditTableRow({ audit, onDelete, isDeleting }: { audit: Audit, onDelete?: (id: string) => void, isDeleting?: boolean }) {
   const router = useRouter();
   const { toast } = useToast();
   const [password, setPassword] = useState('');
@@ -125,7 +125,8 @@ function AuditTableRow({ audit, onDelete }: { audit: Audit, onDelete?: (id: stri
                 </div>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleConfirmDelete}>
+                  <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeleting}>
+                     {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Eliminar
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -138,7 +139,7 @@ function AuditTableRow({ audit, onDelete }: { audit: Audit, onDelete?: (id: stri
 }
 
 
-export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?: (id: string) => void }) {
+export function AuditLogTable({ audits, onDelete, isDeleting }: { audits: Audit[], onDelete?: (id: string) => void, isDeleting?: boolean }) {
   const router = useRouter();
 
   if (audits.length === 0) {
@@ -173,6 +174,7 @@ export function AuditLogTable({ audits, onDelete }: { audits: Audit[], onDelete?
                 key={audit.id}
                 audit={audit} 
                 onDelete={onDelete} 
+                isDeleting={isDeleting}
             />
         ))}
       </TableBody>

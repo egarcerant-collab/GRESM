@@ -32,7 +32,7 @@ import { Separator } from './ui/separator';
 import { useUser } from '@/firebase';
 import type { UserProfile, Audit } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { saveAudit } from '@/lib/audit-data-manager';
+import { saveAuditAction } from '@/app/actions';
 
 
 const documentTypes = [
@@ -193,7 +193,6 @@ export function AuditForm() {
 
 
   useEffect(() => {
-    // Patient check is disabled in mock mode
     setPatientWarning(null);
   }, [documentNumberValue, visitTypeValue]);
 
@@ -261,32 +260,32 @@ export function AuditForm() {
         toast({ variant: 'destructive', title: 'Error', description: 'Debe iniciar sesión para crear una auditoría.' });
         return;
     }
-    startTransition(() => {
-        try {
-            const newAudit: Audit = {
-                ...values,
-                id: `mockaudit${Date.now()}`, // Generate a unique-ish ID
-                auditorId: user.uid,
-                auditorName: auditorProfile.fullName,
-                createdAt: new Date().toISOString(),
-                followUpDate: values.followUpDate || new Date().toISOString(),
-            };
+    startTransition(async () => {
+      const newAudit: Audit = {
+          ...values,
+          id: `audit_${Date.now()}`,
+          auditorId: user.uid,
+          auditorName: auditorProfile.fullName,
+          createdAt: new Date().toISOString(),
+          followUpDate: values.followUpDate || new Date().toISOString(),
+      };
 
-            saveAudit(newAudit);
+      const result = await saveAuditAction(newAudit);
 
-            toast({
-                title: 'Auditoría Guardada',
-                description: 'El nuevo registro ha sido guardado localmente.',
-            });
-            form.reset();
-            router.push('/logs');
-        } catch (error: any) {
-             toast({
-              variant: 'destructive',
-              title: 'Error al Guardar',
-              description: error.message || 'No se pudo guardar la auditoría en el almacenamiento local.',
-            });
-        }
+      if (result.success) {
+        toast({
+            title: 'Auditoría Guardada',
+            description: 'El nuevo registro ha sido guardado en el archivo.',
+        });
+        form.reset();
+        router.push('/logs');
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error al Guardar',
+          description: result.message || 'No se pudo guardar la auditoría en el archivo.',
+        });
+      }
     });
   }
 
