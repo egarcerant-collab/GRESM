@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
+import { getImageAsBase64Action } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
 import { useUser } from '@/firebase';
@@ -133,12 +134,13 @@ export default function LogsPage() {
   
     try {
       const zip = new JSZip();
+      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
       
       for (const audit of filteredAudits) {
         const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;
 
         const { jsPDF } = await import('jspdf');
-        const docPDF = await generateAuditPdf(audit, null, auditorData as UserProfile | null, new jsPDF({
+        const docPDF = await generateAuditPdf(audit, backgroundImage, auditorData as UserProfile | null, new jsPDF({
           orientation: "p",
           unit: "pt",
           format: "a4"
