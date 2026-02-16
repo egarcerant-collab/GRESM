@@ -284,7 +284,7 @@ export function AuditForm() {
              toast({
               variant: 'destructive',
               title: 'Error al Guardar',
-              description: error.message || 'No se pudo guardar la auditoría localmente.',
+              description: error.message || 'No se pudo guardar la auditoría en el almacenamiento local.',
             });
         }
     });

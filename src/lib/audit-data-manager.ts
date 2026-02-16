@@ -32,7 +32,7 @@ export function saveAudit(audit: Audit): void {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(audits));
     } catch (error) {
         console.error("Error saving to localStorage", error);
-        throw new Error("Could not save audit data locally.");
+        throw new Error("No se pudo guardar los datos. El almacenamiento local del navegador podría estar lleno o deshabilitado.");
     }
 }
 
@@ -44,7 +44,7 @@ export function deleteAudit(id: string): void {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(audits));
     } catch (error) {
         console.error("Error deleting from localStorage", error);
-        throw new Error("Could not delete audit data locally.");
+        throw new Error("No se pudo eliminar la auditoría localmente.");
     }
 }
 
