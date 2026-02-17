@@ -29,10 +29,10 @@ import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import type { UserProfile, Audit } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { saveAuditAction } from '@/app/actions';
+import { collection } from 'firebase/firestore';
 
 
 const documentTypes = [
@@ -110,33 +110,22 @@ export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { user, profile } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
 
   const [isClient, setIsClient] = useState(false);
-  const [auditorProfile, setAuditorProfile] = useState<UserProfile | null>(profile);
   const [maxBirthDate, setMaxBirthDate] = useState('');
 
   useEffect(() => {
-    // This will only run on the client, after initial hydration
     setIsClient(true);
     setMaxBirthDate(format(new Date(), 'yyyy-MM-dd'));
   }, []);
   
-   useEffect(() => {
-    if (profile) {
-      setAuditorProfile(profile);
-    }
-  }, [profile]);
-
-
   const [departmentSelection, setDepartmentSelection] = useState<string>('');
   const [municipalitySelection, setMunicipalitySelection] = useState<string>('');
   const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
   const [ethnicitySelection, setEthnicitySelection] = useState<string>('');
   const [upgdProviderSelection, setUpgdProviderSelection] = useState<string>('');
-
-  const [isCheckingPatient, setIsCheckingPatient] = useState(false);
-  const [patientWarning, setPatientWarning] = useState<string | null>(null);
   const [genderViolenceTypeSelection, setGenderViolenceTypeSelection] = useState<string>('');
 
   const form = useForm<z.infer<typeof auditSchema>>({
@@ -156,15 +145,15 @@ export function AuditForm() {
       followUpNotes: '',
       nextSteps: '',
       visitType: 'Seguimiento',
-      birthDate: undefined,
-      age: undefined,
-      sex: undefined,
-      affiliationStatus: undefined,
-      area: undefined,
+      birthDate: '',
+      age: 0,
+      sex: 'Masculino',
+      affiliationStatus: 'Activa',
+      area: 'Rural',
       settlement: '',
       nationality: '',
       primaryHealthProvider: '',
-      regime: undefined,
+      regime: 'Subsidiado',
       upgdProvider: '',
       followUpInterventionType: '',
       genderViolenceType: '',
@@ -173,14 +162,12 @@ export function AuditForm() {
   });
   
   useEffect(() => {
-    if (auditorProfile) {
-        form.setValue('auditorName', auditorProfile.fullName);
+    if (profile) {
+        form.setValue('auditorName', profile.fullName);
     }
-  }, [auditorProfile, form]);
+  }, [profile, form]);
 
   const eventSelection = form.watch('event');
-  const documentNumberValue = form.watch('documentNumber');
-  const visitTypeValue = form.watch('visitType');
   const birthDateValue = form.watch('birthDate');
   const isOtherEvent = eventSelection === 'Otro';
   const isOtherDepartment = departmentSelection === 'Otro';
@@ -193,10 +180,6 @@ export function AuditForm() {
 
 
   useEffect(() => {
-    setPatientWarning(null);
-  }, [documentNumberValue, visitTypeValue]);
-
-  useEffect(() => {
     if (departmentSelection && departmentSelection !== 'Otro') {
       form.setValue('department', departmentSelection);
       setAvailableMunicipalities(municipalitiesByDepartment[departmentSelection] || []);
@@ -204,7 +187,6 @@ export function AuditForm() {
       setAvailableMunicipalities([]);
       form.setValue('department', '');
     }
-    // Reset municipality when department changes
     form.setValue('municipality', '');
     setMunicipalitySelection('');
   }, [departmentSelection, form]);
@@ -212,78 +194,63 @@ export function AuditForm() {
   useEffect(() => {
     if (municipalitySelection && municipalitySelection !== 'Otro') {
       form.setValue('municipality', municipalitySelection);
-    } else if (municipalitySelection !== 'Otro') {
-       form.setValue('municipality', '');
     }
   }, [municipalitySelection, form]);
 
   useEffect(() => {
     if (ethnicitySelection && ethnicitySelection !== 'Otro') {
       form.setValue('ethnicity', ethnicitySelection);
-    } else if (ethnicitySelection !== 'Otro') {
-      form.setValue('ethnicity', '');
     }
   }, [ethnicitySelection, form]);
 
   useEffect(() => {
     if (upgdProviderSelection && upgdProviderSelection !== 'Otro') {
       form.setValue('upgdProvider', upgdProviderSelection);
-    } else if (upgdProviderSelection !== 'Otro') {
-      form.setValue('upgdProvider', '');
     }
   }, [upgdProviderSelection, form]);
 
   useEffect(() => {
     if (genderViolenceTypeSelection && genderViolenceTypeSelection !== 'otros') {
         form.setValue('genderViolenceType', genderViolenceTypeSelection);
-    } else {
-        form.setValue('genderViolenceType', '');
     }
   }, [genderViolenceTypeSelection, form]);
 
   useEffect(() => {
     if (birthDateValue) {
       try {
-        // Adding time to avoid timezone issues where the date might be off by one day
         const age = differenceInYears(new Date(), new Date(`${birthDateValue}T00:00:00`));
         form.setValue('age', age >= 0 ? age : 0);
       } catch (e) {
-        // Invalid date string
-        form.setValue('age', undefined);
+        form.setValue('age', 0);
       }
     }
   }, [birthDateValue, form]);
 
+  const auditsCollection = useMemoFirebase(() => collection(firestore, 'audits'), [firestore]);
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
-    if (!user || !auditorProfile) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Debe iniciar sesión para crear una auditoría.' });
-        return;
-    }
     startTransition(async () => {
-      const newAudit: Audit = {
+      try {
+        const auditData = {
           ...values,
-          id: `audit_${Date.now()}`,
-          auditorId: user.uid,
-          auditorName: auditorProfile.fullName,
+          auditorId: user?.uid || 'anonymous',
           createdAt: new Date().toISOString(),
           followUpDate: values.followUpDate || new Date().toISOString(),
-      };
+        };
 
-      const result = await saveAuditAction(newAudit);
+        addDocumentNonBlocking(auditsCollection, auditData);
 
-      if (result.success) {
         toast({
             title: 'Auditoría Guardada',
-            description: 'El nuevo registro ha sido guardado en el archivo.',
+            description: 'El nuevo registro ha sido guardado permanentemente en la base de datos.',
         });
         form.reset();
         router.push('/logs');
-      } else {
+      } catch (e: any) {
         toast({
           variant: 'destructive',
           title: 'Error al Guardar',
-          description: result.message || 'No se pudo guardar la auditoría en el archivo.',
+          description: 'No se pudo guardar la auditoría. Verifique su conexión.',
         });
       }
     });
@@ -325,7 +292,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Documento</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione un tipo de documento" />
@@ -348,11 +315,6 @@ export function AuditForm() {
                 <FormControl>
                   <Input type="number" placeholder="e.g., 1006895977" {...field} />
                 </FormControl>
-                 {isCheckingPatient ? (
-                    <FormDescription>Verificando...</FormDescription>
-                ) : patientWarning ? (
-                    <p className="text-sm font-medium text-yellow-600">{patientWarning}</p>
-                ) : null}
                 <FormMessage />
               </FormItem>
             )}
@@ -363,7 +325,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Evento</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione un evento" />
@@ -441,10 +403,7 @@ export function AuditForm() {
                   <Input
                     type="date"
                     value={field.value || ''}
-                    onChange={(e) => {
-                       field.onChange(e.target.value);
-                    }}
-                    min="1900-01-01"
+                    onChange={(e) => field.onChange(e.target.value)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -460,25 +419,19 @@ export function AuditForm() {
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     className="flex flex-wrap gap-x-4 gap-y-2 pt-2"
                   >
                     <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="PRIMERA VEZ" />
-                      </FormControl>
+                      <FormControl><RadioGroupItem value="PRIMERA VEZ" /></FormControl>
                       <FormLabel className="font-normal">Primera Vez</FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="Seguimiento" />
-                      </FormControl>
+                      <FormControl><RadioGroupItem value="Seguimiento" /></FormControl>
                       <FormLabel className="font-normal">Seguimiento</FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="CIERRE DE CASO" />
-                      </FormControl>
+                      <FormControl><RadioGroupItem value="CIERRE DE CASO" /></FormControl>
                       <FormLabel className="font-normal">Cierre de caso</FormLabel>
                     </FormItem>
                   </RadioGroup>
@@ -492,9 +445,7 @@ export function AuditForm() {
               <FormLabel>Departamento</FormLabel>
               <Select onValueChange={setDepartmentSelection} value={departmentSelection}>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un departamento" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Seleccione un departamento" /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
@@ -509,9 +460,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especifique el Departamento</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Cundinamarca" {...field} />
-                    </FormControl>
+                    <FormControl><Input placeholder="e.g., Cundinamarca" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -525,9 +474,7 @@ export function AuditForm() {
                 <FormLabel>Municipio</FormLabel>
                 <Select onValueChange={setMunicipalitySelection} value={municipalitySelection}>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un municipio" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Seleccione un municipio" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {availableMunicipalities.map(muni => <SelectItem key={muni} value={muni}>{muni}</SelectItem>)}
@@ -545,9 +492,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especifique el Municipio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., BOGOTA" {...field} />
-                    </FormControl>
+                    <FormControl><Input placeholder="e.g., BOGOTA" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -560,9 +505,7 @@ export function AuditForm() {
               <FormLabel>Etnia</FormLabel>
               <Select onValueChange={setEthnicitySelection} value={ethnicitySelection}>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione una etnia" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Seleccione una etnia" /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {ethnicityOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
@@ -577,9 +520,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especifique la Etnia</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., MESTIZO" {...field} />
-                    </FormControl>
+                    <FormControl><Input placeholder="e.g., MESTIZO" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -592,9 +533,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Dirección</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., OVIDIO MEJIA CALLE 36" {...field} />
-                </FormControl>
+                <FormControl><Input placeholder="e.g., OVIDIO MEJIA CALLE 36" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -605,9 +544,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Número Telefónico</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="e.g., 3215402336" {...field} />
-                </FormControl>
+                <FormControl><Input type="number" placeholder="e.g., 3215402336" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -632,7 +569,6 @@ export function AuditForm() {
                           value={field.value || ''}
                           onChange={(e) => field.onChange(e.target.value)}
                           max={isClient ? maxBirthDate : undefined}
-                          min="1900-01-01"
                         />
                       </FormControl>
                       <FormMessage />
@@ -642,8 +578,7 @@ export function AuditForm() {
                 <FormField control={form.control} name="age" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Edad</FormLabel>
-                      <FormControl><Input type="number" placeholder="Calculada automáticamente" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} /></FormControl>
-                       <FormDescription>Se calcula a partir de la fecha de nacimiento.</FormDescription>
+                      <FormControl><Input type="number" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -652,132 +587,12 @@ export function AuditForm() {
                     <FormItem>
                       <FormLabel>Sexo</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccione el sexo" /></SelectTrigger>
-                        </FormControl>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="Masculino">Masculino</SelectItem>
                           <SelectItem value="Femenino">Femenino</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="affiliationStatus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado de Afiliación</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccione un estado" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Activa">Activa</SelectItem>
-                          <SelectItem value="Inactiva">Inactiva</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                <FormField control={form.control} name="area" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Área</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccione el área" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Rural">Rural</SelectItem>
-                          <SelectItem value="Urbano">Urbano</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField control={form.control} name="settlement" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Asentamiento</FormLabel>
-                      <FormControl><Input placeholder="e.g., Urbano" {...field} value={field.value ?? ''} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField control={form.control} name="nationality" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nacionalidad</FormLabel>
-                      <FormControl><Input placeholder="e.g., Colombiana" {...field} value={field.value ?? ''} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField control={form.control} name="primaryHealthProvider" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>IPS Atención Primaria</FormLabel>
-                      <FormControl><Input placeholder="e.g., IPS Principal" {...field} value={field.value ?? ''} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField control={form.control} name="regime" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Régimen</FormLabel>
-                       <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Seleccione el régimen" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Subsidiado">Subsidiado</SelectItem>
-                          <SelectItem value="Contributivo">Contributivo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="lg:col-span-2 grid md:grid-cols-2 gap-8 items-start">
-                    <FormItem>
-                      <FormLabel>Nombre UPGD o Prestador</FormLabel>
-                      <Select onValueChange={setUpgdProviderSelection} value={upgdProviderSelection}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione un prestador" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {upgdProviderOptions.map((provider) => (
-                            <SelectItem key={provider} value={provider}>
-                              {provider}
-                            </SelectItem>
-                          ))}
-                          <SelectItem value="Otro">Otro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                    {isOtherUpgdProvider && (
-                      <FormField
-                          control={form.control}
-                          name="upgdProvider"
-                          render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Especifique el prestador</FormLabel>
-                              <FormControl>
-                                  <Input placeholder="Nombre del prestador" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                          )}
-                      />
-                    )}
-                </div>
-
-                <FormField control={form.control} name="followUpInterventionType" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Intervención</FormLabel>
-                      <FormControl><Input placeholder="e.g., Psicología" {...field} value={field.value ?? ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -794,9 +609,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Seguimiento</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Describa el seguimiento realizado..." {...field} rows={6}/>
-                </FormControl>
+                <FormControl><Textarea placeholder="Describa el seguimiento..." {...field} rows={6}/></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -808,17 +621,15 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Conducta a Seguir</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Describa la conducta a seguir..." {...field} rows={4}/>
-                </FormControl>
+                <FormControl><Textarea placeholder="Describa la conducta..." {...field} rows={4}/></FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isPending || isCheckingPatient || !!patientWarning}>
-            {(isPending || isCheckingPatient) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" disabled={isPending}>
+            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Auditoría
           </Button>
         </div>

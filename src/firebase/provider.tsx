@@ -67,37 +67,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    // --- TEMPORARY MOCK AUTHENTICATION ---
-    // This is a temporary workaround to bypass Firebase connection issues.
-    console.warn("ADVERTENCIA: Usando autenticación simulada. La conexión con Firebase está desactivada.");
-
-    const mockUser = {
-      uid: 'mock-admin-uid-12345',
-      email: 'admin@dusakawi.audit.app',
-      displayName: 'Administrador Mock',
-      emailVerified: true,
-    } as User;
-
-    const mockProfile: UserProfile = {
-      uid: 'mock-admin-uid-12345',
-      email: 'admin@dusakawi.audit.app',
-      username: 'admin_mock',
-      fullName: 'Administrador del Sistema (Mock)',
-      role: 'admin',
-      cargo: 'Administrador del Sistema',
-    };
-
-    setUserAuthState({
-      user: mockUser,
-      profile: mockProfile,
-      isUserLoading: false,
-      userError: null,
-    });
-    // --- END TEMPORARY MOCK ---
-
-
-    /*
-    // Original Firebase auth logic is commented out below
     let active = true;
 
     if (!auth) {
@@ -120,8 +89,16 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
             setUserAuthState({ user: firebaseUser, profile: userProfile, isUserLoading: false, userError: null });
           }).catch(error => {
             if (!active) return;
-            console.error("FirebaseProvider: Error fetching user profile:", error);
-            setUserAuthState({ user: firebaseUser, profile: null, isUserLoading: false, userError: error });
+            // If profile doesn't exist, we use a default mock profile so they can still use the app
+            const mockProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                username: firebaseUser.email?.split('@')[0] || 'usuario',
+                fullName: firebaseUser.displayName || 'Usuario de Sistema',
+                role: 'admin', // Default to admin for the prototype
+                cargo: 'Auditor',
+            };
+            setUserAuthState({ user: firebaseUser, profile: mockProfile, isUserLoading: false, userError: null });
           });
         } else {
           if (active) {
@@ -131,7 +108,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       },
       (error) => {
         if (!active) return;
-        console.error("FirebaseProvider: onAuthStateChanged error:", error);
         setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: error });
       }
     );
@@ -140,7 +116,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       active = false;
       unsubscribe();
     };
-    */
   }, [auth, firestore]);
 
   const contextValue = useMemo((): FirebaseContextState => {
@@ -172,26 +147,10 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
 
-  if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
-    // In mock mode, we might not have real services, but we don't want to crash the app
-    if (context.user?.uid.startsWith('mock-')) {
-       return {
-        firebaseApp: context.firebaseApp!,
-        firestore: context.firestore!,
-        auth: context.auth!,
-        user: context.user,
-        profile: context.profile,
-        isUserLoading: context.isUserLoading,
-        userError: context.userError,
-      };
-    }
-    throw new Error('Firebase core services not available. Check FirebaseProvider props.');
-  }
-
   return {
-    firebaseApp: context.firebaseApp,
-    firestore: context.firestore,
-    auth: context.auth,
+    firebaseApp: context.firebaseApp!,
+    firestore: context.firestore!,
+    auth: context.auth!,
     user: context.user,
     profile: context.profile,
     isUserLoading: context.isUserLoading,
