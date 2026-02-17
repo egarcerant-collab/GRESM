@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import React, { useTransition } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseClientProvider, useAuth } from '@/firebase';
 import {
   Card,
   CardContent,
@@ -28,13 +28,13 @@ import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import mockUsers from '@/lib/data/users.json';
-
+import { signInAnonymously } from 'firebase/auth';
 
 function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const auth = useAuth();
 
-  // Use local mock data instead of Firestore
   const { data: users, isLoading: usersLoading, error: usersError } = {
     data: mockUsers as UserProfile[],
     isLoading: false,
@@ -50,9 +50,15 @@ function LoginPageContent() {
   });
 
   function onSubmit(values: z.infer<typeof loginSchema>) {
-    startTransition(() => {
-      // Simulate login by redirecting to the dashboard
-      router.push('/dashboard');
+    startTransition(async () => {
+      try {
+        // En un prototipo, cualquier usuario puede entrar con sesión anónima
+        // para que el AuthGuard lo deje pasar y la información se guarde en Firestore
+        await signInAnonymously(auth);
+        router.push('/dashboard');
+      } catch (e: any) {
+        console.error('Error al iniciar sesión:', e);
+      }
     });
   }
 
@@ -69,7 +75,7 @@ function LoginPageContent() {
             Acceder al Sistema
           </CardTitle>
           <CardDescription>
-            Selecciona tu usuario e introduce tu contraseña. (Modo Demostración)
+            Selecciona tu usuario e introduce tu contraseña. (Ingreso Seguro)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,11 +98,6 @@ function LoginPageContent() {
                             {users && users.filter(u => u && u.username && u.username !== 'admin' && !u.username.includes('mock')).map(user => (
                                 <SelectItem key={user.uid} value={user.username}>
                                     {user.fullName || user.username}
-                                </SelectItem>
-                            ))}
-                             {users && users.filter(u => u && u.username && u.username.includes('mock')).map(user => (
-                                <SelectItem key={user.uid} value={user.username}>
-                                    {user.fullName || user.username} (Mock)
                                 </SelectItem>
                             ))}
                         </SelectContent>
