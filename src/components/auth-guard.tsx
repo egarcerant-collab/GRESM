@@ -1,48 +1,49 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
 
-  // This effect runs once on the client to set isMounted to true.
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // This effect handles redirection based on auth state, but only after client mount.
   useEffect(() => {
-    // Only run redirection logic on the client and after the initial auth check.
-    if (isMounted && !isUserLoading && !user) {
-      router.push('/login');
+    // Solo redirigir si no estamos cargando y no hay usuario
+    // Y si no estamos ya en la página de login
+    if (isMounted && !isUserLoading && !user && pathname !== '/login') {
+      router.replace('/login');
     }
-  }, [user, isUserLoading, router, isMounted]);
+  }, [user, isUserLoading, router, isMounted, pathname]);
 
-  // On the server, or on the client before it has mounted, or while auth is loading,
-  // show a loader. This is the crucial step to prevent any hydration mismatch.
+  // Pantalla de carga mientras se verifica la sesión
   if (!isMounted || isUserLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">Verificando sesión...</p>
+        </div>
       </div>
     );
   }
   
-  // If, after all checks, there is still no user, we are about to redirect.
-  // Render the loader to avoid a flash of content while redirecting.
-  if (!user) {
+  // Si no hay usuario y no es la página de login, mostramos carga mientras redirige
+  if (!user && pathname !== '/login') {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Only if we are on the client, auth is loaded, and a user exists, render the children.
   return <>{children}</>;
 }

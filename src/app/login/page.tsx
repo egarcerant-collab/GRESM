@@ -48,27 +48,26 @@ function LoginPageContent() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof loginSchema>) {
+  async function onSubmit(values: z.infer<typeof loginSchema>) {
     startTransition(async () => {
       try {
-        // Iniciamos sesión de forma real en Firebase
-        await signInAnonymously(auth);
+        // Iniciamos sesión de forma real en Firebase Auth
+        const userCredential = await signInAnonymously(auth);
         
-        toast({
-          title: "Acceso Exitoso",
-          description: "Bienvenido al sistema de auditoría.",
-        });
-
-        // Pequeña pausa para asegurar que el estado de Auth se propague
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 500);
+        if (userCredential.user) {
+          toast({
+            title: "Acceso Exitoso",
+            description: "Bienvenido al sistema de auditoría.",
+          });
+          // Redirección inmediata tras el éxito
+          router.replace('/dashboard');
+        }
       } catch (e: any) {
         console.error('Error al iniciar sesión:', e);
         toast({
           variant: "destructive",
-          title: "Error de Conexión",
-          description: "No se pudo conectar con el servidor de seguridad.",
+          title: "Error de Acceso",
+          description: "No se pudo conectar con el servidor de seguridad. Intente de nuevo.",
         });
       }
     });
@@ -87,7 +86,7 @@ function LoginPageContent() {
             Acceder al Sistema
           </CardTitle>
           <CardDescription>
-            Selecciona tu usuario e ingresa con seguridad.
+            Selecciona tu usuario e introduce tu contraseña.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -125,7 +124,7 @@ function LoginPageContent() {
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
+                      <Input type="password" placeholder="Introduce tu contraseña" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

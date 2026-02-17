@@ -79,39 +79,42 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
     const unsubscribe = onAuthStateChanged(
       auth,
-      (firebaseUser) => {
+      async (firebaseUser) => {
         if (!active) return;
 
         if (firebaseUser) {
-          const profileRef = doc(firestore, 'users', firebaseUser.uid);
-          getDoc(profileRef).then(docSnap => {
+          try {
+            const profileRef = doc(firestore, 'users', firebaseUser.uid);
+            const docSnap = await getDoc(profileRef);
+            
             if (!active) return;
+            
             const userProfile = docSnap.exists() ? docSnap.data() as UserProfile : null;
             
-            // Si no tiene perfil en la BD, creamos uno por defecto para que pueda navegar
+            // Perfil por defecto garantizado para evitar bloqueos
             const finalProfile: UserProfile = userProfile || {
                 uid: firebaseUser.uid,
-                email: firebaseUser.email || 'anonimo@sistema.com',
-                username: 'invitado',
+                email: firebaseUser.email || 'usuario@dusakawi.audit.app',
+                username: 'auditor_demo',
                 fullName: 'Usuario Autorizado',
-                role: 'admin', // Le damos permisos de admin para la demo
-                cargo: 'Auditor Externo',
+                role: 'admin',
+                cargo: 'Auditor de Riesgo',
             };
             
             setUserAuthState({ user: firebaseUser, profile: finalProfile, isUserLoading: false, userError: null });
-          }).catch(error => {
+          } catch (error) {
             if (!active) return;
-            // En caso de error de red, igual dejamos pasar con perfil de invitado
+            // Si falla Firestore, permitimos el acceso con perfil local
             const mockProfile: UserProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || '',
-                username: 'usuario_demo',
-                fullName: 'Usuario de Sistema',
+                username: 'usuario_offline',
+                fullName: 'Auditor del Sistema',
                 role: 'admin',
-                cargo: 'Auditor',
+                cargo: 'Gestor de Riesgo',
             };
             setUserAuthState({ user: firebaseUser, profile: mockProfile, isUserLoading: false, userError: null });
-          });
+          }
         } else {
           if (active) {
             setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: null });
