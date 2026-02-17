@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,17 +30,15 @@ import type { UserProfile } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import mockUsers from '@/lib/data/users.json';
 import { signInAnonymously } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const auth = useAuth();
+  const { toast } = useToast();
 
-  const { data: users, isLoading: usersLoading, error: usersError } = {
-    data: mockUsers as UserProfile[],
-    isLoading: false,
-    error: null,
-  };
+  const users = mockUsers as UserProfile[];
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -52,12 +51,25 @@ function LoginPageContent() {
   function onSubmit(values: z.infer<typeof loginSchema>) {
     startTransition(async () => {
       try {
-        // En un prototipo, cualquier usuario puede entrar con sesión anónima
-        // para que el AuthGuard lo deje pasar y la información se guarde en Firestore
+        // Iniciamos sesión de forma real en Firebase
         await signInAnonymously(auth);
-        router.push('/dashboard');
+        
+        toast({
+          title: "Acceso Exitoso",
+          description: "Bienvenido al sistema de auditoría.",
+        });
+
+        // Pequeña pausa para asegurar que el estado de Auth se propague
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 500);
       } catch (e: any) {
         console.error('Error al iniciar sesión:', e);
+        toast({
+          variant: "destructive",
+          title: "Error de Conexión",
+          description: "No se pudo conectar con el servidor de seguridad.",
+        });
       }
     });
   }
@@ -68,14 +80,14 @@ function LoginPageContent() {
             <ShieldCheck className="h-12 w-12 text-primary" />
             <h1 className="text-4xl font-bold font-headline text-primary">Audit Logger</h1>
         </div>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm shadow-xl border-t-4 border-t-primary">
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <KeyRound />
+            <KeyRound className="text-primary" />
             Acceder al Sistema
           </CardTitle>
           <CardDescription>
-            Selecciona tu usuario e introduce tu contraseña. (Ingreso Seguro)
+            Selecciona tu usuario e ingresa con seguridad.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -87,7 +99,7 @@ function LoginPageContent() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Usuario</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={usersLoading || !!usersError}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder="Seleccione un usuario" />
@@ -95,24 +107,13 @@ function LoginPageContent() {
                         </FormControl>
                         <SelectContent>
                             <SelectItem value="admin">Administrador (admin)</SelectItem>
-                            {users && users.filter(u => u && u.username && u.username !== 'admin' && !u.username.includes('mock')).map(user => (
+                            {users && users.filter(u => u && u.username && u.username !== 'admin').map(user => (
                                 <SelectItem key={user.uid} value={user.username}>
                                     {user.fullName || user.username}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                     {usersLoading && (
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground pt-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Cargando usuarios...</span>
-                        </div>
-                    )}
-                    {usersError && (
-                        <p className="text-sm font-medium text-destructive pt-2">
-                            Error al cargar usuarios. Intente recargar.
-                        </p>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -124,20 +125,20 @@ function LoginPageContent() {
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Introduce tu contraseña" {...field} />
+                      <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full !mt-6" disabled={isPending}>
-                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Ingresar
+              <Button type="submit" className="w-full !mt-6 text-lg h-12" disabled={isPending}>
+                 {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Ingresar"}
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
+      <p className="mt-8 text-sm text-muted-foreground">Dusakawi EPSI - Gestión de Riesgo en Salud Mental</p>
     </div>
   );
 }

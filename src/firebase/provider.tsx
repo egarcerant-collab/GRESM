@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -86,16 +87,27 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           getDoc(profileRef).then(docSnap => {
             if (!active) return;
             const userProfile = docSnap.exists() ? docSnap.data() as UserProfile : null;
-            setUserAuthState({ user: firebaseUser, profile: userProfile, isUserLoading: false, userError: null });
+            
+            // Si no tiene perfil en la BD, creamos uno por defecto para que pueda navegar
+            const finalProfile: UserProfile = userProfile || {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || 'anonimo@sistema.com',
+                username: 'invitado',
+                fullName: 'Usuario Autorizado',
+                role: 'admin', // Le damos permisos de admin para la demo
+                cargo: 'Auditor Externo',
+            };
+            
+            setUserAuthState({ user: firebaseUser, profile: finalProfile, isUserLoading: false, userError: null });
           }).catch(error => {
             if (!active) return;
-            // If profile doesn't exist, we use a default mock profile so they can still use the app
+            // En caso de error de red, igual dejamos pasar con perfil de invitado
             const mockProfile: UserProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || '',
-                username: firebaseUser.email?.split('@')[0] || 'usuario',
-                fullName: firebaseUser.displayName || 'Usuario de Sistema',
-                role: 'admin', // Default to admin for the prototype
+                username: 'usuario_demo',
+                fullName: 'Usuario de Sistema',
+                role: 'admin',
                 cargo: 'Auditor',
             };
             setUserAuthState({ user: firebaseUser, profile: mockProfile, isUserLoading: false, userError: null });
