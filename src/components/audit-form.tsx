@@ -77,8 +77,17 @@ const MUNICIPALITIES_BY_DEPT: Record<string, string[]> = {
 };
 
 const ethnicityOptions = [
-  "WAYUU", "WIWA", "KOGUI", "ARHUACO", "KANKUAMO", 
-  "AFROCOLOMBIANO", "MESTIZO", "SIN ETNIA", "OTRO"
+  "YUKPA",
+  "ARHUACO",
+  "WIWA",
+  "CHIMILA",
+  "KANKUAMO",
+  "WAYUU",
+  "ZENU",
+  "INGA",
+  "SIN ETNIA",
+  "INDIGENA",
+  "OTRO"
 ];
 
 export function AuditForm() {
