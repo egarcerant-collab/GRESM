@@ -69,6 +69,17 @@ export default function LogsPage() {
       try {
         const data = await getAuditsAction();
         setAudits(data);
+        
+        // Si hay auditorías pero ninguna en el año actual, cambiar al año de la auditoría más reciente
+        if (data.length > 0) {
+          const currentYear = new Date().getFullYear().toString();
+          const hasDataForCurrentYear = data.some(a => new Date(a.createdAt).getFullYear().toString() === currentYear);
+          
+          if (!hasDataForCurrentYear) {
+            const latestYear = new Date(data[data.length - 1].createdAt).getFullYear().toString();
+            setSelectedYear(latestYear);
+          }
+        }
       } catch (error) {
         console.error("Failed to load audits", error);
       } finally {
@@ -82,7 +93,7 @@ export default function LogsPage() {
     const res = await deleteAuditAction(id);
     if (res.success) {
       setAudits(prev => prev.filter(a => a.id !== id));
-      toast({ title: "Auditoría Eliminada del JSON" });
+      toast({ title: "Auditoría Eliminada" });
     } else {
       toast({ variant: 'destructive', title: "Error al eliminar", description: res.error });
     }
@@ -132,7 +143,7 @@ export default function LogsPage() {
       <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           <CardTitle className="font-headline text-2xl">Registro de Auditoría</CardTitle>
-          <CardDescription>Datos guardados permanentemente en audits.json</CardDescription>
+          <CardDescription>Datos cargados desde public/data/audits.json</CardDescription>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button asChild className="w-full md:w-auto">
