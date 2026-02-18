@@ -76,6 +76,7 @@ export function AuditForm() {
     setIsClient(true);
   }, []);
   
+  // Aseguramos que defaultValues tenga cadenas vacías en lugar de undefined para evitar el error de "uncontrolled input"
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
     defaultValues: {
@@ -110,6 +111,7 @@ export function AuditForm() {
     },
   });
   
+  // Actualizar el nombre del auditor cuando el perfil esté disponible
   useEffect(() => {
     if (profile) {
         form.setValue('auditorName', profile.fullName || '');
@@ -139,6 +141,7 @@ export function AuditForm() {
         followUpDate: values.followUpDate || new Date().toISOString(),
       } as Audit;
 
+      // Guardado real en el archivo JSON del servidor
       const res = await saveAuditAction(auditData);
       
       if (res.success) {
@@ -157,6 +160,8 @@ export function AuditForm() {
 
   if (!isClient) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
+  const eventValue = form.watch('event');
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -167,7 +172,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Auditor</FormLabel>
-                <FormControl><Input {...field} disabled /></FormControl>
+                <FormControl><Input {...field} value={field.value || ''} disabled /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -178,7 +183,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Paciente</FormLabel>
-                <FormControl><Input placeholder="e.g., Juan Perez" {...field} /></FormControl>
+                <FormControl><Input placeholder="e.g., Juan Perez" {...field} value={field.value || ''} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -189,7 +194,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Documento</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
                   </FormControl>
@@ -207,7 +212,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Número de Documento</FormLabel>
-                <FormControl><Input type="text" {...field} /></FormControl>
+                <FormControl><Input type="text" {...field} value={field.value || ''} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -221,7 +226,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Evento</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione evento" /></SelectTrigger>
                   </FormControl>
@@ -239,7 +244,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Fecha de Seguimiento</FormLabel>
-                <FormControl><Input type="date" {...field} /></FormControl>
+                <FormControl><Input type="date" {...field} value={field.value || ''} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -253,7 +258,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Visita</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione tipo" /></SelectTrigger>
                   </FormControl>
@@ -273,7 +278,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Teléfono</FormLabel>
-                <FormControl><Input type="text" {...field} /></FormControl>
+                <FormControl><Input type="text" {...field} value={field.value || ''} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -287,7 +292,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Departamento</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
                   </FormControl>
@@ -305,7 +310,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Municipio</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
                   </FormControl>
@@ -323,7 +328,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Etnia</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
                   </FormControl>
@@ -343,7 +348,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Dirección</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
+                <FormControl><Input {...field} value={field.value || ''} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -355,7 +360,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Seguimiento</FormLabel>
-                <FormControl><Textarea {...field} rows={4}/></FormControl>
+                <FormControl><Textarea {...field} value={field.value || ''} rows={4}/></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -367,7 +372,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Conducta a Seguir</FormLabel>
-                <FormControl><Textarea {...field} rows={4}/></FormControl>
+                <FormControl><Textarea {...field} value={field.value || ''} rows={4}/></FormControl>
                 <FormMessage />
               </FormItem>
             )}
