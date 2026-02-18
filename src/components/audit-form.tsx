@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { Loader2 } from 'lucide-react';
-import { format, differenceInYears } from 'date-fns';
+import { differenceInYears } from 'date-fns';
 import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +51,18 @@ const eventTypes = [
 ];
 
 const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
+
+const municipalityOptions = [
+  "RIOHACHA", "MAICAO", "URIBIA", "MANAURE", "BARRANCAS", 
+  "DISTRACCION", "FONSECA", "HATONUEVO", "SAN JUAN DEL CESAR", 
+  "VILLANUEVA", "URUMITA", "LA JAGUA DEL PILAR", "VALLEDUPAR", 
+  "SANTA MARTA", "OTRO"
+];
+
+const ethnicityOptions = [
+  "WAYUU", "WIWA", "KOGUI", "ARHUACO", "KANKUAMO", 
+  "AFROCOLOMBIANO", "MESTIZO", "OTRO"
+];
 
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
@@ -100,7 +112,7 @@ export function AuditForm() {
   
   useEffect(() => {
     if (profile) {
-        form.setValue('auditorName', profile.fullName);
+        form.setValue('auditorName', profile.fullName || '');
     }
   }, [profile, form]);
 
@@ -275,7 +287,14 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Departamento</FormLabel>
-                <FormControl><Input placeholder="Cesar, Magdalena..." {...field} /></FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {departmentOptions.map(dept => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -286,7 +305,14 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Municipio</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {municipalityOptions.map(mun => <SelectItem key={mun} value={mun}>{mun}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -297,7 +323,14 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Etnia</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {ethnicityOptions.map(eth => <SelectItem key={eth} value={eth}>{eth}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
