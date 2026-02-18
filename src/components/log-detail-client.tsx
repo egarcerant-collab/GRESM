@@ -1,6 +1,7 @@
+
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -11,229 +12,88 @@ import {
 } from '@/components/ui/card';
 import type { Audit, UserProfile } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trash2, FileDown, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { getImageAsBase64Action } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format, isValid } from 'date-fns';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { useUser } from '@/firebase';
 import mockUsersData from '@/lib/data/users.json';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
-  // A value is considered missing if it's null, undefined, or an empty string.
-  // We explicitly allow 0 as a valid value for fields like age.
   const isValueMissing = value === null || value === undefined || value === '';
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 py-3">
       <div className="font-medium text-muted-foreground">{label}</div>
       <div className="md:col-span-2 text-foreground">
-        {isValueMissing ? (
-          <span className="text-sm font-medium text-destructive">No se proporcionó información</span>
-        ) : (
-          value
-        )}
+        {isValueMissing ? <span className="text-sm font-medium text-destructive">No se proporcionó</span> : value}
       </div>
     </div>
   );
 }
 
-function getVisitTypeBadgeVariant(visitType?: Audit['visitType']) {
-  switch (visitType) {
-    case 'PRIMERA VEZ':
-      return 'secondary';
-    case 'CIERRE DE CASO':
-      return 'default';
-    case 'Seguimiento':
-    default:
-      return 'outline';
-  }
-}
-
-// This function is now safe because we call it inside useEffect on the client
-function formatDateSafe(dateString: string | undefined, formatString: string): string | undefined {
-    if (!dateString) return undefined;
-    const date = new Date(dateString);
-    if (!isValid(date)) return 'Fecha no válida';
-    return format(date, formatString);
-}
-
-
-export default function LogDetailClient({ audit }: { audit: Audit }) {
-  const [isDeleting, setIsDeleting] = React.useState(false);
-  const [isDownloading, setIsDownloading] = React.useState(false);
-  const router = useRouter();
+export default function LogDetailClient({ audit: initialAudit }: { audit: Audit }) {
+  const [audit, setAudit] = useState<Audit>(initialAudit);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
-  const { profile: currentUserProfile, isUserLoading: isProfileLoading } = useUser();
-  const [password, setPassword] = React.useState('');
-  
-  const [formattedDates, setFormattedDates] = React.useState({
-    createdAtForHeader: '',
-    createdAt: '',
-    birthDate: '',
-  });
 
-  React.useEffect(() => {
-    // All date formatting happens here, on the client, after hydration.
-    // This prevents server/client mismatch due to timezones.
-    setFormattedDates({
-      createdAtForHeader: formatDateSafe(audit.createdAt, 'PPPp') || '',
-      createdAt: formatDateSafe(audit.createdAt, 'PPP') || '',
-      birthDate: formatDateSafe(audit.birthDate, 'PPP') || '',
-    });
-  }, [audit.createdAt, audit.birthDate]);
-
-  const handleDelete = () => {
-    // Deletion is handled on the main logs page now to simplify state management.
-    toast({
-      variant: 'destructive',
-      title: 'Función no disponible',
-      description: 'La eliminación se realiza desde la lista principal de registros.',
-    });
-    router.push('/logs');
-  };
+  useEffect(() => {
+    // Asegurarse de cargar la versión más reciente del almacenamiento local
+    const stored = localStorage.getItem('audit-data-storage');
+    if (stored) {
+      const allAudits = JSON.parse(stored);
+      const current = allAudits.find((a: Audit) => a.id === initialAudit.id);
+      if (current) setAudit(current);
+    }
+  }, [initialAudit.id]);
 
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
       const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGEN UNIFICADA.jpg');
-      
       const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;
-      
       await generateAuditPdf(audit, backgroundImage, auditorData as UserProfile | null);
-      
-      toast({
-        title: 'PDF Generado',
-        description: 'El informe de auditoría se ha descargado.',
-      });
+      toast({ title: 'PDF Generado' });
     } catch (error) {
-      console.error('Error generando el PDF:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error al generar PDF',
-        description: 'No se pudo generar el informe en PDF.',
-      });
+      toast({ variant: 'destructive', title: 'Error al generar PDF' });
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const onOpenChange = (open: boolean) => {
-    if (!open) {
-      setPassword('');
-    }
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const d = new Date(dateString);
+    return isValid(d) ? format(d, 'PPP') : 'Fecha no válida';
   };
-  
-  const showSpecialEventFields = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
-  const canDelete = !isProfileLoading && currentUserProfile?.role === 'admin';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" asChild>
-            <Link href="/logs">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Volver a los registros</span>
-            </Link>
+            <Link href="/logs"><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
-          <h1 className="font-headline text-2xl text-foreground">Detalles de Auditoría</h1>
+          <h1 className="font-headline text-2xl">Detalles de Auditoría</h1>
         </div>
-        
-        <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={isDownloading}>
-            {isDownloading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="mr-2 h-4 w-4" />
-            )}
-            Descargar PDF
-          </Button>
-        </div>
-
+        <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={isDownloading}>
+          {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+          Descargar PDF
+        </Button>
       </div>
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-xl">Auditoría ID: {audit.id}</CardTitle>
-          <CardDescription>
-            {formattedDates.createdAtForHeader ? `Registrado el ${formattedDates.createdAtForHeader}` : <span className="text-transparent">Cargando...</span>}
-          </CardDescription>
+          <CardTitle>Auditoría ID: {audit.id}</CardTitle>
+          <CardDescription>Registrado el {formatDate(audit.createdAt)}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="divide-y divide-border">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-              <div className="divide-y divide-border">
-                <DetailItem label="Auditor" value={audit.auditorName} />
-                <DetailItem label="Paciente" value={audit.patientName} />
-                <DetailItem label="Tipo de Documento" value={audit.documentType} />
-                <DetailItem label="Número de Documento" value={audit.documentNumber} />
-                 <DetailItem label="Fecha de Creación" value={formattedDates.createdAt || <span className="text-transparent">Cargando...</span>} />
-                <DetailItem label="Tipo de Visita" value={<Badge variant={getVisitTypeBadgeVariant(audit.visitType)} className="capitalize">{audit.visitType?.toLowerCase().replace('_', ' ') || 'N/A'}</Badge>} />
-              </div>
-               <div className="divide-y divide-border">
-                <DetailItem label="Evento" value={audit.event} />
-                <DetailItem label="Detalles del Evento" value={audit.eventDetails} />
-                {audit.event === 'Violencia de Género' && (
-                    <>
-                        <DetailItem label="Tipo de Violencia" value={audit.genderViolenceType} />
-                        <DetailItem label="Detalles Violencia" value={audit.genderViolenceTypeDetails} />
-                    </>
-                )}
-                <DetailItem label="Departamento" value={audit.department} />
-                <DetailItem label="Municipio" value={audit.municipality} />
-                <DetailItem label="Etnia" value={audit.ethnicity} />
-                <DetailItem label="Dirección" value={audit.address} />
-                <DetailItem label="Número de Teléfono" value={audit.phoneNumber} />
-              </div>
-            </div>
-
-            {showSpecialEventFields && (
-                <>
-                    <div className="pt-4">
-                        <h3 className="text-md font-semibold mt-4 mb-2 text-foreground">Información Adicional de Evento</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-                            <div className="divide-y divide-border">
-                                <DetailItem label="Fecha de Nacimiento" value={formattedDates.birthDate || <span className="text-transparent">Cargando...</span>} />
-                                <DetailItem label="Edad" value={audit.age} />
-                                <DetailItem label="Sexo" value={audit.sex} />
-                                <DetailItem label="Estado de Afiliación" value={audit.affiliationStatus} />
-                                <DetailItem label="Área" value={audit.area} />
-                                <DetailItem label="Asentamiento" value={audit.settlement} />
-                            </div>
-                            <div className="divide-y divide-border">
-                                <DetailItem label="Nacionalidad" value={audit.nationality} />
-                                <DetailItem label="IPS Primaria" value={audit.primaryHealthProvider} />
-                                <DetailItem label="Régimen" value={audit.regime} />
-                                <DetailItem label="UPGD o Prestador" value={audit.upgdProvider} />
-                                <DetailItem label="Tipo de Intervención" value={audit.followUpInterventionType} />
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            <div className="pt-4">
-              <DetailItem label="Notas de Seguimiento" value={<p className="whitespace-pre-wrap">{audit.followUpNotes}</p>} />
-            </div>
-            <div className="pt-4">
-              <DetailItem label="Conducta a Seguir" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
-            </div>
-          </div>
+        <CardContent className="divide-y">
+            <DetailItem label="Auditor" value={audit.auditorName} />
+            <DetailItem label="Paciente" value={audit.patientName} />
+            <DetailItem label="Documento" value={`${audit.documentType} - ${audit.documentNumber}`} />
+            <DetailItem label="Evento" value={audit.event} />
+            <DetailItem label="Seguimiento" value={<p className="whitespace-pre-wrap">{audit.followUpNotes}</p>} />
+            <DetailItem label="Conducta" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
         </CardContent>
       </Card>
     </div>

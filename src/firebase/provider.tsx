@@ -3,45 +3,18 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Firestore } from 'firebase/firestore';
+import { Auth } from 'firebase/auth';
 import type { UserProfile } from '@/lib/types';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-
-
-interface UserAuthState {
-  user: User | null;
-  profile: UserProfile | null;
-  isUserLoading: boolean;
-  userError: Error | null;
-}
+import mockUsers from '@/lib/data/users.json';
 
 export interface FirebaseContextState {
-  areServicesAvailable: boolean; 
-  firebaseApp: FirebaseApp | null;
-  firestore: Firestore | null;
-  auth: Auth | null;
-  user: User | null;
+  user: any | null;
   profile: UserProfile | null;
   isUserLoading: boolean;
   userError: Error | null;
-}
-
-export interface FirebaseServicesAndUser {
-  firebaseApp: FirebaseApp;
-  firestore: Firestore;
-  auth: Auth;
-  user: User | null;
-  profile: UserProfile | null;
-  isUserLoading: boolean;
-  userError: Error | null;
-}
-
-export interface UserHookResult {
-  user: User | null;
-  profile: UserProfile | null;
-  isUserLoading: boolean;
-  userError: Error | null;
+  login: (username: string) => void;
+  logout: () => void;
 }
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
@@ -53,153 +26,78 @@ interface FirebaseProviderProps {
   auth: Auth;
 }
 
-
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   children,
-  firebaseApp,
-  firestore,
-  auth,
 }) => {
-  const [userAuthState, setUserAuthState] = useState<UserAuthState>({
-    user: null,
+  const [userAuthState, setUserAuthState] = useState<{
+    profile: UserProfile | null;
+    isUserLoading: boolean;
+  }>({
     profile: null,
-    isUserLoading: true, 
-    userError: null,
+    isUserLoading: true,
   });
 
   useEffect(() => {
-    let active = true;
-
-    if (!auth) {
-      if (active) {
-        setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
+    // Verificar si hay una sesión guardada en el navegador
+    const savedUserUid = localStorage.getItem('audit-app-session');
+    if (savedUserUid) {
+      const foundProfile = (mockUsers as UserProfile[]).find(u => u.uid === savedUserUid);
+      if (foundProfile) {
+        setUserAuthState({ profile: foundProfile, isUserLoading: false });
+      } else {
+        setUserAuthState({ profile: null, isUserLoading: false });
       }
-      return;
+    } else {
+      setUserAuthState({ profile: null, isUserLoading: false });
     }
+  }, []);
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (firebaseUser) => {
-        if (!active) return;
+  const login = (username: string) => {
+    const foundProfile = (mockUsers as UserProfile[]).find(u => u.username === username);
+    if (foundProfile) {
+      localStorage.setItem('audit-app-session', foundProfile.uid);
+      setUserAuthState({ profile: foundProfile, isUserLoading: false });
+    }
+  };
 
-        if (firebaseUser) {
-          try {
-            const profileRef = doc(firestore, 'users', firebaseUser.uid);
-            const docSnap = await getDoc(profileRef);
-            
-            if (!active) return;
-            
-            const userProfile = docSnap.exists() ? docSnap.data() as UserProfile : null;
-            
-            // Perfil por defecto garantizado para evitar bloqueos
-            const finalProfile: UserProfile = userProfile || {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || 'usuario@dusakawi.audit.app',
-                username: 'auditor_demo',
-                fullName: 'Usuario Autorizado',
-                role: 'admin',
-                cargo: 'Auditor de Riesgo',
-            };
-            
-            setUserAuthState({ user: firebaseUser, profile: finalProfile, isUserLoading: false, userError: null });
-          } catch (error) {
-            if (!active) return;
-            // Si falla Firestore, permitimos el acceso con perfil local
-            const mockProfile: UserProfile = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                username: 'usuario_offline',
-                fullName: 'Auditor del Sistema',
-                role: 'admin',
-                cargo: 'Gestor de Riesgo',
-            };
-            setUserAuthState({ user: firebaseUser, profile: mockProfile, isUserLoading: false, userError: null });
-          }
-        } else {
-          if (active) {
-            setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: null });
-          }
-        }
-      },
-      (error) => {
-        if (!active) return;
-        setUserAuthState({ user: null, profile: null, isUserLoading: false, userError: error });
-      }
-    );
-    
-    return () => {
-      active = false;
-      unsubscribe();
-    };
-  }, [auth, firestore]);
+  const logout = () => {
+    localStorage.removeItem('audit-app-session');
+    setUserAuthState({ profile: null, isUserLoading: false });
+  };
 
-  const contextValue = useMemo((): FirebaseContextState => {
-    const servicesAvailable = !!(firebaseApp && firestore && auth);
-    return {
-      areServicesAvailable: servicesAvailable,
-      firebaseApp: servicesAvailable ? firebaseApp : null,
-      firestore: servicesAvailable ? firestore : null,
-      auth: servicesAvailable ? auth : null,
-      user: userAuthState.user,
-      profile: userAuthState.profile,
-      isUserLoading: userAuthState.isUserLoading,
-      userError: userAuthState.userError,
-    };
-  }, [firebaseApp, firestore, auth, userAuthState]);
+  const contextValue = useMemo(() => ({
+    user: userAuthState.profile ? { uid: userAuthState.profile.uid } : null,
+    profile: userAuthState.profile,
+    isUserLoading: userAuthState.isUserLoading,
+    userError: null,
+    login,
+    logout,
+  }), [userAuthState]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      <FirebaseErrorListener />
       {children}
     </FirebaseContext.Provider>
   );
 };
 
-export const useFirebase = (): FirebaseServicesAndUser => {
+export const useFirebase = () => {
   const context = useContext(FirebaseContext);
-
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
-
-  return {
-    firebaseApp: context.firebaseApp!,
-    firestore: context.firestore!,
-    auth: context.auth!,
-    user: context.user,
-    profile: context.profile,
-    isUserLoading: context.isUserLoading,
-    userError: context.userError,
-  };
+  return context;
 };
 
-export const useAuth = (): Auth => {
-  const { auth } = useFirebase();
-  return auth;
+export const useUser = () => {
+  const { user, profile, isUserLoading, userError, login, logout } = useFirebase();
+  return { user, profile, isUserLoading, userError, login, logout };
 };
 
-export const useFirestore = (): Firestore => {
-  const { firestore } = useFirebase();
-  return firestore;
-};
+export const useFirestore = () => ({});
+export const useAuth = () => ({});
+export const useFirebaseApp = () => ({});
 
-export const useFirebaseApp = (): FirebaseApp => {
-  const { firebaseApp } = useFirebase();
-  return firebaseApp;
-};
-
-type MemoFirebase <T> = T & {__memo?: boolean};
-
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
-  const memoized = useMemo(factory, deps);
-  
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
-  
-  return memoized;
+export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
+  return useMemo(factory, deps);
 }
-
-export const useUser = (): UserHookResult => {
-  const { user, profile, isUserLoading, userError } = useFirebase();
-  return { user, profile, isUserLoading, userError };
-};

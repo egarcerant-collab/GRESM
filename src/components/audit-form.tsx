@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,11 +29,9 @@ import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
-import { useUser, useFirestore, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import type { UserProfile, Audit } from '@/lib/types';
+import { useUser } from '@/firebase';
+import type { Audit } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { collection } from 'firebase/firestore';
-
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -63,24 +61,6 @@ const genderViolenceTypes = [
 ];
 
 const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
-const ethnicityOptions = [
-  "YUKPA",
-  "ARHUACO",
-  "WIWA",
-  "CHIMILA",
-  "KANKUAMO",
-  "WAYUU",
-  "ZENU",
-  "INGA",
-  "SIN ETNIA",
-  "INDIGENA",
-];
-
-const upgdProviderOptions = [
-    "UNIPSSAM IPS | Especialistas en Salud Mental",
-    "IPS Vital Salud Guajira S.A.S.",
-    "Insecar - Instituto Neuropsiquiatrico Nuestra Señora del Carmen"
-];
 
 const municipalitiesByDepartment: Record<string, string[]> = {
   CESAR: [
@@ -105,12 +85,23 @@ const municipalitiesByDepartment: Record<string, string[]> = {
   ],
 };
 
+const ethnicityOptions = [
+  "YUKPA",
+  "ARHUACO",
+  "WIWA",
+  "CHIMILA",
+  "KANKUAMO",
+  "WAYUU",
+  "ZENU",
+  "INGA",
+  "SIN ETNIA",
+  "INDIGENA",
+];
 
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const { user, profile } = useUser();
-  const firestore = useFirestore();
+  const { profile } = useUser();
   const router = useRouter();
 
   const [isClient, setIsClient] = useState(false);
@@ -125,8 +116,6 @@ export function AuditForm() {
   const [municipalitySelection, setMunicipalitySelection] = useState<string>('');
   const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
   const [ethnicitySelection, setEthnicitySelection] = useState<string>('');
-  const [upgdProviderSelection, setUpgdProviderSelection] = useState<string>('');
-  const [genderViolenceTypeSelection, setGenderViolenceTypeSelection] = useState<string>('');
 
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
@@ -173,19 +162,13 @@ export function AuditForm() {
   const isOtherDepartment = departmentSelection === 'Otro';
   const isOtherMunicipality = municipalitySelection === 'Otro';
   const isOtherEthnicity = ethnicitySelection === 'Otro';
-  const isOtherUpgdProvider = upgdProviderSelection === 'Otro';
   const showSpecialEventFields = eventSelection === 'Intento de Suicidio' || eventSelection === 'Consumo de Sustancia Psicoactivas';
   const isGenderViolenceEvent = eventSelection === 'Violencia de Género';
-  const isOtherGenderViolenceType = genderViolenceTypeSelection === 'otros';
-
 
   useEffect(() => {
     if (departmentSelection && departmentSelection !== 'Otro') {
       form.setValue('department', departmentSelection);
       setAvailableMunicipalities(municipalitiesByDepartment[departmentSelection] || []);
-    } else if (departmentSelection !== 'Otro') {
-      setAvailableMunicipalities([]);
-      form.setValue('department', '');
     }
     form.setValue('municipality', '');
     setMunicipalitySelection('');
@@ -204,18 +187,6 @@ export function AuditForm() {
   }, [ethnicitySelection, form]);
 
   useEffect(() => {
-    if (upgdProviderSelection && upgdProviderSelection !== 'Otro') {
-      form.setValue('upgdProvider', upgdProviderSelection);
-    }
-  }, [upgdProviderSelection, form]);
-
-  useEffect(() => {
-    if (genderViolenceTypeSelection && genderViolenceTypeSelection !== 'otros') {
-        form.setValue('genderViolenceType', genderViolenceTypeSelection);
-    }
-  }, [genderViolenceTypeSelection, form]);
-
-  useEffect(() => {
     if (birthDateValue) {
       try {
         const age = differenceInYears(new Date(), new Date(`${birthDateValue}T00:00:00`));
@@ -226,23 +197,25 @@ export function AuditForm() {
     }
   }, [birthDateValue, form]);
 
-  const auditsCollection = useMemoFirebase(() => collection(firestore, 'audits'), [firestore]);
-
   function onSubmit(values: z.infer<typeof auditSchema>) {
     startTransition(async () => {
       try {
-        const auditData = {
+        const auditData: Audit = {
           ...values,
-          auditorId: user?.uid || 'anonymous',
+          id: `AUD-${Date.now()}`,
+          auditorId: profile?.uid || 'anonymous',
           createdAt: new Date().toISOString(),
           followUpDate: values.followUpDate || new Date().toISOString(),
-        };
+        } as Audit;
 
-        addDocumentNonBlocking(auditsCollection, auditData);
+        // GUARDADO PERDURANTE EN LOCALSTORAGE
+        const existingAudits = JSON.parse(localStorage.getItem('audit-data-storage') || '[]');
+        existingAudits.push(auditData);
+        localStorage.setItem('audit-data-storage', JSON.stringify(existingAudits));
 
         toast({
             title: 'Auditoría Guardada',
-            description: 'El nuevo registro ha sido guardado permanentemente en la base de datos.',
+            description: 'El registro se ha guardado permanentemente en tu navegador.',
         });
         form.reset();
         router.push('/logs');
@@ -250,7 +223,7 @@ export function AuditForm() {
         toast({
           variant: 'destructive',
           title: 'Error al Guardar',
-          description: 'No se pudo guardar la auditoría. Verifique su conexión.',
+          description: 'Ocurrió un error inesperado.',
         });
       }
     });
@@ -266,9 +239,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Auditor</FormLabel>
-                <FormControl>
-                    <Input {...field} disabled />
-                </FormControl>
+                <FormControl><Input {...field} disabled /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -279,9 +250,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Paciente</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Cristhian Bello Diaz" {...field} />
-                </FormControl>
+                <FormControl><Input placeholder="e.g., Juan Perez" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -294,9 +263,7 @@ export function AuditForm() {
                 <FormLabel>Tipo de Documento</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un tipo de documento" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {documentTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
@@ -312,9 +279,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Número de Documento</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="e.g., 1006895977" {...field} />
-                </FormControl>
+                <FormControl><Input type="number" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -327,9 +292,7 @@ export function AuditForm() {
                 <FormLabel>Evento</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un evento" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Seleccione evento" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {eventTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
@@ -339,114 +302,24 @@ export function AuditForm() {
               </FormItem>
             )}
           />
-           {isOtherEvent && (
-            <FormField
-              control={form.control}
-              name="eventDetails"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Especifique el Evento</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., SPA" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-          {isGenderViolenceEvent && (
-            <div className="md:col-span-2 grid md:grid-cols-2 gap-8 -mt-4">
-                <FormField
-                    control={form.control}
-                    name="genderViolenceType"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Tipo de Violencia de Género</FormLabel>
-                            <Select onValueChange={(value) => { field.onChange(value); setGenderViolenceTypeSelection(value); }} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleccione un tipo de violencia" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {genderViolenceTypes.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                {isOtherGenderViolenceType && (
-                    <FormField
-                        control={form.control}
-                        name="genderViolenceTypeDetails"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Especifique Otro Tipo</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Especifique otro tipo" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )}
-            </div>
-          )}
-           <FormField
+          
+          <FormField
             control={form.control}
             name="followUpDate"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Fecha de Seguimiento</FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    value={field.value || ''}
-                    onChange={(e) => field.onChange(e.target.value)}
-                  />
-                </FormControl>
+                <FormControl><Input type="date" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="visitType"
-            render={({ field }) => (
-              <FormItem className="space-y-3">
-                <FormLabel>Tipo de Visita</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    className="flex flex-wrap gap-x-4 gap-y-2 pt-2"
-                  >
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl><RadioGroupItem value="PRIMERA VEZ" /></FormControl>
-                      <FormLabel className="font-normal">Primera Vez</FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl><RadioGroupItem value="Seguimiento" /></FormControl>
-                      <FormLabel className="font-normal">Seguimiento</FormLabel>
-                    </FormItem>
-                    <FormItem className="flex items-center space-x-3 space-y-0">
-                      <FormControl><RadioGroupItem value="CIERRE DE CASO" /></FormControl>
-                      <FormLabel className="font-normal">Cierre de caso</FormLabel>
-                    </FormItem>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
+
+          <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
             <FormItem>
               <FormLabel>Departamento</FormLabel>
               <Select onValueChange={setDepartmentSelection} value={departmentSelection}>
-                <FormControl>
-                  <SelectTrigger><SelectValue placeholder="Seleccione un departamento" /></SelectTrigger>
-                </FormControl>
+                <FormControl><SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger></FormControl>
                 <SelectContent>
                   {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
                   <SelectItem value="Otro">Otro</SelectItem>
@@ -459,40 +332,8 @@ export function AuditForm() {
                 name="department"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Especifique el Departamento</FormLabel>
-                    <FormControl><Input placeholder="e.g., Cundinamarca" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </div>
-          
-           <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
-            {availableMunicipalities.length > 0 && !isOtherDepartment ? (
-              <FormItem>
-                <FormLabel>Municipio</FormLabel>
-                <Select onValueChange={setMunicipalitySelection} value={municipalitySelection}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Seleccione un municipio" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {availableMunicipalities.map(muni => <SelectItem key={muni} value={muni}>{muni}</SelectItem>)}
-                    <SelectItem value="Otro">Otro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            ) : (
-               !isOtherDepartment && <div /> 
-            )}
-             {(isOtherMunicipality || isOtherDepartment) && (
-              <FormField
-                control={form.control}
-                name="municipality"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Especifique el Municipio</FormLabel>
-                    <FormControl><Input placeholder="e.g., BOGOTA" {...field} /></FormControl>
+                    <FormLabel>Especifique</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -500,40 +341,13 @@ export function AuditForm() {
             )}
           </div>
 
-          <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
-            <FormItem>
-              <FormLabel>Etnia</FormLabel>
-              <Select onValueChange={setEthnicitySelection} value={ethnicitySelection}>
-                <FormControl>
-                  <SelectTrigger><SelectValue placeholder="Seleccione una etnia" /></SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {ethnicityOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                   <SelectItem value="Otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-            {isOtherEthnicity && (
-              <FormField
-                control={form.control}
-                name="ethnicity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Especifique la Etnia</FormLabel>
-                    <FormControl><Input placeholder="e.g., MESTIZO" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </div>
           <FormField
             control={form.control}
             name="address"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Dirección</FormLabel>
-                <FormControl><Input placeholder="e.g., OVIDIO MEJIA CALLE 36" {...field} /></FormControl>
+                <FormControl><Input {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -543,65 +357,13 @@ export function AuditForm() {
             name="phoneNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Número Telefónico</FormLabel>
-                <FormControl><Input type="number" placeholder="e.g., 3215402336" {...field} /></FormControl>
+                <FormLabel>Teléfono</FormLabel>
+                <FormControl><Input type="number" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        {showSpecialEventFields && (
-          <>
-            <Separator />
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-foreground">Información Adicional de Evento</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <FormField
-                  control={form.control}
-                  name="birthDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha de Nacimiento</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          value={field.value || ''}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          max={isClient ? maxBirthDate : undefined}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField control={form.control} name="age" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Edad</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField control={form.control} name="sex" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sexo</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="Masculino">Masculino</SelectItem>
-                          <SelectItem value="Femenino">Femenino</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-            <Separator />
-          </>
-        )}
 
         <FormField
             control={form.control}
@@ -609,7 +371,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Seguimiento</FormLabel>
-                <FormControl><Textarea placeholder="Describa el seguimiento..." {...field} rows={6}/></FormControl>
+                <FormControl><Textarea {...field} rows={4}/></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -621,7 +383,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Conducta a Seguir</FormLabel>
-                <FormControl><Textarea placeholder="Describa la conducta..." {...field} rows={4}/></FormControl>
+                <FormControl><Textarea {...field} rows={4}/></FormControl>
                 <FormMessage />
               </FormItem>
             )}

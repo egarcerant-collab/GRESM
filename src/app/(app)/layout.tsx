@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/sidebar";
 import { ShieldCheck } from 'lucide-react';
 import React from 'react';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthGuard } from '@/components/auth-guard';
 
 function AuthenticatedLayout({
@@ -44,10 +43,8 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <FirebaseClientProvider>
-      <AuthGuard>
-        <AuthenticatedLayout>{children}</AuthenticatedLayout>
-      </AuthGuard>
-    </FirebaseClientProvider>
+    <AuthGuard>
+      <AuthenticatedLayout>{children}</AuthenticatedLayout>
+    </AuthGuard>
   )
 }

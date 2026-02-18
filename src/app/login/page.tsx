@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import React, { useTransition } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { FirebaseClientProvider, useAuth } from '@/firebase';
+import { useUser } from '@/firebase';
 import {
   Card,
   CardContent,
@@ -29,13 +28,12 @@ import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import mockUsers from '@/lib/data/users.json';
-import { signInAnonymously } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 
 function LoginPageContent() {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const auth = useAuth();
+  const { login } = useUser();
   const { toast } = useToast();
 
   const users = mockUsers as UserProfile[];
@@ -50,24 +48,21 @@ function LoginPageContent() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     startTransition(async () => {
-      try {
-        // Iniciamos sesión de forma real en Firebase Auth
-        const userCredential = await signInAnonymously(auth);
-        
-        if (userCredential.user) {
-          toast({
-            title: "Acceso Exitoso",
-            description: "Bienvenido al sistema de auditoría.",
-          });
-          // Redirección inmediata tras el éxito
-          router.replace('/dashboard');
-        }
-      } catch (e: any) {
-        console.error('Error al iniciar sesión:', e);
+      // Validamos contra el archivo JSON local y una contraseña fija para simplificar
+      const foundUser = users.find(u => u.username === values.username);
+      
+      if (foundUser && values.password === '123456') {
+        login(values.username);
+        toast({
+          title: "Acceso Exitoso",
+          description: `Bienvenido, ${foundUser.fullName || foundUser.username}`,
+        });
+        router.push('/dashboard');
+      } else {
         toast({
           variant: "destructive",
           title: "Error de Acceso",
-          description: "No se pudo conectar con el servidor de seguridad. Intente de nuevo.",
+          description: "Usuario o contraseña incorrectos.",
         });
       }
     });
@@ -86,7 +81,7 @@ function LoginPageContent() {
             Acceder al Sistema
           </CardTitle>
           <CardDescription>
-            Selecciona tu usuario e introduce tu contraseña.
+            Selecciona tu usuario de la lista e ingresa la contraseña.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,12 +96,11 @@ function LoginPageContent() {
                     <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                             <SelectTrigger>
-                            <SelectValue placeholder="Seleccione un usuario" />
+                            <SelectValue placeholder="Seleccione su usuario" />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="admin">Administrador (admin)</SelectItem>
-                            {users && users.filter(u => u && u.username && u.username !== 'admin').map(user => (
+                            {users.map(user => (
                                 <SelectItem key={user.uid} value={user.username}>
                                     {user.fullName || user.username}
                                 </SelectItem>
@@ -124,7 +118,7 @@ function LoginPageContent() {
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Introduce tu contraseña" {...field} />
+                      <Input type="password" placeholder="Ingrese su contraseña" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -137,15 +131,11 @@ function LoginPageContent() {
           </Form>
         </CardContent>
       </Card>
-      <p className="mt-8 text-sm text-muted-foreground">Dusakawi EPSI - Gestión de Riesgo en Salud Mental</p>
+      <p className="mt-8 text-sm text-muted-foreground">Dusakawi EPSI - Gestión de Riesgo</p>
     </div>
   );
 }
 
 export default function LoginPage() {
-  return (
-    <FirebaseClientProvider>
-      <LoginPageContent />
-    </FirebaseClientProvider>
-  );
+  return <LoginPageContent />;
 }
