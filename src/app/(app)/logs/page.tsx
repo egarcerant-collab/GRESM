@@ -36,7 +36,7 @@ import {
 
 const JSZip = require('jszip');
 
-const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+const years = Array.from({ length: 6 }, (_, i) => 2026 - i);
 const months = [
   { value: 'all', label: 'Todos los Meses' },
   { value: '0', label: 'Enero' },
@@ -70,14 +70,24 @@ export default function LogsPage() {
         const data = await getAuditsAction();
         setAudits(data);
         
-        // Si hay auditorías pero ninguna en el año actual, cambiar al año de la auditoría más reciente
         if (data.length > 0) {
           const currentYear = new Date().getFullYear().toString();
-          const hasDataForCurrentYear = data.some(a => new Date(a.createdAt).getFullYear().toString() === currentYear);
+          const hasDataForCurrentYear = data.some(a => {
+            const date = new Date(a.createdAt);
+            return !isNaN(date.getTime()) && date.getFullYear().toString() === currentYear;
+          });
           
           if (!hasDataForCurrentYear) {
-            const latestYear = new Date(data[data.length - 1].createdAt).getFullYear().toString();
-            setSelectedYear(latestYear);
+            // Si no hay datos este año, buscamos el año más reciente en los datos
+            const latestYearInDate = data.reduce((latest, audit) => {
+              const date = new Date(audit.createdAt);
+              const year = isNaN(date.getTime()) ? 0 : date.getFullYear();
+              return year > latest ? year : latest;
+            }, 0);
+            
+            if (latestYearInDate !== 0) {
+              setSelectedYear(latestYearInDate.toString());
+            }
           }
         }
       } catch (error) {
@@ -102,6 +112,7 @@ export default function LogsPage() {
   const filteredAudits = useMemo(() => {
     return audits.filter((audit) => {
       const auditDate = new Date(audit.createdAt);
+      if (isNaN(auditDate.getTime())) return false;
       const yearMatch = auditDate.getFullYear().toString() === selectedYear;
       const monthMatch = selectedMonth === 'all' || auditDate.getMonth().toString() === selectedMonth;
       return yearMatch && monthMatch;
@@ -143,7 +154,7 @@ export default function LogsPage() {
       <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           <CardTitle className="font-headline text-2xl">Registro de Auditoría</CardTitle>
-          <CardDescription>Datos cargados desde public/data/audits.json</CardDescription>
+          <CardDescription>Visualización de registros almacenados en el servidor.</CardDescription>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button asChild className="w-full md:w-auto">
@@ -159,9 +170,9 @@ export default function LogsPage() {
       <CardContent>
         <Accordion type="single" collapsible className="w-full mb-4 border rounded-lg px-4">
           <AccordionItem value="item-1">
-            <AccordionTrigger>Ver JSON de Auditorías (Archivo Real)</AccordionTrigger>
+            <AccordionTrigger>Ver JSON de Auditorías (Datos del Servidor)</AccordionTrigger>
             <AccordionContent>
-              <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto">
+              <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto max-h-[400px]">
                 {JSON.stringify(audits, null, 2)}
               </pre>
             </AccordionContent>
