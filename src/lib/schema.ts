@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const loginSchema = z.object({
@@ -18,8 +17,10 @@ export const auditSchema = z.object({
   followUpDate: z.string({ required_error: 'La fecha de seguimiento es requerida.' }),
   visitType: z.enum(['PRIMERA VEZ', 'Seguimiento', 'CIERRE DE CASO'], { required_error: 'Seleccione el tipo de visita.' }),
   department: z.string().min(2, { message: 'El departamento es requerido.' }),
+  otherDepartment: z.string().optional(),
   municipality: z.string().min(2, { message: 'El municipio es requerido.' }),
   ethnicity: z.string().min(2, { message: 'La etnia es requerida.' }),
+  otherEthnicity: z.string().optional(),
   address: z.string().min(5, { message: 'La dirección es requerida.' }),
   phoneNumber: z.string().min(7, { message: 'El número de teléfono es requerido.' }).regex(/^[0-9]+$/, "Solo se permiten números."),
   followUpNotes: z.string().min(10, { message: 'Las notas de seguimiento son requeridas.' }),
@@ -55,7 +56,7 @@ export const auditSchema = z.object({
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La fecha de nacimiento es requerida.', path: ['birthDate'] });
         }
         if (data.age === undefined) {
-             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La edad es requerida y se calcula de la fecha de nacimiento.', path: ['age'] });
+             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La edad es requerida.', path: ['age'] });
         }
         if (!data.sex) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El sexo es requerido.', path: ['sex'] });
@@ -79,28 +80,20 @@ export const auditSchema = z.object({
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El régimen es requerido.', path: ['regime'] });
         }
         if (!data.upgdProvider || data.upgdProvider.length === 0) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre UPGD o Prestador es requerido.', path: ['upgdProvider'] });
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre UPGD es requerido.', path: ['upgdProvider'] });
         }
         if (!data.followUpInterventionType || data.followUpInterventionType.length === 0) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El tipo de intervención es requerido.', path: ['followUpInterventionType'] });
         }
     }
-}).refine(data => {
-    if (data.event === 'Violencia de Género') {
-        return !!data.genderViolenceType && data.genderViolenceType.length > 0;
+    
+    if (data.department === 'OTRO' && (!data.otherDepartment || data.otherDepartment.length < 2)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Especifique el departamento.', path: ['otherDepartment'] });
     }
-    return true;
-}, {
-    message: 'El tipo de violencia es requerido.',
-    path: ['genderViolenceType'],
-}).refine(data => {
-    if (data.event === 'Violencia de Género' && data.genderViolenceType === 'otros') {
-        return !!data.genderViolenceTypeDetails && data.genderViolenceTypeDetails.length > 1;
+    
+    if (data.ethnicity === 'OTRO' && (!data.otherEthnicity || data.otherEthnicity.length < 2)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Especifique la etnia.', path: ['otherEthnicity'] });
     }
-    return true;
-}, {
-    message: 'Especifique el tipo de violencia.',
-    path: ['genderViolenceTypeDetails'],
 });
 
 export const userSchema = z.object({
@@ -111,5 +104,3 @@ export const userSchema = z.object({
   role: z.enum(['admin', 'user']),
   signature: z.string().optional(),
 });
-
-    

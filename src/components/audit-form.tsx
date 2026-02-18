@@ -11,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { auditSchema } from '@/lib/schema';
@@ -50,17 +51,18 @@ const eventTypes = [
   "Otro"
 ];
 
-const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
+const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA", "OTRO"];
 
 const MUNICIPALITIES_BY_DEPT: Record<string, string[]> = {
   "LA GUAJIRA": ["RIOHACHA", "MAICAO", "URIBIA", "MANAURE", "BARRANCAS", "DISTRACCION", "FONSECA", "HATONUEVO", "SAN JUAN DEL CESAR", "VILLANUEVA", "URUMITA", "LA JAGUA DEL PILAR", "OTRO"],
   "CESAR": ["VALLEDUPAR", "OTRO"],
-  "MAGDALENA": ["SANTA MARTA", "OTRO"]
+  "MAGDALENA": ["SANTA MARTA", "OTRO"],
+  "OTRO": ["OTRO"]
 };
 
 const ethnicityOptions = [
   "WAYUU", "WIWA", "KOGUI", "ARHUACO", "KANKUAMO", 
-  "AFROCOLOMBIANO", "MESTIZO", "OTRO"
+  "AFROCOLOMBIANO", "MESTIZO", "SIN ETNIA", "OTRO"
 ];
 
 export function AuditForm() {
@@ -85,8 +87,10 @@ export function AuditForm() {
       eventDetails: '',
       followUpDate: '',
       department: '',
+      otherDepartment: '',
       municipality: '',
       ethnicity: '',
+      otherEthnicity: '',
       address: '',
       phoneNumber: '',
       followUpNotes: '',
@@ -115,11 +119,12 @@ export function AuditForm() {
   }, [profile, form]);
 
   const selectedDepartment = form.watch('department');
+  const selectedEthnicity = form.watch('ethnicity');
   const birthDateValue = form.watch('birthDate');
 
   const municipalityOptions = useMemo(() => {
     if (!selectedDepartment) return [];
-    return MUNICIPALITIES_BY_DEPT[selectedDepartment] || [];
+    return MUNICIPALITIES_BY_DEPT[selectedDepartment] || ["OTRO"];
   }, [selectedDepartment]);
 
   useEffect(() => {
@@ -135,12 +140,18 @@ export function AuditForm() {
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
     startTransition(async () => {
+      // Si seleccionó OTRO, usamos el valor del campo de texto
+      const finalDepartment = values.department === 'OTRO' ? values.otherDepartment : values.department;
+      const finalEthnicity = values.ethnicity === 'OTRO' ? values.otherEthnicity : values.ethnicity;
+
       const auditData: Audit = {
         ...values,
         id: `AUD-${Date.now()}`,
         auditorId: profile?.uid || 'anonymous',
         createdAt: new Date().toISOString(),
         followUpDate: values.followUpDate || new Date().toISOString(),
+        department: finalDepartment,
+        ethnicity: finalEthnicity,
       } as Audit;
 
       const res = await saveAuditAction(auditData);
@@ -153,7 +164,7 @@ export function AuditForm() {
         toast({
           variant: 'destructive',
           title: 'Error al Guardar',
-          description: res.error || 'Ocurrió un error inesperado al escribir en el archivo JSON.',
+          description: res.error || 'Ocurrió un error inesperado.',
         });
       }
     });
@@ -182,7 +193,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del Paciente</FormLabel>
-                <FormControl><Input placeholder="e.g., Juan Perez" {...field} value={field.value || ''} /></FormControl>
+                <FormControl><Input placeholder="Ej. Juan Pérez" {...field} value={field.value || ''} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -284,7 +295,7 @@ export function AuditForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField
             control={form.control}
             name="department"
@@ -306,6 +317,19 @@ export function AuditForm() {
               </FormItem>
             )}
           />
+          {selectedDepartment === 'OTRO' && (
+            <FormField
+              control={form.control}
+              name="otherDepartment"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especifique Departamento</FormLabel>
+                  <FormControl><Input placeholder="Ingrese el departamento" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="municipality"
@@ -324,6 +348,9 @@ export function AuditForm() {
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField
             control={form.control}
             name="ethnicity"
@@ -342,6 +369,19 @@ export function AuditForm() {
               </FormItem>
             )}
           />
+          {selectedEthnicity === 'OTRO' && (
+            <FormField
+              control={form.control}
+              name="otherEthnicity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especifique Etnia</FormLabel>
+                  <FormControl><Input placeholder="Ingrese la etnia" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         <FormField
