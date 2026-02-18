@@ -27,10 +27,10 @@ import { differenceInYears } from 'date-fns';
 import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import type { Audit } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { saveAuditAction } from '@/app/actions';
+import { collection, doc, setDoc } from 'firebase/firestore';
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -95,6 +95,7 @@ export function AuditForm() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { profile } = useUser();
+  const db = useFirestore();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   
@@ -171,13 +172,16 @@ export function AuditForm() {
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
     startTransition(async () => {
+      if (!db) return;
+
       const finalDepartment = values.department === 'OTRO' ? values.otherDepartment : values.department;
       const finalMunicipality = values.municipality === 'OTRO' ? values.otherMunicipality : values.municipality;
       const finalEthnicity = values.ethnicity === 'OTRO' ? values.otherEthnicity : values.ethnicity;
 
+      const auditId = `AUD-${Date.now()}`;
       const auditData: Audit = {
         ...values,
-        id: `AUD-${Date.now()}`,
+        id: auditId,
         auditorId: profile?.uid || 'anonymous',
         createdAt: new Date().toISOString(),
         followUpDate: values.followUpDate || new Date().toISOString(),
@@ -186,17 +190,20 @@ export function AuditForm() {
         ethnicity: finalEthnicity || '',
       } as Audit;
 
-      const res = await saveAuditAction(auditData);
-      
-      if (res.success) {
-        toast({ title: 'Auditoría Guardada Exitosamente' });
+      try {
+        // Guardado directo en Firestore
+        const auditRef = doc(db, 'audits', auditId);
+        await setDoc(auditRef, auditData);
+        
+        toast({ title: 'Auditoría Guardada Exitosamente en la Nube' });
         form.reset();
         router.push('/logs');
-      } else {
+      } catch (error: any) {
+        console.error("Error saving to Firestore:", error);
         toast({
           variant: 'destructive',
           title: 'Error al Guardar',
-          description: res.error || 'Ocurrió un error inesperado.',
+          description: error.message || 'Ocurrió un error al intentar guardar en la nube.',
         });
       }
     });
@@ -293,10 +300,9 @@ export function AuditForm() {
           />
         </div>
 
-        {/* CAMPOS CONDICIONALES PARA EVENTOS ESPECIALES */}
         {showSpecialFields && (
-          <div className="p-6 bg-muted/30 rounded-lg border-2 border-dashed border-primary/20 space-y-6">
-            <h3 className="font-semibold text-primary">Información Adicional Obligatoria</h3>
+          <div className="p-6 bg-primary/5 rounded-lg border-2 border-dashed border-primary/20 space-y-6">
+            <h3 className="font-semibold text-primary text-lg">Información Adicional Obligatoria</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField
                 control={form.control}
@@ -304,7 +310,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fecha de Nacimiento</FormLabel>
-                    <FormControl><Input type="date" {...field} /></FormControl>
+                    <FormControl><Input type="date" {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -326,7 +332,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sexo</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Sexo" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="Masculino">Masculino</SelectItem>
@@ -346,7 +352,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Estado de Afiliación</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="Activa">Activa</SelectItem>
@@ -363,7 +369,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Área</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="Urbano">Urbano</SelectItem>
@@ -383,7 +389,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Asentamiento / Barrio</FormLabel>
-                    <FormControl><Input placeholder="Ej. Barrio El Centro" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Ej. Barrio El Centro" {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -394,7 +400,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nacionalidad</FormLabel>
-                    <FormControl><Input placeholder="Ej. Colombiana" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Ej. Colombiana" {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -408,7 +414,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>IPS Atención Primaria</FormLabel>
-                    <FormControl><Input placeholder="Nombre de la IPS" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Nombre de la IPS" {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -419,7 +425,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Régimen</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Régimen" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="Subsidiado">Subsidiado</SelectItem>
@@ -439,7 +445,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nombre UPGD o Prestador</FormLabel>
-                    <FormControl><Input placeholder="Nombre del prestador" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Nombre del prestador" {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -450,7 +456,7 @@ export function AuditForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Intervención</FormLabel>
-                    <FormControl><Input placeholder="Hospitalización, Psiquiatría, etc." {...field} /></FormControl>
+                    <FormControl><Input placeholder="Hospitalización, Psiquiatría, etc." {...field} value={field.value || ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -523,7 +529,7 @@ export function AuditForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Especifique Departamento</FormLabel>
-                  <FormControl><Input placeholder="Ingrese el departamento" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Ingrese el departamento" {...field} value={field.value || ''} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -554,7 +560,7 @@ export function AuditForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Especifique Municipio</FormLabel>
-                  <FormControl><Input placeholder="Ingrese el municipio" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Ingrese el municipio" {...field} value={field.value || ''} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -588,7 +594,7 @@ export function AuditForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Especifique Etnia</FormLabel>
-                  <FormControl><Input placeholder="Ingrese la etnia" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Ingrese la etnia" {...field} value={field.value || ''} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}

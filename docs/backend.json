@@ -1,256 +1,51 @@
+
 {
   "entities": {
-    "AuditLog": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AuditLog",
+    "Audit": {
+      "title": "Audit",
       "type": "object",
-      "description": "Represents a record of an audit event.",
+      "description": "Represents an audit record stored in Firestore.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the audit log entry."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User who performed the audit. (Relationship: User 1:N AuditLog)"
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "Timestamp of when the audit event occurred.",
-          "format": "date-time"
-        },
-        "eventType": {
-          "type": "string",
-          "description": "Type of audit event (e.g., form creation, data update, report generation)."
-        },
-        "description": {
-          "type": "string",
-          "description": "Detailed description of the audit event."
-        },
-        "formId": {
-          "type": "string",
-          "description": "Reference to the Form that was audited. (Relationship: Form 1:N AuditLog)"
-        }
+        "id": { "type": "string" },
+        "auditorName": { "type": "string" },
+        "auditorId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "documentType": { "type": "string" },
+        "documentNumber": { "type": "string" },
+        "event": { "type": "string" },
+        "eventDetails": { "type": "string" },
+        "followUpDate": { "type": "string", "format": "date-time" },
+        "visitType": { "type": "string", "enum": ["PRIMERA VEZ", "Seguimiento", "CIERRE DE CASO"] },
+        "department": { "type": "string" },
+        "municipality": { "type": "string" },
+        "ethnicity": { "type": "string" },
+        "address": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "followUpNotes": { "type": "string" },
+        "nextSteps": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "birthDate": { "type": "string" },
+        "age": { "type": "number" },
+        "sex": { "type": "string" },
+        "affiliationStatus": { "type": "string" },
+        "area": { "type": "string" },
+        "settlement": { "type": "string" },
+        "nationality": { "type": "string" },
+        "primaryHealthProvider": { "type": "string" },
+        "regime": { "type": "string" },
+        "upgdProvider": { "type": "string" },
+        "followUpInterventionType": { "type": "string" }
       },
-      "required": [
-        "id",
-        "userId",
-        "timestamp",
-        "eventType",
-        "description"
-      ]
-    },
-    "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
-      "type": "object",
-      "description": "Represents a user of the Audit Logger application.",
-      "properties": {
-        "uid": {
-          "type": "string",
-          "description": "Unique identifier for the user (from Firebase Auth)."
-        },
-        "email": {
-          "type": "string",
-          "description": "User's email address.",
-          "format": "email"
-        },
-        "username": {
-          "type": "string",
-          "description": "The user's unique username for login."
-        },
-        "fullName": {
-          "type": "string",
-          "description": "The user's full name."
-        },
-        "role": {
-          "type": "string",
-          "description": "The user's role in the application.",
-          "enum": [
-            "admin",
-            "user"
-          ]
-        },
-        "cargo": {
-          "type": "string",
-          "description": "The user's job title or position."
-        },
-        "signature": {
-          "type": "string",
-          "description": "The user's signature as a base64 data URL.",
-          "format": "data-url"
-        }
-      },
-      "required": [
-        "uid",
-        "email",
-        "username",
-        "fullName",
-        "role",
-        "cargo"
-      ]
-    },
-    "Form": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Form",
-      "type": "object",
-      "description": "Represents an audit form.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the form."
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the audit form."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the purpose of the form."
-        },
-        "template": {
-          "type": "string",
-          "description": "Form template as JSON"
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "template"
-      ]
-    },
-    "AuditData": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "AuditData",
-      "type": "object",
-      "description": "Represents the data captured in a filled audit form.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the audit data."
-        },
-        "formId": {
-          "type": "string",
-          "description": "Reference to the Form. (Relationship: Form 1:N AuditData)"
-        },
-        "consecutivo": {
-          "type": "number",
-          "description": "The consecutive identifier for the audit record."
-        },
-        "alicePlata": {
-          "type": "string",
-          "description": "Name of the person performing the audit."
-        },
-        "pacienteNombre": {
-          "type": "string",
-          "description": "Name of the patient."
-        },
-        "tipoDocumento": {
-          "type": "string",
-          "description": "Type of identification document."
-        },
-        "numeroDocumento": {
-          "type": "string",
-          "description": "Identification document number."
-        },
-        "evento": {
-          "type": "string",
-          "description": "Event type."
-        },
-        "especifica": {
-          "type": "string",
-          "description": "Specific details of the event."
-        },
-        "fechaSeguimiento": {
-          "type": "string",
-          "description": "Date of follow-up.",
-          "format": "date-time"
-        },
-        "primeraVezSeguimiento": {
-          "type": "string",
-          "description": "Indicates if it's the first time or a follow-up."
-        },
-        "departamento": {
-          "type": "string",
-          "description": "Department."
-        },
-        "municipio": {
-          "type": "string",
-          "description": "Municipality."
-        },
-        "etnia": {
-          "type": "string",
-          "description": "Ethnicity."
-        },
-        "direccion": {
-          "type": "string",
-          "description": "Address."
-        },
-        "numeroTelefonico": {
-          "type": "string",
-          "description": "Phone number."
-        },
-        "seguimiento": {
-          "type": "string",
-          "description": "Follow-up notes."
-        },
-        "conductaASeguir": {
-          "type": "string",
-          "description": "Course of action to follow."
-        }
-      },
-      "required": [
-        "id",
-        "formId",
-        "consecutivo",
-        "alicePlata",
-        "pacienteNombre",
-        "tipoDocumento",
-        "numeroDocumento",
-        "evento",
-        "especifica",
-        "fechaSeguimiento",
-        "primeraVezSeguimiento",
-        "departamento",
-        "municipio",
-        "etnia",
-        "direccion",
-        "numeroTelefonico",
-        "seguimiento",
-        "conductaASeguir"
-      ]
+      "required": ["id", "auditorName", "patientName", "documentType", "documentNumber", "event", "followUpDate", "visitType", "department", "municipality", "ethnicity", "address", "phoneNumber", "followUpNotes", "nextSteps", "createdAt"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": {
-        "$ref": "#/backend/entities/User"
-      },
-      "description": "Stores user profile information. Accessible only to the user themselves or admins."
-    },
-    "/forms/{formId}": {
-      "schema": {
-        "$ref": "#/backend/entities/Form"
-      },
-      "description": "Stores audit form templates. Accessible to admins."
-    },
-    "/audit_logs/{logId}": {
-      "schema": {
-        "$ref": "#/backend/entities/AuditLog"
-      },
-      "description": "Stores logs of all audit events. Accessible to admins."
-    },
-    "/audit_data/{auditDataId}": {
-      "schema": {
-        "$ref": "#/backend/entities/AuditData"
-      },
-      "description": "Stores audit data captured from filled forms. Accessible to admins."
+    "/audits/{auditId}": {
+      "schema": { "$ref": "#/backend/entities/Audit" },
+      "description": "Collection of all audit records."
     }
   }
 }

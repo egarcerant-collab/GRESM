@@ -15,6 +15,7 @@ export interface FirebaseContextState {
   userError: Error | null;
   login: (username: string) => void;
   logout: () => void;
+  firestore: Firestore | null;
 }
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
@@ -28,6 +29,7 @@ interface FirebaseProviderProps {
 
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   children,
+  firestore,
 }) => {
   const [userAuthState, setUserAuthState] = useState<{
     profile: UserProfile | null;
@@ -38,7 +40,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   });
 
   useEffect(() => {
-    // Verificar si hay una sesión guardada en el navegador
     const savedUserUid = localStorage.getItem('audit-app-session');
     if (savedUserUid) {
       const foundProfile = (mockUsers as UserProfile[]).find(u => u.uid === savedUserUid);
@@ -72,7 +73,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     userError: null,
     login,
     logout,
-  }), [userAuthState]);
+    firestore,
+  }), [userAuthState, firestore]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
@@ -94,10 +96,18 @@ export const useUser = () => {
   return { user, profile, isUserLoading, userError, login, logout };
 };
 
-export const useFirestore = () => ({});
+export const useFirestore = () => {
+  const { firestore } = useFirebase();
+  return firestore;
+};
+
 export const useAuth = () => ({});
 export const useFirebaseApp = () => ({});
 
 export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
-  return useMemo(factory, deps);
+  const memoized = useMemo(factory, deps);
+  if (memoized && typeof memoized === 'object') {
+    (memoized as any).__memo = true;
+  }
+  return memoized;
 }

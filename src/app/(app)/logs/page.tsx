@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DownloadAuditsButton } from '@/components/download-audits-button';
 import {
   Card,
@@ -21,10 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
-import { getImageAsBase64Action, getAuditsAction, deleteAuditAction } from '@/app/actions';
+import { getImageAsBase64Action } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { AuditLogTable } from '@/components/audit-log-table';
 import mockUsersData from '@/lib/data/users.json';
 import {
@@ -33,6 +34,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { collection, deleteDoc, doc } from 'firebase/firestore';
 
 const JSZip = require('jszip');
 
@@ -55,61 +57,55 @@ const months = [
 
 export default function LogsPage() {
   const { profile: currentUserProfile } = useUser();
-  const [audits, setAudits] = useState<Audit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const db = useFirestore();
   const { toast } = useToast();
   
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [isDownloading, setIsDownloading] = useState(false);
 
+  const auditsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return collection(db, 'audits');
+  }, [db]);
+
+  const { data: audits, isLoading: loading } = useCollection<Audit>(auditsQuery);
+
+  // Ajuste automático de año basado en los datos disponibles
   useEffect(() => {
-    async function fetchAudits() {
-      setLoading(true);
-      try {
-        const data = await getAuditsAction();
-        setAudits(data);
+    if (audits && audits.length > 0) {
+      const currentYear = new Date().getFullYear().toString();
+      const hasDataForCurrentYear = audits.some(a => {
+        const date = new Date(a.createdAt);
+        return !isNaN(date.getTime()) && date.getFullYear().toString() === currentYear;
+      });
+      
+      if (!hasDataForCurrentYear) {
+        const latestYearInDate = audits.reduce((latest, audit) => {
+          const date = new Date(audit.createdAt);
+          const year = isNaN(date.getTime()) ? 0 : date.getFullYear();
+          return year > latest ? year : latest;
+        }, 0);
         
-        if (data.length > 0) {
-          const currentYear = new Date().getFullYear().toString();
-          const hasDataForCurrentYear = data.some(a => {
-            const date = new Date(a.createdAt);
-            return !isNaN(date.getTime()) && date.getFullYear().toString() === currentYear;
-          });
-          
-          if (!hasDataForCurrentYear) {
-            // Si no hay datos este año, buscamos el año más reciente en los datos
-            const latestYearInDate = data.reduce((latest, audit) => {
-              const date = new Date(audit.createdAt);
-              const year = isNaN(date.getTime()) ? 0 : date.getFullYear();
-              return year > latest ? year : latest;
-            }, 0);
-            
-            if (latestYearInDate !== 0) {
-              setSelectedYear(latestYearInDate.toString());
-            }
-          }
+        if (latestYearInDate !== 0) {
+          setSelectedYear(latestYearInDate.toString());
         }
-      } catch (error) {
-        console.error("Failed to load audits", error);
-      } finally {
-        setLoading(false);
       }
     }
-    fetchAudits();
-  }, []);
+  }, [audits]);
 
   const handleDeleteAudit = async (id: string) => {
-    const res = await deleteAuditAction(id);
-    if (res.success) {
-      setAudits(prev => prev.filter(a => a.id !== id));
-      toast({ title: "Auditoría Eliminada" });
-    } else {
-      toast({ variant: 'destructive', title: "Error al eliminar", description: res.error });
+    if (!db) return;
+    try {
+      await deleteDoc(doc(db, 'audits', id));
+      toast({ title: "Auditoría Eliminada de la Nube" });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: "Error al eliminar", description: error.message });
     }
   };
 
   const filteredAudits = useMemo(() => {
+    if (!audits) return [];
     return audits.filter((audit) => {
       const auditDate = new Date(audit.createdAt);
       if (isNaN(auditDate.getTime())) return false;
@@ -154,7 +150,7 @@ export default function LogsPage() {
       <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           <CardTitle className="font-headline text-2xl">Registro de Auditoría</CardTitle>
-          <CardDescription>Visualización de registros almacenados en el servidor.</CardDescription>
+          <CardDescription>Visualización de registros almacenados en la base de datos de la nube.</CardDescription>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button asChild className="w-full md:w-auto">
@@ -170,7 +166,7 @@ export default function LogsPage() {
       <CardContent>
         <Accordion type="single" collapsible className="w-full mb-4 border rounded-lg px-4">
           <AccordionItem value="item-1">
-            <AccordionTrigger>Ver JSON de Auditorías (Datos del Servidor)</AccordionTrigger>
+            <AccordionTrigger>Ver JSON de Auditorías (Datos de la Nube)</AccordionTrigger>
             <AccordionContent>
               <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto max-h-[400px]">
                 {JSON.stringify(audits, null, 2)}
