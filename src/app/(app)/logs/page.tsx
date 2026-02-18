@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -22,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
-import { getImageAsBase64Action } from '@/app/actions';
+import { getImageAsBase64Action, getAuditsAction, deleteAuditAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { saveAs } from 'file-saver';
 import { useUser } from '@/firebase';
@@ -51,7 +50,7 @@ const months = [
   { value: '8', label: 'Septiembre' },
   { value: '9', label: 'Octubre' },
   { value: '10', label: 'Noviembre' },
-  { value: '11', 'label': 'Diciembre' },
+  { value: '11', label: 'Diciembre' },
 ];
 
 export default function LogsPage() {
@@ -65,22 +64,28 @@ export default function LogsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   useEffect(() => {
-    // Cargar datos desde localStorage (nuestra "base de datos" JSON persistente)
-    const loadAudits = () => {
-      const stored = localStorage.getItem('audit-data-storage');
-      if (stored) {
-        setAudits(JSON.parse(stored));
+    async function fetchAudits() {
+      setLoading(true);
+      try {
+        const data = await getAuditsAction();
+        setAudits(data);
+      } catch (error) {
+        console.error("Failed to load audits", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    };
-    loadAudits();
+    }
+    fetchAudits();
   }, []);
 
-  const handleDeleteAudit = (id: string) => {
-    const updated = audits.filter(a => a.id !== id);
-    localStorage.setItem('audit-data-storage', JSON.stringify(updated));
-    setAudits(updated);
-    toast({ title: "Auditoría Eliminada" });
+  const handleDeleteAudit = async (id: string) => {
+    const res = await deleteAuditAction(id);
+    if (res.success) {
+      setAudits(prev => prev.filter(a => a.id !== id));
+      toast({ title: "Auditoría Eliminada del JSON" });
+    } else {
+      toast({ variant: 'destructive', title: "Error al eliminar", description: res.error });
+    }
   };
 
   const filteredAudits = useMemo(() => {
@@ -96,7 +101,7 @@ export default function LogsPage() {
     setIsDownloading(true);
     try {
       const zip = new JSZip();
-      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGEN UNIFICADA.jpg');
+      const backgroundImage = await getImageAsBase64Action('imagenes/IMAGEN UNIFICADA.jpg');
       
       for (const audit of filteredAudits) {
         const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;
@@ -127,7 +132,7 @@ export default function LogsPage() {
       <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div>
           <CardTitle className="font-headline text-2xl">Registro de Auditoría</CardTitle>
-          <CardDescription>Datos guardados permanentemente en este navegador.</CardDescription>
+          <CardDescription>Datos guardados permanentemente en audits.json</CardDescription>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <Button asChild className="w-full md:w-auto">
@@ -143,7 +148,7 @@ export default function LogsPage() {
       <CardContent>
         <Accordion type="single" collapsible className="w-full mb-4 border rounded-lg px-4">
           <AccordionItem value="item-1">
-            <AccordionTrigger>Ver JSON de Auditorías (Datos Guardados)</AccordionTrigger>
+            <AccordionTrigger>Ver JSON de Auditorías (Archivo Real)</AccordionTrigger>
             <AccordionContent>
               <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto">
                 {JSON.stringify(audits, null, 2)}

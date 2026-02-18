@@ -48,7 +48,6 @@ function LoginPageContent() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     startTransition(async () => {
-      // Validamos contra el archivo JSON local y una contraseña fija para simplificar
       const foundUser = users.find(u => u.username === values.username);
       
       if (foundUser && values.password === '123456') {

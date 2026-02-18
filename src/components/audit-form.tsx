@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,14 +23,13 @@ import {
 } from './ui/select';
 import { Loader2 } from 'lucide-react';
 import { format, differenceInYears } from 'date-fns';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from './ui/separator';
 import { useUser } from '@/firebase';
 import type { Audit } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { saveAuditAction } from '@/app/actions';
 
 const documentTypes = [
   "CC: Cédula de Ciudadanía", 
@@ -52,51 +50,7 @@ const eventTypes = [
   "Otro"
 ];
 
-const genderViolenceTypes = [
-    "Violencia física",
-    "Negligencia y abandono",
-    "Acoso sexual",
-    "Abuso sexual",
-    "otros"
-];
-
 const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
-
-const municipalitiesByDepartment: Record<string, string[]> = {
-  CESAR: [
-    "BECERRIL", "CHIMICHAGUA", "CHIRIGUANA", "CURUMANÍ", "LA JAGUA DE IBIRICO",
-    "PAILITAS", "TAMALAMEQUE", "ASTREA", "BOSCONIA", "EL COPEY", "EL PASO",
-    "AGUSTÍN CODAZZI", "LA PAZ", "MANAURE", "PUEBLO BELLO", "SAN DIEGO",
-    "VALLEDUPAR", "AGUACHICA", "GAMARRA", "GONZÁLEZ", "LA GLORIA", "PELAYA",
-    "RÍO DE ORO", "SAN ALBERTO", "SAN MARTÍN"
-  ],
-  "LA GUAJIRA": [
-    "ALBANIA", "BARRANCAS", "DIBULLA", "DISTRACCION", "EL MOLINO", "FONSECA",
-    "HATONUEVO", "LA JAGUA DEL PILAR", "MAICAO", "MANAURE", "RIOHACHA",
-    "SAN JUAN DEL CESAR", "URIBIA", "URUMITA", "VILLANUEVA"
-  ],
-  MAGDALENA: [
-    "ALGARROBO", "ARACATACA", "ARIGUANÍ", "CERRO SAN ANTONIO", "CHIBOLO",
-    "CIÉNAGA", "CONCORDIA", "EL BANCO", "EL PIÑON", "EL RETEN", "FUNDACION",
-    "GUAMAL", "NUEVA GRANADA", "PEDRAZA", "PIJIÑO DEL CARMEN", "PIVIJAY",
-    "PLATO", "PUEBLO VIEJO", "REMOLINO", "SABANAS DE SAN ANGEL", "SALAMINA",
-    "SAN SEBASTIAN DE BUENAVISTA", "SAN ZENON", "SANTA ANA", "SANTA BARBARA DE PINTO",
-    "SANTA MARTA", "SITIONUEVO", "TENERIFE", "ZAPAYAN", "ZONA BANANERA"
-  ],
-};
-
-const ethnicityOptions = [
-  "YUKPA",
-  "ARHUACO",
-  "WIWA",
-  "CHIMILA",
-  "KANKUAMO",
-  "WAYUU",
-  "ZENU",
-  "INGA",
-  "SIN ETNIA",
-  "INDIGENA",
-];
 
 export function AuditForm() {
   const [isPending, startTransition] = useTransition();
@@ -105,22 +59,15 @@ export function AuditForm() {
   const router = useRouter();
 
   const [isClient, setIsClient] = useState(false);
-  const [maxBirthDate, setMaxBirthDate] = useState('');
-
+  
   useEffect(() => {
     setIsClient(true);
-    setMaxBirthDate(format(new Date(), 'yyyy-MM-dd'));
   }, []);
   
-  const [departmentSelection, setDepartmentSelection] = useState<string>('');
-  const [municipalitySelection, setMunicipalitySelection] = useState<string>('');
-  const [availableMunicipalities, setAvailableMunicipalities] = useState<string[]>([]);
-  const [ethnicitySelection, setEthnicitySelection] = useState<string>('');
-
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
     defaultValues: {
-      auditorName: '',
+      auditorName: profile?.fullName || '',
       patientName: '',
       documentType: '',
       documentNumber: '',
@@ -156,35 +103,7 @@ export function AuditForm() {
     }
   }, [profile, form]);
 
-  const eventSelection = form.watch('event');
   const birthDateValue = form.watch('birthDate');
-  const isOtherEvent = eventSelection === 'Otro';
-  const isOtherDepartment = departmentSelection === 'Otro';
-  const isOtherMunicipality = municipalitySelection === 'Otro';
-  const isOtherEthnicity = ethnicitySelection === 'Otro';
-  const showSpecialEventFields = eventSelection === 'Intento de Suicidio' || eventSelection === 'Consumo de Sustancia Psicoactivas';
-  const isGenderViolenceEvent = eventSelection === 'Violencia de Género';
-
-  useEffect(() => {
-    if (departmentSelection && departmentSelection !== 'Otro') {
-      form.setValue('department', departmentSelection);
-      setAvailableMunicipalities(municipalitiesByDepartment[departmentSelection] || []);
-    }
-    form.setValue('municipality', '');
-    setMunicipalitySelection('');
-  }, [departmentSelection, form]);
-  
-  useEffect(() => {
-    if (municipalitySelection && municipalitySelection !== 'Otro') {
-      form.setValue('municipality', municipalitySelection);
-    }
-  }, [municipalitySelection, form]);
-
-  useEffect(() => {
-    if (ethnicitySelection && ethnicitySelection !== 'Otro') {
-      form.setValue('ethnicity', ethnicitySelection);
-    }
-  }, [ethnicitySelection, form]);
 
   useEffect(() => {
     if (birthDateValue) {
@@ -199,35 +118,31 @@ export function AuditForm() {
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
     startTransition(async () => {
-      try {
-        const auditData: Audit = {
-          ...values,
-          id: `AUD-${Date.now()}`,
-          auditorId: profile?.uid || 'anonymous',
-          createdAt: new Date().toISOString(),
-          followUpDate: values.followUpDate || new Date().toISOString(),
-        } as Audit;
+      const auditData: Audit = {
+        ...values,
+        id: `AUD-${Date.now()}`,
+        auditorId: profile?.uid || 'anonymous',
+        createdAt: new Date().toISOString(),
+        followUpDate: values.followUpDate || new Date().toISOString(),
+      } as Audit;
 
-        // GUARDADO PERDURANTE EN LOCALSTORAGE
-        const existingAudits = JSON.parse(localStorage.getItem('audit-data-storage') || '[]');
-        existingAudits.push(auditData);
-        localStorage.setItem('audit-data-storage', JSON.stringify(existingAudits));
-
-        toast({
-            title: 'Auditoría Guardada',
-            description: 'El registro se ha guardado permanentemente en tu navegador.',
-        });
+      const res = await saveAuditAction(auditData);
+      
+      if (res.success) {
+        toast({ title: 'Auditoría Guardada en JSON' });
         form.reset();
         router.push('/logs');
-      } catch (e: any) {
+      } else {
         toast({
           variant: 'destructive',
-          title: 'Error al Guardar',
-          description: 'Ocurrió un error inesperado.',
+          title: 'Error al Guardar en Servidor',
+          description: res.error || 'Ocurrió un error inesperado.',
         });
       }
     });
   }
+
+  if (!isClient) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
     <Form {...form}>
@@ -284,7 +199,10 @@ export function AuditForm() {
               </FormItem>
             )}
           />
-          <FormField
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+           <FormField
             control={form.control}
             name="event"
             render={({ field }) => (
@@ -302,7 +220,6 @@ export function AuditForm() {
               </FormItem>
             )}
           />
-          
           <FormField
             control={form.control}
             name="followUpDate"
@@ -310,55 +227,6 @@ export function AuditForm() {
               <FormItem>
                 <FormLabel>Fecha de Seguimiento</FormLabel>
                 <FormControl><Input type="date" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className='md:col-span-2 grid md:grid-cols-2 gap-8'>
-            <FormItem>
-              <FormLabel>Departamento</FormLabel>
-              <Select onValueChange={setDepartmentSelection} value={departmentSelection}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger></FormControl>
-                <SelectContent>
-                  {departmentOptions.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                  <SelectItem value="Otro">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
-            {isOtherDepartment && (
-              <FormField
-                control={form.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Especifique</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </div>
-
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Dirección</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phoneNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Teléfono</FormLabel>
-                <FormControl><Input type="number" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
