@@ -73,6 +73,7 @@ export function AuditForm() {
       documentNumber: '',
       event: '',
       eventDetails: '',
+      followUpDate: '',
       department: '',
       municipality: '',
       ethnicity: '',
@@ -129,14 +130,14 @@ export function AuditForm() {
       const res = await saveAuditAction(auditData);
       
       if (res.success) {
-        toast({ title: 'Auditoría Guardada en JSON' });
+        toast({ title: 'Auditoría Guardada Exitosamente' });
         form.reset();
         router.push('/logs');
       } else {
         toast({
           variant: 'destructive',
-          title: 'Error al Guardar en Servidor',
-          description: res.error || 'Ocurrió un error inesperado.',
+          title: 'Error al Guardar',
+          description: res.error || 'Ocurrió un error inesperado al escribir en el archivo JSON.',
         });
       }
     });
@@ -194,7 +195,7 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Número de Documento</FormLabel>
-                <FormControl><Input type="number" {...field} /></FormControl>
+                <FormControl><Input type="text" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -232,6 +233,88 @@ export function AuditForm() {
             )}
           />
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FormField
+            control={form.control}
+            name="visitType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de Visita</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Seleccione tipo" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="PRIMERA VEZ">PRIMERA VEZ</SelectItem>
+                    <SelectItem value="Seguimiento">Seguimiento</SelectItem>
+                    <SelectItem value="CIERRE DE CASO">CIERRE DE CASO</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phoneNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Teléfono</FormLabel>
+                <FormControl><Input type="text" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <FormField
+            control={form.control}
+            name="department"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Departamento</FormLabel>
+                <FormControl><Input placeholder="Cesar, Magdalena..." {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="municipality"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Municipio</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="ethnicity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Etnia</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Dirección</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
         <FormField
             control={form.control}
