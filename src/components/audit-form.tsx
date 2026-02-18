@@ -24,7 +24,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { differenceInYears } from 'date-fns';
 import { Textarea } from './ui/textarea';
-import { useTransition, useEffect, useState } from 'react';
+import { useTransition, useEffect, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import type { Audit } from '@/lib/types';
@@ -52,12 +52,11 @@ const eventTypes = [
 
 const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA"];
 
-const municipalityOptions = [
-  "RIOHACHA", "MAICAO", "URIBIA", "MANAURE", "BARRANCAS", 
-  "DISTRACCION", "FONSECA", "HATONUEVO", "SAN JUAN DEL CESAR", 
-  "VILLANUEVA", "URUMITA", "LA JAGUA DEL PILAR", "VALLEDUPAR", 
-  "SANTA MARTA", "OTRO"
-];
+const MUNICIPALITIES_BY_DEPT: Record<string, string[]> = {
+  "LA GUAJIRA": ["RIOHACHA", "MAICAO", "URIBIA", "MANAURE", "BARRANCAS", "DISTRACCION", "FONSECA", "HATONUEVO", "SAN JUAN DEL CESAR", "VILLANUEVA", "URUMITA", "LA JAGUA DEL PILAR", "OTRO"],
+  "CESAR": ["VALLEDUPAR", "OTRO"],
+  "MAGDALENA": ["SANTA MARTA", "OTRO"]
+};
 
 const ethnicityOptions = [
   "WAYUU", "WIWA", "KOGUI", "ARHUACO", "KANKUAMO", 
@@ -69,14 +68,12 @@ export function AuditForm() {
   const { toast } = useToast();
   const { profile } = useUser();
   const router = useRouter();
-
   const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
     setIsClient(true);
   }, []);
   
-  // Aseguramos que defaultValues tenga cadenas vacías en lugar de undefined para evitar el error de "uncontrolled input"
   const form = useForm<z.infer<typeof auditSchema>>({
     resolver: zodResolver(auditSchema),
     defaultValues: {
@@ -111,14 +108,19 @@ export function AuditForm() {
     },
   });
   
-  // Actualizar el nombre del auditor cuando el perfil esté disponible
   useEffect(() => {
     if (profile) {
         form.setValue('auditorName', profile.fullName || '');
     }
   }, [profile, form]);
 
+  const selectedDepartment = form.watch('department');
   const birthDateValue = form.watch('birthDate');
+
+  const municipalityOptions = useMemo(() => {
+    if (!selectedDepartment) return [];
+    return MUNICIPALITIES_BY_DEPT[selectedDepartment] || [];
+  }, [selectedDepartment]);
 
   useEffect(() => {
     if (birthDateValue) {
@@ -141,7 +143,6 @@ export function AuditForm() {
         followUpDate: values.followUpDate || new Date().toISOString(),
       } as Audit;
 
-      // Guardado real en el archivo JSON del servidor
       const res = await saveAuditAction(auditData);
       
       if (res.success) {
@@ -159,8 +160,6 @@ export function AuditForm() {
   }
 
   if (!isClient) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
-
-  const eventValue = form.watch('event');
 
   return (
     <Form {...form}>
@@ -292,7 +291,10 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Departamento</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
+                <Select onValueChange={(val) => {
+                  field.onChange(val);
+                  form.setValue('municipality', '');
+                }} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
                   </FormControl>
@@ -310,9 +312,9 @@ export function AuditForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Municipio</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
+                <Select onValueChange={field.onChange} value={field.value || ''} disabled={!selectedDepartment}>
                   <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={selectedDepartment ? "Seleccione Municipio" : "Elija Departamento"} /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {municipalityOptions.map(mun => <SelectItem key={mun} value={mun}>{mun}</SelectItem>)}
