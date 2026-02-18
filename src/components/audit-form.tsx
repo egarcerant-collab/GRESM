@@ -11,7 +11,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { auditSchema } from '@/lib/schema';
@@ -54,9 +53,26 @@ const eventTypes = [
 const departmentOptions = ["CESAR", "MAGDALENA", "LA GUAJIRA", "OTRO"];
 
 const MUNICIPALITIES_BY_DEPT: Record<string, string[]> = {
-  "LA GUAJIRA": ["RIOHACHA", "MAICAO", "URIBIA", "MANAURE", "BARRANCAS", "DISTRACCION", "FONSECA", "HATONUEVO", "SAN JUAN DEL CESAR", "VILLANUEVA", "URUMITA", "LA JAGUA DEL PILAR", "OTRO"],
-  "CESAR": ["VALLEDUPAR", "OTRO"],
-  "MAGDALENA": ["SANTA MARTA", "OTRO"],
+  "CESAR": [
+    "BECERRIL", "CHIMICHAGUA", "CHIRIGUANA", "CURUMANÍ", "LA JAGUA DE IBIRICO", 
+    "PAILITAS", "TAMALAMEQUE", "ASTREA", "BOSCONIA", "EL COPEY", "EL PASO", 
+    "AGUSTÍN CODAZZI", "LA PAZ", "MANAURE", "PUEBLO BELLO", "SAN DIEGO", 
+    "VALLEDUPAR", "AGUACHICA", "GAMARRA", "GONZÁLEZ", "LA GLORIA", "PELAYA", 
+    "RÍO DE ORO", "SAN ALBERTO", "SAN MARTÍN", "OTRO"
+  ],
+  "LA GUAJIRA": [
+    "ALBANIA", "DIBULLA", "MAICAO", "MANAURE", "RIOHACHA", "URIBIA", 
+    "BARRANCAS", "DISTRACCION", "EL MOLINO", "FONSECA", "HATONUEVO", 
+    "LA JAGUA DEL PILAR", "SAN JUAN DEL CESAR", "URUMITA", "VILLANUEVA", "OTRO"
+  ],
+  "MAGDALENA": [
+    "ARIGUANÍ", "CHIBOLO", "NUEVA GRANADA", "PLATO", "SABANAS DE SAN ANGEL", 
+    "TENERIFE", "ALGARROBO", "ARACATACA", "CIÉNAGA", "EL RETEN", "FUNDACION", 
+    "PUEBLO VIEJO", "ZONA BANANERA", "CERRO SAN ANTONIO", "CONCORDIA", "EL PIÑON", 
+    "PEDRAZA", "PIVIJAY", "REMOLINO", "SALAMINA", "SITIONUEVO", "ZAPAYAN", 
+    "SANTA MARTA", "EL BANCO", "GUAMAL", "PIJIÑO DEL CARMEN", "SAN SEBASTIAN DE BUENAVISTA", 
+    "SAN ZENON", "SANTA ANA", "SANTA BARBARA DE PINTO", "OTRO"
+  ],
   "OTRO": ["OTRO"]
 };
 
@@ -89,6 +105,7 @@ export function AuditForm() {
       department: '',
       otherDepartment: '',
       municipality: '',
+      otherMunicipality: '',
       ethnicity: '',
       otherEthnicity: '',
       address: '',
@@ -119,6 +136,7 @@ export function AuditForm() {
   }, [profile, form]);
 
   const selectedDepartment = form.watch('department');
+  const selectedMunicipality = form.watch('municipality');
   const selectedEthnicity = form.watch('ethnicity');
   const birthDateValue = form.watch('birthDate');
 
@@ -140,8 +158,8 @@ export function AuditForm() {
 
   function onSubmit(values: z.infer<typeof auditSchema>) {
     startTransition(async () => {
-      // Si seleccionó OTRO, usamos el valor del campo de texto
       const finalDepartment = values.department === 'OTRO' ? values.otherDepartment : values.department;
+      const finalMunicipality = values.municipality === 'OTRO' ? values.otherMunicipality : values.municipality;
       const finalEthnicity = values.ethnicity === 'OTRO' ? values.otherEthnicity : values.ethnicity;
 
       const auditData: Audit = {
@@ -150,8 +168,9 @@ export function AuditForm() {
         auditorId: profile?.uid || 'anonymous',
         createdAt: new Date().toISOString(),
         followUpDate: values.followUpDate || new Date().toISOString(),
-        department: finalDepartment,
-        ethnicity: finalEthnicity,
+        department: finalDepartment || '',
+        municipality: finalMunicipality || '',
+        ethnicity: finalEthnicity || '',
       } as Audit;
 
       const res = await saveAuditAction(auditData);
@@ -305,6 +324,7 @@ export function AuditForm() {
                 <Select onValueChange={(val) => {
                   field.onChange(val);
                   form.setValue('municipality', '');
+                  form.setValue('otherMunicipality', '');
                 }} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger><SelectValue placeholder="Seleccione" /></SelectTrigger>
@@ -348,6 +368,19 @@ export function AuditForm() {
               </FormItem>
             )}
           />
+          {selectedMunicipality === 'OTRO' && (
+            <FormField
+              control={form.control}
+              name="otherMunicipality"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especifique Municipio</FormLabel>
+                  <FormControl><Input placeholder="Ingrese el municipio" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

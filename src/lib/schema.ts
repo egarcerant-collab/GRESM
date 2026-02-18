@@ -19,6 +19,7 @@ export const auditSchema = z.object({
   department: z.string().min(2, { message: 'El departamento es requerido.' }),
   otherDepartment: z.string().optional(),
   municipality: z.string().min(2, { message: 'El municipio es requerido.' }),
+  otherMunicipality: z.string().optional(),
   ethnicity: z.string().min(2, { message: 'La etnia es requerida.' }),
   otherEthnicity: z.string().optional(),
   address: z.string().min(5, { message: 'La dirección es requerida.' }),
@@ -89,6 +90,10 @@ export const auditSchema = z.object({
     
     if (data.department === 'OTRO' && (!data.otherDepartment || data.otherDepartment.length < 2)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Especifique el departamento.', path: ['otherDepartment'] });
+    }
+
+    if (data.municipality === 'OTRO' && (!data.otherMunicipality || data.otherMunicipality.length < 2)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Especifique el municipio.', path: ['otherMunicipality'] });
     }
     
     if (data.ethnicity === 'OTRO' && (!data.otherEthnicity || data.otherEthnicity.length < 2)) {
