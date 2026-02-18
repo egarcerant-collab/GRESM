@@ -1,3 +1,4 @@
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format, isValid } from 'date-fns';
@@ -100,10 +101,6 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
         [{ content: 'Fecha de Seguimiento:', styles: { fontStyle: "bold" } }, formatDateSafe(data.followUpDate, 'yyyy-MM-dd')],
         [{ content: 'Evento:', styles: { fontStyle: "bold" } }, data.event || 'N/A'],
         ...(data.eventDetails ? [[{ content: 'Detalles del Evento:', styles: { fontStyle: "bold" } }, data.eventDetails]] : []),
-        ...(data.event === 'Violencia de Género' ? [
-            [{ content: 'Tipo de Violencia:', styles: { fontStyle: "bold" } }, data.genderViolenceType || 'N/A'],
-            ...(data.genderViolenceTypeDetails ? [[{ content: 'Detalles Violencia:', styles: { fontStyle: "bold" } }, data.genderViolenceTypeDetails]] : []),
-        ] : []),
     ],
     theme: "striped",
     styles: { font: FONT, fontSize: 10, cellPadding: 5 },

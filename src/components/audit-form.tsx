@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -144,10 +145,13 @@ export function AuditForm() {
     }
   }, [profile, form]);
 
+  const selectedEvent = form.watch('event');
   const selectedDepartment = form.watch('department');
   const selectedMunicipality = form.watch('municipality');
   const selectedEthnicity = form.watch('ethnicity');
   const birthDateValue = form.watch('birthDate');
+
+  const showSpecialFields = selectedEvent === 'Intento de Suicidio' || selectedEvent === 'Consumo de Sustancia Psicoactivas';
 
   const municipalityOptions = useMemo(() => {
     if (!selectedDepartment) return [];
@@ -288,6 +292,172 @@ export function AuditForm() {
             )}
           />
         </div>
+
+        {/* CAMPOS CONDICIONALES PARA EVENTOS ESPECIALES */}
+        {showSpecialFields && (
+          <div className="p-6 bg-muted/30 rounded-lg border-2 border-dashed border-primary/20 space-y-6">
+            <h3 className="font-semibold text-primary">Información Adicional Obligatoria</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="birthDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de Nacimiento</FormLabel>
+                    <FormControl><Input type="date" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Edad (Calculada)</FormLabel>
+                    <FormControl><Input type="number" {...field} disabled /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sex"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sexo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Sexo" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Masculino">Masculino</SelectItem>
+                        <SelectItem value="Femenino">Femenino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="affiliationStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado de Afiliación</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Activa">Activa</SelectItem>
+                        <SelectItem value="Inactiva">Inactiva</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="area"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Área</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Área" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Urbano">Urbano</SelectItem>
+                        <SelectItem value="Rural">Rural</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="settlement"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Asentamiento / Barrio</FormLabel>
+                    <FormControl><Input placeholder="Ej. Barrio El Centro" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="nationality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nacionalidad</FormLabel>
+                    <FormControl><Input placeholder="Ej. Colombiana" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="primaryHealthProvider"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>IPS Atención Primaria</FormLabel>
+                    <FormControl><Input placeholder="Nombre de la IPS" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="regime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Régimen</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Régimen" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="Subsidiado">Subsidiado</SelectItem>
+                        <SelectItem value="Contributivo">Contributivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="upgdProvider"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre UPGD o Prestador</FormLabel>
+                    <FormControl><Input placeholder="Nombre del prestador" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="followUpInterventionType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Intervención</FormLabel>
+                    <FormControl><Input placeholder="Hospitalización, Psiquiatría, etc." {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FormField

@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const loginSchema = z.object({
@@ -56,7 +57,7 @@ export const auditSchema = z.object({
         if (!data.birthDate) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La fecha de nacimiento es requerida.', path: ['birthDate'] });
         }
-        if (data.age === undefined) {
+        if (data.age === undefined || data.age === 0) {
              ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La edad es requerida.', path: ['age'] });
         }
         if (!data.sex) {

@@ -38,20 +38,10 @@ export default function LogDetailClient({ audit: initialAudit }: { audit: Audit 
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Asegurarse de cargar la versión más reciente del almacenamiento local
-    const stored = localStorage.getItem('audit-data-storage');
-    if (stored) {
-      const allAudits = JSON.parse(stored);
-      const current = allAudits.find((a: Audit) => a.id === initialAudit.id);
-      if (current) setAudit(current);
-    }
-  }, [initialAudit.id]);
-
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
-      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGEN UNIFICADA.jpg');
+      const backgroundImage = await getImageAsBase64Action('imagenes/IMAGEN UNIFICADA.jpg');
       const auditorData = mockUsersData.find(u => u.uid === audit.auditorId) || null;
       await generateAuditPdf(audit, backgroundImage, auditorData as UserProfile | null);
       toast({ title: 'PDF Generado' });
@@ -67,6 +57,8 @@ export default function LogDetailClient({ audit: initialAudit }: { audit: Audit 
     const d = new Date(dateString);
     return isValid(d) ? format(d, 'PPP') : 'Fecha no válida';
   };
+
+  const showSpecialInfo = audit.event === 'Intento de Suicidio' || audit.event === 'Consumo de Sustancia Psicoactivas';
 
   return (
     <div className="space-y-6">
@@ -92,6 +84,23 @@ export default function LogDetailClient({ audit: initialAudit }: { audit: Audit 
             <DetailItem label="Paciente" value={audit.patientName} />
             <DetailItem label="Documento" value={`${audit.documentType} - ${audit.documentNumber}`} />
             <DetailItem label="Evento" value={audit.event} />
+            
+            {showSpecialInfo && (
+              <>
+                <DetailItem label="Fecha Nacimiento" value={formatDate(audit.birthDate)} />
+                <DetailItem label="Edad" value={audit.age} />
+                <DetailItem label="Sexo" value={audit.sex} />
+                <DetailItem label="Estado Afiliación" value={audit.affiliationStatus} />
+                <DetailItem label="Área" value={audit.area} />
+                <DetailItem label="Asentamiento" value={audit.settlement} />
+                <DetailItem label="Nacionalidad" value={audit.nationality} />
+                <DetailItem label="IPS Atención Primaria" value={audit.primaryHealthProvider} />
+                <DetailItem label="Régimen" value={audit.regime} />
+                <DetailItem label="Nombre UPGD" value={audit.upgdProvider} />
+                <DetailItem label="Tipo Intervención" value={audit.followUpInterventionType} />
+              </>
+            )}
+
             <DetailItem label="Seguimiento" value={<p className="whitespace-pre-wrap">{audit.followUpNotes}</p>} />
             <DetailItem label="Conducta" value={<p className="whitespace-pre-wrap">{audit.nextSteps}</p>} />
         </CardContent>
