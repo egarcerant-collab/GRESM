@@ -1,33 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { getDataDir, getPublicDir } from '@/lib/data-path';
-
-const usersPath = path.join(getDataDir(), 'users.json');
-
-function saveSignatureFile(uid: string, base64DataUrl: string): string {
-  const sigDir = path.join(getPublicDir(), 'signatures');
-  if (!fs.existsSync(sigDir)) fs.mkdirSync(sigDir, { recursive: true });
-  const base64 = base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
-  const filePath = path.join(sigDir, `${uid}.png`);
-  fs.writeFileSync(filePath, Buffer.from(base64, 'base64'));
-  return `/signatures/${uid}.png`;
-}
-
-function readUsers(): any[] {
-  return JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
-}
+import { supabase } from '@/lib/supabase';
 
 export async function GET() {
-  const users = readUsers();
-  return NextResponse.json(users.map(({ password, ...u }: any) => u));
+  const { data, error } = await supabase.from('users').select('uid, email, username, fullName, role, cargo, signature');
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const users = readUsers();
 
-  if (users.find((u) => u.username === body.username)) {
+  const { data: existing } = await supabase
+    .from('users')
+    .select('uid')
+    .eq('username', body.username)
+    .single();
+
+  if (existing) {
     return NextResponse.json({ error: 'auth/email-already-in-use' }, { status: 400 });
   }
 
@@ -36,17 +25,14 @@ export async function POST(request: NextRequest) {
   }
 
   const uid = crypto.randomUUID();
-  if (body.signature && body.signature.startsWith('data:')) {
-    body.signature = saveSignatureFile(uid, body.signature);
-  }
   const newUser = {
     uid,
     email: `${body.username}@dusakawi.audit.app`,
     ...body,
   };
 
-  users.push(newUser);
-  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+  const { error } = await supabase.from('users').insert(newUser);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { password, ...userWithoutPassword } = newUser;
   return NextResponse.json(userWithoutPassword);

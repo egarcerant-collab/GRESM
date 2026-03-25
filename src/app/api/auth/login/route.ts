@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { getDataDir } from '@/lib/data-path';
-
-const usersPath = path.join(getDataDir(), 'users.json');
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   const { username, password } = await request.json();
-  const users: any[] = JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
-  const user = users.find((u) => u.username === username && u.password === password);
-  if (!user) {
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .eq('password', password)
+    .single();
+
+  if (error || !data) {
     return NextResponse.json({ error: 'auth/invalid-credential' }, { status: 401 });
   }
-  const { password: _, ...userWithoutPassword } = user;
+
+  const { password: _, ...userWithoutPassword } = data;
   return NextResponse.json(userWithoutPassword);
 }

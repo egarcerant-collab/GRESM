@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { getDataDir } from '@/lib/data-path';
-
-const usersPath = path.join(getDataDir(), 'users.json');
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   const { username, password } = await request.json();
-
-  const users: any[] = JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
-
-  if (users.find((u) => u.username === username)) {
-    return NextResponse.json({ error: 'auth/email-already-in-use' }, { status: 400 });
-  }
 
   if (!password || password.length < 6) {
     return NextResponse.json({ error: 'auth/weak-password' }, { status: 400 });
   }
 
-  const uid = crypto.randomUUID();
-  const isFirstUser = users.length === 0;
+  const { data: existing } = await supabase
+    .from('users')
+    .select('uid')
+    .eq('username', username)
+    .single();
 
+  if (existing) {
+    return NextResponse.json({ error: 'auth/email-already-in-use' }, { status: 400 });
+  }
+
+  const { count } = await supabase.from('users').select('*', { count: 'exact', head: true });
+  const isFirstUser = count === 0;
+
+  const uid = crypto.randomUUID();
   const newUser = {
     uid,
     email: `${username}@dusakawi.audit.app`,
@@ -31,8 +32,8 @@ export async function POST(request: NextRequest) {
     password,
   };
 
-  users.push(newUser);
-  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+  const { error } = await supabase.from('users').insert(newUser);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { password: _, ...userWithoutPassword } = newUser;
   return NextResponse.json(userWithoutPassword);
