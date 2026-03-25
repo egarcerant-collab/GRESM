@@ -26,7 +26,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { getImageAsBase64Action } from '@/app/actions';
+async function getBackgroundImage(): Promise<string | null> {
+  try {
+    const res = await fetch('/imagenes/IMAGENEN UNIFICADA.jpg');
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+    return `data:image/jpeg;base64,${b64}`;
+  } catch {
+    return null;
+  }
+}
 import { useToast } from '@/hooks/use-toast';
 import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
@@ -103,7 +113,7 @@ export default function LogDetailClient({ audit }: { audit: Audit }) {
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
-      const backgroundImage = await getImageAsBase64Action('/imagenes/IMAGENEN UNIFICADA.jpg');
+      const backgroundImage = await getBackgroundImage();
       
       const auditorProfile = await getDoc(doc(firestore, 'users', audit.auditorId));
       const auditorData = auditorProfile.exists() ? auditorProfile.data() as UserProfile : null;
