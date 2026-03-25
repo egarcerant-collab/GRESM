@@ -1,0 +1,291 @@
+{
+  "entities": {
+    "AuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditLog",
+      "type": "object",
+      "description": "Represents a record of an audit event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the audit log entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who performed the audit. (Relationship: User 1:N AuditLog)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the audit event occurred.",
+          "format": "date-time"
+        },
+        "eventType": {
+          "type": "string",
+          "description": "Type of audit event (e.g., form creation, data update, report generation)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the audit event."
+        },
+        "formId": {
+          "type": "string",
+          "description": "Reference to the Form that was audited. (Relationship: Form 1:N AuditLog)"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "timestamp",
+        "eventType",
+        "description"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Audit Logger application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "userName": {
+          "type": "string",
+          "description": "The users username"
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "userName",
+        "email"
+      ]
+    },
+    "Form": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Form",
+      "type": "object",
+      "description": "Represents an audit form.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the form."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the audit form."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the purpose of the form."
+        },
+        "template": {
+          "type": "string",
+          "description": "Form template as JSON"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "template"
+      ]
+    },
+    "AuditData": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditData",
+      "type": "object",
+      "description": "Represents the data captured in a filled audit form.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the audit data."
+        },
+        "formId": {
+          "type": "string",
+          "description": "Reference to the Form. (Relationship: Form 1:N AuditData)"
+        },
+        "consecutivo": {
+          "type": "number",
+          "description": "The consecutive identifier for the audit record."
+        },
+        "alicePlata": {
+          "type": "string",
+          "description": "Name of the person performing the audit."
+        },
+        "pacienteNombre": {
+          "type": "string",
+          "description": "Name of the patient."
+        },
+        "tipoDocumento": {
+          "type": "string",
+          "description": "Type of identification document."
+        },
+        "numeroDocumento": {
+          "type": "string",
+          "description": "Identification document number."
+        },
+        "evento": {
+          "type": "string",
+          "description": "Event type."
+        },
+        "especifica": {
+          "type": "string",
+          "description": "Specific details of the event."
+        },
+        "fechaSeguimiento": {
+          "type": "string",
+          "description": "Date of follow-up.",
+          "format": "date-time"
+        },
+        "primeraVezSeguimiento": {
+          "type": "string",
+          "description": "Indicates if it's the first time or a follow-up."
+        },
+        "departamento": {
+          "type": "string",
+          "description": "Department."
+        },
+        "municipio": {
+          "type": "string",
+          "description": "Municipality."
+        },
+        "etnia": {
+          "type": "string",
+          "description": "Ethnicity."
+        },
+        "direccion": {
+          "type": "string",
+          "description": "Address."
+        },
+        "numeroTelefonico": {
+          "type": "string",
+          "description": "Phone number."
+        },
+        "seguimiento": {
+          "type": "string",
+          "description": "Follow-up notes."
+        },
+        "conductaASeguir": {
+          "type": "string",
+          "description": "Course of action to follow."
+        }
+      },
+      "required": [
+        "id",
+        "formId",
+        "consecutivo",
+        "alicePlata",
+        "pacienteNombre",
+        "tipoDocumento",
+        "numeroDocumento",
+        "evento",
+        "especifica",
+        "fechaSeguimiento",
+        "primeraVezSeguimiento",
+        "departamento",
+        "municipio",
+        "etnia",
+        "direccion",
+        "numeroTelefonico",
+        "seguimiento",
+        "conductaASeguir"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Accessible only to the user themselves or admins.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/forms/{formId}",
+        "definition": {
+          "entityName": "Form",
+          "schema": {
+            "$ref": "#/backend/entities/Form"
+          },
+          "description": "Stores audit form templates. Accessible to admins.",
+          "params": [
+            {
+              "name": "formId",
+              "description": "The unique identifier of the form."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/audit_logs/{logId}",
+        "definition": {
+          "entityName": "AuditLog",
+          "schema": {
+            "$ref": "#/backend/entities/AuditLog"
+          },
+          "description": "Stores logs of all audit events. Accessible to admins.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier of the audit log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/audit_data/{auditDataId}",
+        "definition": {
+          "entityName": "AuditData",
+          "schema": {
+            "$ref": "#/backend/entities/AuditData"
+          },
+          "description": "Stores audit data captured from filled forms. Accessible to admins.",
+          "params": [
+            {
+              "name": "auditDataId",
+              "description": "The unique identifier for the audit data."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "adminRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to store admin roles. Presence of a document indicates admin privileges. Existence over Content.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who is an admin."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage audit logs, user data, forms, and audit data efficiently, while strictly adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). This structure prioritizes security and scalability by avoiding hierarchical authorization dependencies, making security rules simple and robust.\n\n**Authorization Independence:**\n\n*   To ensure authorization independence and enable atomic operations, the `AuditData` subcollection denormalizes authorization data. There is no explicit ownership, but the data is implicitly available to admins (defined by the `roles_admin` collection).\n\n**Structural Segregation:**\n\n*   The structure separates different types of data into distinct collections, each with a homogeneous security posture. For example, `users` holds user profiles, while `forms` stores audit form templates, each managed independently.\n\n**Access Modeling:**\n\n*   **Private User Data:** User-related data (e.g., profile information) is stored under `/users/{userId}`, providing a clear path-based ownership model.\n*   **Forms:** Forms are stored in a top-level `/forms` collection. Given that the use case allows different activities to be filled in by a group of auditors, there isn't an explicit user ownership, but rather implicit ownership by the admins.\n*   **Audit Logs:** Audit logs are stored under `/audit_logs`, providing a central repository for logging all the actions performed on the forms.\n*   **Audit Data:** Audit Data entries are stored under `/audit_data`, providing a central repository for the audit data.\n*   **Admin Roles:** The DBAC approach relies on the existence of documents in `/roles_admin/{userId}` to grant admin privileges.  This approach uses **Existence over Content** which is the preferred approach when using DBAC.\n\n**QAPs Support:**\n\n*   The structure enables secure `list` operations. By segregating data based on access requirements and using the appropriate authorization checks (e.g., verifying user ID for user-specific data or admin role existence), the rules ensure that only authorized users can access specific collections and documents.\n\nThis design ensures that all security rules are simple, auditable, and scalable."
+  }
+}
