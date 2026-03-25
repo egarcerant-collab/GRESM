@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { getDataDir } from '@/lib/data-path';
+import { getDataDir, getPublicDir } from '@/lib/data-path';
 
 const usersPath = path.join(getDataDir(), 'users.json');
+
+function saveSignatureFile(uid: string, base64DataUrl: string): string {
+  const sigDir = path.join(getPublicDir(), 'signatures');
+  if (!fs.existsSync(sigDir)) fs.mkdirSync(sigDir, { recursive: true });
+  const base64 = base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
+  const filePath = path.join(sigDir, `${uid}.png`);
+  fs.writeFileSync(filePath, Buffer.from(base64, 'base64'));
+  return `/signatures/${uid}.png`;
+}
 
 function readUsers(): any[] {
   return JSON.parse(fs.readFileSync(usersPath, 'utf-8'));
@@ -27,6 +36,9 @@ export async function POST(request: NextRequest) {
   }
 
   const uid = crypto.randomUUID();
+  if (body.signature && body.signature.startsWith('data:')) {
+    body.signature = saveSignatureFile(uid, body.signature);
+  }
   const newUser = {
     uid,
     email: `${body.username}@dusakawi.audit.app`,

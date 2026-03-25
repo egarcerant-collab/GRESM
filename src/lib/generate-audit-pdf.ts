@@ -170,8 +170,15 @@ async function buildPdf(data: Audit, backgroundImage: string | null, auditor: Us
 
     if (auditor.signature) {
       try {
-        doc.addImage(auditor.signature, 'PNG', leftMargin, finalY, 120, 60, undefined, 'FAST');
-        finalY += 70; // Position below signature image
+        let sigData = auditor.signature;
+        if (sigData.startsWith('/')) {
+          const res = await fetch(sigData);
+          const buf = await res.arrayBuffer();
+          const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          sigData = `data:image/png;base64,${b64}`;
+        }
+        doc.addImage(sigData, 'PNG', leftMargin, finalY, 120, 60, undefined, 'FAST');
+        finalY += 70;
       } catch (e) {
         console.error("Error adding signature image:", e);
         doc.text('[Error al cargar la firma]', leftMargin, finalY + 30);

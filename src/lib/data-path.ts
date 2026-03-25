@@ -6,14 +6,20 @@ import path from 'path';
  * or from a parent directory (e.g. via launch.json).
  */
 export function getDataDir(): string {
-  // First try: running directly from project root (npm run dev)
   const direct = path.join(process.cwd(), 'data');
   if (fs.existsSync(direct)) return direct;
-
-  // Second try: started from parent directory with GRESM as subdir
   const fromParent = path.join(process.cwd(), 'GRESM', 'data');
   if (fs.existsSync(fromParent)) return fromParent;
+  return direct;
+}
 
-  // Fallback: return the direct path anyway and let it fail with a clear error
+/**
+ * Finds the public directory.
+ */
+export function getPublicDir(): string {
+  const direct = path.join(process.cwd(), 'public');
+  if (fs.existsSync(direct)) return direct;
+  const fromParent = path.join(process.cwd(), 'GRESM', 'public');
+  if (fs.existsSync(fromParent)) return fromParent;
   return direct;
 }
