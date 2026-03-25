@@ -30,8 +30,7 @@ import { Textarea } from './ui/textarea';
 import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from './ui/separator';
-import { addDocumentNonBlocking, useFirestore, useUser } from '@/firebase';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { addDocumentNonBlocking, useFirestore, useUser, collection, doc, getDoc, getDocs, query, where } from '@/local';
 import type { UserProfile } from '@/lib/types';
 
 const documentTypes = [

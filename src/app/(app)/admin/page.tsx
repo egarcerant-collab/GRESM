@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase, deleteDocumentNonBlocking, collection, doc, getDoc } from '@/local';
 import type { UserProfile } from '@/lib/types';
 import { Loader2, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,17 +36,30 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { collection, doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const firestore = useFirestore();
   const { user: authUser } = useUser();
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (authUser) {
+      getDoc(doc(firestore, 'users', authUser.uid)).then(snap => {
+        const profile = snap.data() as UserProfile | null;
+        if (profile?.role !== 'admin') {
+          router.replace('/dashboard');
+        } else {
+          setIsAdmin(true);
+        }
+      });
+    }
+  }, [authUser, firestore, router]);
 
   const usersCollection = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading: loading, error } = useCollection<UserProfile>(usersCollection);
-  
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const { toast } = useToast();
@@ -54,6 +67,10 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  if (isAdmin === null) {
+    return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   if (error) {
     return <div>Error: {error.message}</div>

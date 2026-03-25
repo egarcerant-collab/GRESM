@@ -2,11 +2,10 @@
 'use client';
 
 import LogDetailClient from '@/components/log-detail-client';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, doc } from '@/local';
 import type { Audit } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 
 type PageProps = {
   params: { id: string };

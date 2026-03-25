@@ -1,6 +1,4 @@
 
-import type { User as FirebaseUser } from 'firebase/auth';
-
 export type Audit = {
   id: string;
   auditorName: string;
@@ -47,8 +45,3 @@ export type UserProfile = {
     signature?: string; // As base64 data URL
 };
 
-// This type combines the Firebase user with our custom profile
-export type AppUser = {
-  firebaseUser: FirebaseUser;
-  profile: UserProfile | null;
-}

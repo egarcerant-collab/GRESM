@@ -9,9 +9,8 @@ import {
 } from "@/components/ui/sidebar";
 import { ShieldCheck, Loader2 } from 'lucide-react';
 import React from 'react';
-import { useUser } from '@/firebase';
+import { useUser, FirebaseClientProvider } from '@/local';
 import { useRouter } from 'next/navigation';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 function AppLayoutContent({
   children,

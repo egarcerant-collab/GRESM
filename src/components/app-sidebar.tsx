@@ -13,10 +13,8 @@ import {
 import { FilePlus, List, ShieldCheck, Users, LogOut, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, doc, getDoc } from '@/local';
 import { useMemo, useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { Button } from './ui/button';
 
@@ -79,18 +77,20 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-              <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith('/admin')}
-              tooltip="Administración"
-              >
-              <Link href="/admin">
-                  <Users />
-                  <span>Administración</span>
-              </Link>
-              </SidebarMenuButton>
-          </SidebarMenuItem>
+          {profile?.role === 'admin' && (
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/admin')}
+                tooltip="Administración"
+                >
+                <Link href="/admin">
+                    <Users />
+                    <span>Administración</span>
+                </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>

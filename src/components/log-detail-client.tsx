@@ -32,8 +32,7 @@ import { generateAuditPdf } from '@/lib/generate-audit-pdf';
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { useFirestore, useUser, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useFirestore, useUser, deleteDocumentNonBlocking, doc, getDoc } from '@/local';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;

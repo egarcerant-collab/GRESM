@@ -1,0 +1,20 @@
+[
+  {
+    "uid": "admin-001",
+    "email": "admin@dusakawi.audit.app",
+    "username": "admin",
+    "fullName": "Administrador",
+    "role": "admin",
+    "cargo": "Administrador",
+    "password": "123456"
+  },
+  {
+    "uid": "cc11b0a6-0c85-4400-9813-8037412ac4b9",
+    "email": "eduardo@dusakawi.audit.app",
+    "username": "eduardo",
+    "fullName": "Eduardo Garcerant Gonzalez",
+    "role": "user",
+    "cargo": "Auditor",
+    "password": "123456"
+  }
+]

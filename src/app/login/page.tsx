@@ -17,8 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import React, { useTransition, useState } from 'react';
 import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@/lib/schema';
-import { useFirebase, useUser, FirebaseClientProvider, setDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { useFirebase, useUser, FirebaseClientProvider, setDocumentNonBlocking, useCollection, useMemoFirebase, signInWithEmailAndPassword, createUserWithEmailAndPassword, collection, doc } from '@/local';
 import {
   Card,
   CardContent,
@@ -27,7 +26,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
-import { collection, doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';

@@ -22,9 +22,7 @@ import { userSchema } from '@/lib/schema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { UserProfile } from '@/lib/types';
 import Image from 'next/image';
-import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { useAuth, useFirestore, setDocumentNonBlocking, createUserWithEmailAndPassword, doc } from '@/local';
 
 
 const DUMMY_DOMAIN = 'dusakawi.audit.app';
