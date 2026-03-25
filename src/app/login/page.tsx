@@ -136,7 +136,7 @@ function LoginPageContent() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
         <div className="flex items-center gap-4 mb-8">
             <ShieldCheck className="h-12 w-12 text-primary" />
-            <h1 className="text-4xl font-bold font-headline text-primary">Audit Logger</h1>
+            <h1 className="text-4xl font-bold font-headline text-primary">Garcerant Auditoria</h1>
         </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
